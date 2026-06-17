@@ -1,0 +1,12 @@
+{
+  "name": "Withdrawal button",
+  "settings": {
+    "label": { "label": "Button label" },
+    "alignment": {
+      "label": "Alignment",
+      "options": { "left": "Left", "center": "Center", "right": "Right" }
+    },
+    "bg_color": { "label": "Background color" },
+    "text_color": { "label": "Text color" }
+  }
+}

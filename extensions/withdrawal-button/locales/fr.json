@@ -1,0 +1,12 @@
+{
+  "name": "Bouton de rétractation",
+  "settings": {
+    "label": { "label": "Libellé du bouton" },
+    "alignment": {
+      "label": "Alignement",
+      "options": { "left": "Gauche", "center": "Centré", "right": "Droite" }
+    },
+    "bg_color": { "label": "Couleur de fond" },
+    "text_color": { "label": "Couleur du texte" }
+  }
+}

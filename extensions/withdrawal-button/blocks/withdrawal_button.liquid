@@ -1,0 +1,67 @@
+{%- comment -%}
+  EU Withdrawal — "Bouton de rétractation" app block.
+  No server logic: a styled link to the public withdrawal form served by the
+  App Proxy (/apps/retractation). Settings: label, colors, alignment.
+{%- endcomment -%}
+
+<div class="eu-wd-wrap" style="text-align: {{ block.settings.alignment }};" {{ block.shopify_attributes }}>
+  <a
+    class="eu-wd-button"
+    href="/apps/retractation"
+    style="background-color: {{ block.settings.bg_color }}; color: {{ block.settings.text_color }};"
+  >
+    {{ block.settings.label }}
+  </a>
+</div>
+
+{% stylesheet %}
+  .eu-wd-wrap { margin: 1rem 0; }
+  .eu-wd-button {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    text-decoration: none;
+    line-height: 1.2;
+    transition: opacity 0.15s ease;
+  }
+  .eu-wd-button:hover { opacity: 0.9; }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:name",
+  "target": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "label",
+      "label": "t:settings.label.label",
+      "default": "Exercer mon droit de rétractation"
+    },
+    {
+      "type": "select",
+      "id": "alignment",
+      "label": "t:settings.alignment.label",
+      "options": [
+        { "value": "left", "label": "t:settings.alignment.options.left" },
+        { "value": "center", "label": "t:settings.alignment.options.center" },
+        { "value": "right", "label": "t:settings.alignment.options.right" }
+      ],
+      "default": "center"
+    },
+    {
+      "type": "color",
+      "id": "bg_color",
+      "label": "t:settings.bg_color.label",
+      "default": "#1a1a2e"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "t:settings.text_color.label",
+      "default": "#ffffff"
+    }
+  ]
+}
+{% endschema %}
