@@ -8,6 +8,7 @@ import {
   getActiveShopWithToken,
   getShopByDomain,
 } from "@/lib/shops/repository";
+import { sendAcknowledgement } from "@/lib/email/send";
 import { computeDeadline } from "@/lib/withdrawal/deadline";
 import { loadRuleSet } from "@/lib/withdrawal/rules";
 import { createWithdrawal } from "@/lib/withdrawals/repository";
@@ -152,7 +153,9 @@ async function handleSubmit(
     refundDeadlineAt: deadline.refundDeadlineAt?.toISOString() ?? null,
   });
 
-  // TODO Prompt 5: send the Resend acknowledgement email + email_sent event.
+  // Acknowledgement email (durable medium). Resilient & idempotent: it never
+  // throws, so an email failure cannot block the withdrawal that was just created.
+  await sendAcknowledgement(created.id);
 
   return NextResponse.json({ reference: created.reference });
 }
