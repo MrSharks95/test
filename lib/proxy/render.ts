@@ -86,7 +86,7 @@ export function renderFormPage(locale: Locale, dict: ProxyDict): string {
 (function(){
   var D = JSON.parse(document.getElementById('dict').textContent);
   var ENDPOINT = window.location.pathname; // proxied path → Shopify re-signs
-  var state = { orderVerified:false, country:null, shopifyOrderId:null };
+  var state = { orderVerified:false, country:null, shopifyOrderId:null, shippedAt:null, category:'standard' };
   var $ = function(id){ return document.getElementById(id); };
 
   function show(n){ ['step1','step2','step3'].forEach(function(s,i){ $(s).hidden = (i !== n); }); }
@@ -144,6 +144,8 @@ export function renderFormPage(locale: Locale, dict: ProxyDict): string {
         state.orderVerified = !!res.order_verified;
         state.country = res.country || null;
         state.shopifyOrderId = res.shopify_order_id || null;
+        state.shippedAt = res.shipped_at || null;
+        state.category = res.category || 'standard';
         $('banner').textContent = state.orderVerified ? D.verifiedBanner : D.manualBanner;
         if (state.orderVerified) { renderVerifiedItems(res.items || []); $('btn-add').hidden=true; }
         else { $('items').innerHTML=''; addManualRow(); $('btn-add').hidden=false; }
@@ -168,6 +170,8 @@ export function renderFormPage(locale: Locale, dict: ProxyDict): string {
       orderVerified: state.orderVerified,
       country: state.country,
       shopifyOrderId: state.shopifyOrderId,
+      shippedAt: state.shippedAt,
+      category: state.category,
       reason: $('f-reason').value.trim(),
       items: items
     })

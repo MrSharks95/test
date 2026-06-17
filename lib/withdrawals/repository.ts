@@ -20,6 +20,9 @@ export interface CreateWithdrawalInput {
   items: WithdrawalItem[];
   reason: string | null;
   shippedAt: string | null;
+  deadlineAt: string | null;
+  deadlineStatus: string;
+  refundDeadlineAt: string | null;
 }
 
 export interface CreatedWithdrawal {
@@ -58,6 +61,9 @@ export async function createWithdrawal(
         items: input.items,
         reason: input.reason,
         shipped_at: input.shippedAt,
+        deadline_at: input.deadlineAt,
+        deadline_status: input.deadlineStatus,
+        refund_deadline_at: input.refundDeadlineAt,
       })
       .select("id, reference")
       .single();

@@ -1,7 +1,8 @@
 import "server-only";
 
 import { adminGraphql } from "@/lib/shopify/admin";
-import type { WithdrawalItem } from "@/lib/withdrawal/types";
+import { mapOrderCategory } from "@/lib/withdrawal/category";
+import type { ProductCategory, WithdrawalItem } from "@/lib/withdrawal/types";
 
 /**
  * Order verification for step 1 of the withdrawal form.
@@ -16,6 +17,7 @@ export interface VerifiedOrder {
   shopifyOrderId: number | null;
   country: string | null;
   shippedAt: string | null;
+  category: ProductCategory;
   items: WithdrawalItem[];
 }
 
@@ -32,7 +34,7 @@ const ORDER_QUERY = /* GraphQL */ `
           customer { email defaultAddress { countryCodeV2 } }
           fulfillments(first: 10) { createdAt }
           lineItems(first: 100) {
-            edges { node { id title quantity } }
+            edges { node { id title quantity product { tags } } }
           }
         }
       }
@@ -51,7 +53,16 @@ interface OrderNode {
     defaultAddress: { countryCodeV2: string | null } | null;
   } | null;
   fulfillments: { createdAt: string }[];
-  lineItems: { edges: { node: { id: string; title: string; quantity: number } }[] };
+  lineItems: {
+    edges: {
+      node: {
+        id: string;
+        title: string;
+        quantity: number;
+        product: { tags: string[] } | null;
+      };
+    }[];
+  };
 }
 
 interface OrderQueryResult {
@@ -75,6 +86,7 @@ const EMPTY: VerifiedOrder = {
   shopifyOrderId: null,
   country: null,
   shippedAt: null,
+  category: "standard",
   items: [],
 };
 
@@ -103,6 +115,10 @@ export async function verifyOrder(
   if (!match) return EMPTY;
 
   const node = match.node;
+  const productTags = node.lineItems.edges.map(
+    ({ node: li }) => li.product?.tags ?? [],
+  );
+
   return {
     verified: true,
     shopifyOrderId: gidToNumber(node.id),
@@ -111,6 +127,7 @@ export async function verifyOrder(
       node.customer?.defaultAddress?.countryCodeV2 ??
       null,
     shippedAt: earliest(node.fulfillments.map((f) => f.createdAt)),
+    category: mapOrderCategory(productTags),
     items: node.lineItems.edges.map(({ node: li }) => ({
       title: li.title,
       quantity: li.quantity,

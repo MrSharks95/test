@@ -8,6 +8,8 @@ import {
   getActiveShopWithToken,
   getShopByDomain,
 } from "@/lib/shops/repository";
+import { computeDeadline } from "@/lib/withdrawal/deadline";
+import { loadRuleSet } from "@/lib/withdrawal/rules";
 import { createWithdrawal } from "@/lib/withdrawals/repository";
 import type { WithdrawalItem } from "@/lib/withdrawal/types";
 
@@ -74,6 +76,8 @@ async function handleVerifyOrder(
       order_verified: false,
       country: null,
       shopify_order_id: null,
+      shipped_at: null,
+      category: "standard",
       items: [],
     });
   }
@@ -83,6 +87,8 @@ async function handleVerifyOrder(
     order_verified: result.verified,
     country: result.country,
     shopify_order_id: result.shopifyOrderId,
+    shipped_at: result.shippedAt,
+    category: result.category,
     items: result.items,
   });
 }
@@ -114,6 +120,20 @@ async function handleSubmit(
 
   const name = String(body.name ?? "").trim();
   const reason = String(body.reason ?? "").trim();
+  const country =
+    (body.country ? String(body.country) : null) ?? shopRow.default_country;
+  const category = body.category ? String(body.category) : "standard";
+  const shippedAt = body.shippedAt ? String(body.shippedAt) : null;
+
+  // Deadline engine: country × category, with exemptions and fallbacks.
+  const rules = await loadRuleSet(shopRow.default_country);
+  const deadline = computeDeadline({
+    shippedAt,
+    country,
+    category,
+    receivedAt: shippedAt, // refund window anchored on delivery; ship date as proxy
+    rules,
+  });
 
   const created = await createWithdrawal({
     shopId: shopRow.id,
@@ -123,15 +143,15 @@ async function handleSubmit(
     shopifyOrderId:
       body.shopifyOrderId != null ? Number(body.shopifyOrderId) : null,
     orderVerified: body.orderVerified === true,
-    customerCountry:
-      (body.country ? String(body.country) : null) ?? shopRow.default_country,
+    customerCountry: country,
     items,
     reason: reason || null,
-    shippedAt: null,
+    shippedAt,
+    deadlineAt: deadline.deadlineAt?.toISOString() ?? null,
+    deadlineStatus: deadline.status,
+    refundDeadlineAt: deadline.refundDeadlineAt?.toISOString() ?? null,
   });
 
-  // TODO Prompt 4: compute deadline (computeDeadline) and persist deadline_at /
-  // deadline_status / refund_deadline_at on the withdrawal.
   // TODO Prompt 5: send the Resend acknowledgement email + email_sent event.
 
   return NextResponse.json({ reference: created.reference });
