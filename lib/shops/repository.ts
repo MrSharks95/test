@@ -1,7 +1,7 @@
 import "server-only";
 
 import { getServiceClient } from "@/lib/supabase/server";
-import { encrypt } from "@/lib/shopify/crypto";
+import { decrypt, encrypt } from "@/lib/shopify/crypto";
 
 /**
  * Shop persistence and GDPR purge. Uses the service_role client (bypasses RLS),
@@ -57,6 +57,22 @@ export async function getShopByDomain(
 
   if (error) throw new Error(`getShopByDomain failed: ${error.message}`);
   return (data as ShopRow | null) ?? null;
+}
+
+/**
+ * Active shop (not uninstalled) with its DECRYPTED access token, for Admin API
+ * calls from the proxy. Returns null if unknown, uninstalled, or tokenless.
+ */
+export async function getActiveShopWithToken(
+  shopDomain: string,
+): Promise<{ id: string; defaultCountry: string; token: string } | null> {
+  const shop = await getShopByDomain(shopDomain);
+  if (!shop || shop.uninstalled_at || !shop.access_token) return null;
+  return {
+    id: shop.id,
+    defaultCountry: shop.default_country,
+    token: decrypt(shop.access_token),
+  };
 }
 
 /** Mark a shop uninstalled (app/uninstalled webhook). */

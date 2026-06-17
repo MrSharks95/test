@@ -2,7 +2,11 @@ import crypto from "node:crypto";
 
 import { describe, expect, it } from "vitest";
 
-import { verifyOAuthHmac, verifyWebhookHmac } from "@/lib/shopify/hmac";
+import {
+  verifyOAuthHmac,
+  verifyProxySignature,
+  verifyWebhookHmac,
+} from "@/lib/shopify/hmac";
 
 const SECRET = "test_secret"; // matches vitest.config.ts test env
 
@@ -33,6 +37,39 @@ describe("verifyOAuthHmac", () => {
 
   it("rejects when hmac is missing", () => {
     expect(verifyOAuthHmac(new URLSearchParams({ shop: "x" }))).toBe(false);
+  });
+});
+
+describe("verifyProxySignature", () => {
+  // App Proxy format: key=value sorted, joined with NO separator, hex digest.
+  function sign(params: Record<string, string>): URLSearchParams {
+    const message = Object.keys(params)
+      .sort()
+      .map((k) => `${k}=${params[k]}`)
+      .join("");
+    const signature = crypto
+      .createHmac("sha256", SECRET)
+      .update(message)
+      .digest("hex");
+    return new URLSearchParams({ ...params, signature });
+  }
+
+  it("accepts a correctly signed proxy request", () => {
+    expect(
+      verifyProxySignature(
+        sign({ shop: "demo.myshopify.com", path_prefix: "/apps/retractation", timestamp: "123" }),
+      ),
+    ).toBe(true);
+  });
+
+  it("rejects a tampered param", () => {
+    const sp = sign({ shop: "demo.myshopify.com", timestamp: "123" });
+    sp.set("shop", "evil.myshopify.com");
+    expect(verifyProxySignature(sp)).toBe(false);
+  });
+
+  it("rejects when signature is missing", () => {
+    expect(verifyProxySignature(new URLSearchParams({ shop: "x" }))).toBe(false);
   });
 });
 

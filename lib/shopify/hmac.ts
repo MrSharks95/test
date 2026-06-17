@@ -42,6 +42,39 @@ export function verifyOAuthHmac(searchParams: URLSearchParams): boolean {
 }
 
 /**
+ * App Proxy signature.
+ *
+ * Distinct from OAuth/webhooks: take every query param except `signature`,
+ * sort by key, join as `key=value` with NO separator (multi-valued keys are
+ * comma-joined), HMAC-SHA256 with the API secret, hex-encoded. Constant-time
+ * compare to the `signature` param. See .claude/rules/shopify-app-proxy.md.
+ */
+export function verifyProxySignature(searchParams: URLSearchParams): boolean {
+  const provided = searchParams.get("signature");
+  if (!provided) return false;
+
+  const grouped = new Map<string, string[]>();
+  for (const [key, value] of searchParams.entries()) {
+    if (key === "signature") continue;
+    const arr = grouped.get(key) ?? [];
+    arr.push(value);
+    grouped.set(key, arr);
+  }
+
+  const message = [...grouped.keys()]
+    .sort()
+    .map((key) => `${key}=${grouped.get(key)!.join(",")}`)
+    .join("");
+
+  const digest = crypto
+    .createHmac("sha256", env.SHOPIFY_API_SECRET)
+    .update(message)
+    .digest("hex");
+
+  return safeEqual(Buffer.from(digest, "hex"), Buffer.from(provided, "hex"));
+}
+
+/**
  * Webhook HMAC.
  *
  * Distinct mechanism: HMAC-SHA256 over the RAW request body, base64-encoded,
