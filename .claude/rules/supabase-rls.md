@@ -21,7 +21,7 @@
    publique — référentiel non sensible).
 
 ## Données & région
-- Projet Supabase en **région UE (Frankfurt)** — exigence RGPD.
+- Projet Supabase en **région UE (Paris / eu-west-3)** — exigence RGPD.
 - Les requêtes RGPD (`customers/redact`, `shop/redact`) doivent réellement
   purger/anonymiser les données concernées (voir Prompt 2).
 

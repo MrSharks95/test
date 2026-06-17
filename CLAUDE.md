@@ -10,8 +10,8 @@ marchand gère les demandes dans l'admin embarqué.
 
 ## Stack
 - **Next.js 14** (App Router) · **TypeScript strict** · **Tailwind** · **shadcn/ui**
-- **Supabase** (région **EU / Frankfurt**) — 2 clients : `service_role` (serveur)
-  et `anon` (public)
+- **Supabase** (région **UE — Paris / eu-west-3**, RGPD) — 2 clients :
+  `service_role` (serveur) et `anon` (public)
 - **Resend** (email accusé de réception, support durable)
 - **Shopify** : App Bridge (admin) + Admin API GraphQL + App Proxy (public)
 - Hébergement **Vercel**
@@ -59,7 +59,7 @@ supabase/migrations/  # 001_init.sql
 - **NEVER** traiter une requête App Proxy sans vérifier sa signature Shopify.
   → voir `.claude/rules/shopify-app-proxy.md`
 - **NEVER** vérifier un webhook ou un callback OAuth sans contrôle HMAC.
-- **Données dans l'UE uniquement** (Supabase Frankfurt) — RGPD.
+- **Données dans l'UE uniquement** (Supabase Paris / eu-west-3) — RGPD.
 - Stocker l'`access_token` Shopify **chiffré** (`APP_ENCRYPTION_KEY`).
 
 ## Compacting
