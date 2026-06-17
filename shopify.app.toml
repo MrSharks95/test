@@ -1,0 +1,36 @@
+# Shopify app configuration (deploy reference).
+# Real client_id and application_url come from the Partner Dashboard (Phase 0).
+# Used by `shopify app deploy` to sync scopes, app proxy and compliance webhooks.
+
+name = "EU Withdrawal"
+# client_id = "<SHOPIFY_API_KEY>"
+application_url = "https://example.vercel.app"
+embedded = true
+
+[access_scopes]
+# Long withdrawal periods may need read_all_orders (orders > 60 days) — confirm
+# in the Partner docs before submission (Phase 0, item 0.5).
+scopes = "read_orders,write_orders,read_customers"
+
+[auth]
+redirect_urls = [ "https://example.vercel.app/api/auth/callback" ]
+
+[app_proxy]
+url = "https://example.vercel.app/api/proxy"
+subpath = "retractation"
+prefix = "apps"
+
+# App-level (non-GDPR) webhooks are registered per-shop after install via the
+# Admin API (lib/shopify/webhooks.ts). GDPR/compliance webhooks below are
+# mandatory and verified by HMAC at /api/webhooks.
+[webhooks]
+api_version = "2024-07"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/uninstalled" ]
+  uri = "https://example.vercel.app/api/webhooks"
+
+[webhooks.privacy_compliance]
+customer_data_request_url = "https://example.vercel.app/api/webhooks"
+customer_deletion_url = "https://example.vercel.app/api/webhooks"
+shop_deletion_url = "https://example.vercel.app/api/webhooks"
