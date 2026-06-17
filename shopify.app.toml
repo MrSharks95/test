@@ -23,10 +23,6 @@ prefix = "apps"
 [webhooks]
 api_version = "2024-07"
 
-  [[webhooks.subscriptions]]
-  topics = [ "app/uninstalled" ]
-  uri = "https://test-mrsharks95s-projects.vercel.app/api/webhooks"
-
   [webhooks.privacy_compliance]
   customer_data_request_url = "https://test-mrsharks95s-projects.vercel.app/api/webhooks"
   customer_deletion_url = "https://test-mrsharks95s-projects.vercel.app/api/webhooks"

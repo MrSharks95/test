@@ -2,31 +2,22 @@
   EU Withdrawal — "Bouton de rétractation" app block.
   No server logic: a styled link to the public withdrawal form served by the
   App Proxy (/apps/retractation). Settings: label, colors, alignment.
+  Styles are inline: theme app extension blocks cannot use {% stylesheet %}.
 {%- endcomment -%}
 
-<div class="eu-wd-wrap" style="text-align: {{ block.settings.alignment }};" {{ block.shopify_attributes }}>
+<div
+  class="eu-wd-wrap"
+  style="margin: 1rem 0; text-align: {{ block.settings.alignment }};"
+  {{ block.shopify_attributes }}
+>
   <a
     class="eu-wd-button"
     href="/apps/retractation"
-    style="background-color: {{ block.settings.bg_color }}; color: {{ block.settings.text_color }};"
+    style="display: inline-block; padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 600; text-decoration: none; line-height: 1.2; background-color: {{ block.settings.bg_color }}; color: {{ block.settings.text_color }};"
   >
     {{ block.settings.label }}
   </a>
 </div>
-
-{% stylesheet %}
-  .eu-wd-wrap { margin: 1rem 0; }
-  .eu-wd-button {
-    display: inline-block;
-    padding: 0.75rem 1.5rem;
-    border-radius: 0.5rem;
-    font-weight: 600;
-    text-decoration: none;
-    line-height: 1.2;
-    transition: opacity 0.15s ease;
-  }
-  .eu-wd-button:hover { opacity: 0.9; }
-{% endstylesheet %}
 
 {% schema %}
 {
