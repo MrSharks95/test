@@ -28,6 +28,7 @@ prêt ; il ne manque que les comptes externes et les clés d'environnement.
 2. Applique les migrations dans l'ordre (SQL Editor ou CLI) :
    - `supabase/migrations/001_init.sql`
    - `supabase/migrations/002_email_template.sql`
+   - `supabase/migrations/003_harden_function_search_path.sql`
 3. **Project Settings → API** → note :
    - `Project URL` → `SUPABASE_URL` et `NEXT_PUBLIC_SUPABASE_URL`
    - `anon public` → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
