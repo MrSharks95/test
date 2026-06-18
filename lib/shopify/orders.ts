@@ -1,7 +1,6 @@
 import "server-only";
 
 import { adminGraphql } from "@/lib/shopify/admin";
-import { mapOrderCategory } from "@/lib/withdrawal/category";
 import type { ProductCategory, WithdrawalItem } from "@/lib/withdrawal/types";
 
 /**
@@ -10,6 +9,10 @@ import type { ProductCategory, WithdrawalItem } from "@/lib/withdrawal/types";
  * Looks up the order by name and confirms the customer email matches (strict).
  * On no match (wrong email, or order older than the read_orders 60-day window)
  * we return `verified: false` and the caller falls back to manual entry.
+ *
+ * NOTE: product tags (for tag-based category/exemptions) require the
+ * `read_products` scope, which we don't request — so category defaults to
+ * 'standard' here. Add read_products + product { tags } to enable it.
  */
 
 export interface VerifiedOrder {
@@ -34,7 +37,7 @@ const ORDER_QUERY = /* GraphQL */ `
           customer { email defaultAddress { countryCodeV2 } }
           fulfillments(first: 10) { createdAt }
           lineItems(first: 100) {
-            edges { node { id title quantity product { tags } } }
+            edges { node { id title quantity } }
           }
         }
       }
@@ -54,14 +57,7 @@ interface OrderNode {
   } | null;
   fulfillments: { createdAt: string }[];
   lineItems: {
-    edges: {
-      node: {
-        id: string;
-        title: string;
-        quantity: number;
-        product: { tags: string[] } | null;
-      };
-    }[];
+    edges: { node: { id: string; title: string; quantity: number } }[];
   };
 }
 
@@ -115,9 +111,6 @@ export async function verifyOrder(
   if (!match) return EMPTY;
 
   const node = match.node;
-  const productTags = node.lineItems.edges.map(
-    ({ node: li }) => li.product?.tags ?? [],
-  );
 
   return {
     verified: true,
@@ -127,7 +120,7 @@ export async function verifyOrder(
       node.customer?.defaultAddress?.countryCodeV2 ??
       null,
     shippedAt: earliest(node.fulfillments.map((f) => f.createdAt)),
-    category: mapOrderCategory(productTags),
+    category: "standard",
     items: node.lineItems.edges.map(({ node: li }) => ({
       title: li.title,
       quantity: li.quantity,
