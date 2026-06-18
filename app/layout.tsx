@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Script from "next/script";
 
 import { env } from "@/lib/env";
 
@@ -17,11 +16,11 @@ export default function RootLayout({
   return (
     <html lang="fr">
       <head>
-        {/* Shopify App Bridge — required for the embedded admin (session token). */}
-        <Script
+        {/* Shopify App Bridge — must load early with the api key so the
+            embedded admin can mint session tokens (window.shopify.idToken). */}
+        <script
           src="https://cdn.shopify.com/shopifycloud/app-bridge.js"
           data-api-key={env.SHOPIFY_API_KEY}
-          strategy="beforeInteractive"
         />
       </head>
       <body>{children}</body>
