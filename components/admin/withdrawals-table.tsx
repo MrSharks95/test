@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+
+import { WithdrawalDetail } from "@/components/admin/withdrawal-detail";
 
 interface Withdrawal {
   reference: string;
@@ -47,35 +49,39 @@ function formatDate(iso: string): string {
 export function WithdrawalsTable() {
   const [rows, setRows] = useState<Withdrawal[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    try {
+      if (!window.shopify?.idToken) {
+        setError("Ouvre cette page depuis l'admin Shopify (App Bridge requis).");
+        return;
+      }
+      const token = await window.shopify.idToken();
+      const res = await fetch("/api/admin/withdrawals", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = (await res.json()) as { withdrawals: Withdrawal[] };
+      setRows(json.withdrawals);
+    } catch {
+      setError("Impossible de charger les demandes.");
+    }
+  }, []);
 
   useEffect(() => {
-    let cancelled = false;
+    void load();
+  }, [load]);
 
-    async function load() {
-      try {
-        if (!window.shopify?.idToken) {
-          setError(
-            "Ouvre cette page depuis l'admin Shopify (App Bridge requis).",
-          );
-          return;
-        }
-        const token = await window.shopify.idToken();
-        const res = await fetch("/api/admin/withdrawals", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = (await res.json()) as { withdrawals: Withdrawal[] };
-        if (!cancelled) setRows(json.withdrawals);
-      } catch {
-        if (!cancelled) setError("Impossible de charger les demandes.");
-      }
-    }
-
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  if (selected) {
+    return (
+      <WithdrawalDetail
+        reference={selected}
+        onClose={() => setSelected(null)}
+        onChanged={load}
+      />
+    );
+  }
 
   if (error) return <p className="text-sm text-destructive">{error}</p>;
   if (rows === null) return <p className="text-sm text-muted-foreground">Chargement…</p>;
@@ -98,7 +104,11 @@ export function WithdrawalsTable() {
         </thead>
         <tbody>
           {rows.map((w) => (
-            <tr key={w.reference} className="border-b border-border last:border-0">
+            <tr
+              key={w.reference}
+              onClick={() => setSelected(w.reference)}
+              className="cursor-pointer border-b border-border last:border-0 hover:bg-muted/30"
+            >
               <td className="px-3 py-2 font-mono">{w.reference}</td>
               <td className="px-3 py-2 whitespace-nowrap">{formatDate(w.created_at)}</td>
               <td className="px-3 py-2">
