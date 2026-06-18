@@ -16,8 +16,9 @@ export default function RootLayout({
   return (
     <html lang="fr">
       <head>
-        {/* Shopify App Bridge — must load early with the api key so the
-            embedded admin can mint session tokens (window.shopify.idToken). */}
+        {/* Shopify App Bridge — must load early and synchronously with the api
+            key so the embedded admin can mint session tokens (idToken). */}
+        {/* eslint-disable-next-line @next/next/no-sync-scripts */}
         <script
           src="https://cdn.shopify.com/shopifycloud/app-bridge.js"
           data-api-key={env.SHOPIFY_API_KEY}
