@@ -1,23 +1,40 @@
 {%- comment -%}
   EU Withdrawal — "Bouton de rétractation" app block.
-  No server logic: a styled link to the public withdrawal form served by the
-  App Proxy (/apps/retractation). Settings: label, colors, alignment.
-  Styles are kept inline (app blocks disallow stylesheet/javascript tags).
+  No server logic: opens the public withdrawal form (served by the App Proxy at
+  /apps/retractation) in a modal popup. Styles/JS live in assets/ because app
+  blocks disallow stylesheet/javascript Liquid tags.
 {%- endcomment -%}
 
 <div
   class="eu-wd-wrap"
-  style="margin: 1rem 0; text-align: {{ block.settings.alignment }};"
+  style="text-align: {{ block.settings.alignment }};"
   {{ block.shopify_attributes }}
 >
-  <a
+  <button
+    type="button"
     class="eu-wd-button"
-    href="/apps/retractation"
-    style="display: inline-block; padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 600; text-decoration: none; line-height: 1.2; background-color: {{ block.settings.bg_color }}; color: {{ block.settings.text_color }};"
+    data-eu-wd-open
+    style="background-color: {{ block.settings.bg_color }}; color: {{ block.settings.text_color }};"
   >
     {{ block.settings.label }}
-  </a>
+  </button>
 </div>
+
+<div class="eu-wd-modal" data-eu-wd-modal hidden>
+  <div class="eu-wd-overlay" data-eu-wd-close></div>
+  <div class="eu-wd-dialog">
+    <button class="eu-wd-x" type="button" data-eu-wd-close aria-label="Fermer">&times;</button>
+    <iframe
+      class="eu-wd-frame"
+      title="{{ block.settings.label | escape }}"
+      data-src="/apps/retractation"
+      loading="lazy"
+    ></iframe>
+  </div>
+</div>
+
+{{ 'withdrawal-button.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'withdrawal-button.js' | asset_url }}" defer></script>
 
 {% schema %}
 {
@@ -45,7 +62,7 @@
       "type": "color",
       "id": "bg_color",
       "label": "t:settings.bg_color.label",
-      "default": "#1a1a2e"
+      "default": "#0f172a"
     },
     {
       "type": "color",

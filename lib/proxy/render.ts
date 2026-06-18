@@ -10,13 +10,16 @@ function esc(s: string): string {
 }
 
 /**
- * Self-contained HTML page for the public withdrawal form, served via the App
- * Proxy. Three views (details → items → confirmation) driven by inline vanilla
- * JS. All AJAX posts back to the current proxied path so Shopify re-signs each
- * request (signature verified server-side on every call).
+ * Self-contained, styled HTML page for the public withdrawal form, served via
+ * the App Proxy. Three views (details → items → confirmation) with a step
+ * indicator, driven by inline vanilla JS. All AJAX posts back to the current
+ * proxied path so Shopify re-signs each request (verified server-side).
  */
 export function renderFormPage(locale: Locale, dict: ProxyDict): string {
   const dictJson = JSON.stringify(dict).replace(/</g, "\\u003c");
+  const step1 = locale === "fr" ? "Coordonnées" : "Details";
+  const step2 = locale === "fr" ? "Articles" : "Items";
+  const step3 = locale === "fr" ? "Confirmation" : "Done";
   return `<!doctype html>
 <html lang="${locale}">
 <head>
@@ -24,60 +27,133 @@ export function renderFormPage(locale: Locale, dict: ProxyDict): string {
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>${esc(dict.title)}</title>
 <style>
-  :root { --fg:#1a1a2e; --muted:#6b7280; --border:#e5e7eb; --primary:#1a1a2e; }
+  :root {
+    --bg:#f1f5f9; --card:#ffffff; --fg:#0f172a; --muted:#64748b;
+    --border:#e2e8f0; --primary:#0f172a; --primary-fg:#ffffff;
+    --accent:#4f46e5; --ok:#16a34a; --err:#dc2626; --radius:14px;
+  }
   * { box-sizing:border-box; }
-  body { font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; color:var(--fg); margin:0; background:#f8fafc; }
-  .wrap { max-width:560px; margin:0 auto; padding:2rem 1.25rem; }
-  h1 { font-size:1.5rem; margin:0 0 .25rem; }
-  h2 { font-size:1.15rem; margin:1.5rem 0 .75rem; }
-  p.intro { color:var(--muted); margin:0 0 1rem; }
-  label { display:block; margin:.75rem 0; font-weight:600; font-size:.9rem; }
-  input, textarea { width:100%; margin-top:.35rem; padding:.6rem .7rem; border:1px solid var(--border); border-radius:.5rem; font:inherit; font-weight:400; }
-  textarea { min-height:80px; resize:vertical; }
-  button { font:inherit; font-weight:600; padding:.65rem 1.1rem; border-radius:.5rem; border:0; cursor:pointer; }
-  .btn-primary { background:var(--primary); color:#fff; }
-  .btn-ghost { background:transparent; color:var(--fg); border:1px solid var(--border); }
-  .actions { display:flex; gap:.6rem; margin-top:1.25rem; }
-  .banner { background:#eef2ff; border-radius:.5rem; padding:.6rem .75rem; font-size:.9rem; }
-  .item-row { display:flex; gap:.5rem; align-items:center; margin:.4rem 0; }
+  html,body { margin:0; }
+  body {
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--fg); background:var(--bg);
+    display:flex; justify-content:center; align-items:flex-start;
+    padding:24px 16px; min-height:100vh;
+  }
+  .eu-card {
+    width:100%; max-width:480px; background:var(--card);
+    border:1px solid var(--border); border-radius:var(--radius);
+    box-shadow:0 10px 30px -12px rgba(15,23,42,.18); padding:28px;
+  }
+  .eu-title { font-size:1.35rem; font-weight:700; margin:0 0 4px; letter-spacing:-.01em; }
+  .eu-intro { color:var(--muted); font-size:.9rem; margin:0 0 22px; line-height:1.5; }
+
+  /* Stepper */
+  .eu-steps { list-style:none; display:flex; gap:0; padding:0; margin:0 0 26px; }
+  .eu-step { flex:1; display:flex; flex-direction:column; align-items:center; position:relative; }
+  .eu-step::before {
+    content:""; position:absolute; top:13px; left:-50%; width:100%; height:2px;
+    background:var(--border); z-index:0;
+  }
+  .eu-step:first-child::before { display:none; }
+  .eu-step.is-done::before, .eu-step.is-active::before { background:var(--accent); }
+  .eu-dot {
+    width:28px; height:28px; border-radius:50%; display:flex; align-items:center;
+    justify-content:center; font-size:.8rem; font-weight:700; background:#fff;
+    border:2px solid var(--border); color:var(--muted); position:relative; z-index:1;
+  }
+  .eu-step.is-active .eu-dot { border-color:var(--accent); color:var(--accent); }
+  .eu-step.is-done .eu-dot { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .eu-step-label { font-size:.72rem; color:var(--muted); margin-top:6px; font-weight:600; }
+  .eu-step.is-active .eu-step-label { color:var(--fg); }
+
+  label.eu-field { display:block; margin:14px 0; font-weight:600; font-size:.82rem; color:#334155; }
+  .eu-field input, .eu-field textarea, #items input {
+    width:100%; margin-top:6px; padding:11px 12px; font:inherit; font-weight:400;
+    border:1px solid var(--border); border-radius:10px; background:#fff; color:var(--fg);
+    transition:border-color .15s, box-shadow .15s;
+  }
+  .eu-field input:focus, .eu-field textarea:focus, #items input:focus {
+    outline:none; border-color:var(--accent); box-shadow:0 0 0 3px rgba(79,70,229,.12);
+  }
+  textarea { min-height:84px; resize:vertical; }
+  .eu-req { color:var(--accent); }
+
+  button { font:inherit; font-weight:600; border-radius:10px; cursor:pointer; border:0; }
+  .eu-btn-primary { background:var(--primary); color:var(--primary-fg); padding:12px 18px; width:100%; transition:opacity .15s; }
+  .eu-btn-primary:hover { opacity:.92; }
+  .eu-btn-primary:disabled { opacity:.5; cursor:default; }
+  .eu-btn-ghost { background:#fff; color:var(--fg); border:1px solid var(--border); padding:12px 18px; }
+  .eu-btn-ghost:hover { background:#f8fafc; }
+  .eu-actions { display:flex; gap:10px; margin-top:22px; }
+  .eu-actions .eu-btn-primary { flex:1; }
+
+  .eu-banner { display:flex; gap:8px; align-items:flex-start; background:#eef2ff; color:#3730a3;
+    border-radius:10px; padding:11px 13px; font-size:.85rem; line-height:1.4; margin-bottom:14px; }
+  .eu-banner.warn { background:#fff7ed; color:#9a3412; }
+
+  #items { margin-top:6px; }
+  .item-row { display:flex; gap:8px; align-items:center; margin:8px 0; }
+  .item-row.check { background:#f8fafc; border:1px solid var(--border); border-radius:10px; padding:10px 12px; cursor:pointer; }
   .item-row input[type=text] { flex:1; margin:0; }
-  .item-row input[type=number] { width:72px; margin:0; }
-  .err { color:#b91c1c; font-size:.85rem; }
-  .ref { font-size:1.25rem; margin-top:1rem; }
+  .item-row input[type=number] { width:76px; margin:0; text-align:center; }
+  .item-row input[type=checkbox] { width:18px; height:18px; accent-color:var(--accent); }
+  .item-row span { font-size:.9rem; }
+  .eu-add { background:none; border:1px dashed var(--border); color:var(--accent); width:100%; padding:10px; margin-top:6px; }
+
+  .eu-err { color:var(--err); font-size:.82rem; margin:8px 0 0; }
+
+  /* Confirmation */
+  .eu-done { text-align:center; padding:8px 0; }
+  .eu-check { width:64px; height:64px; border-radius:50%; background:#dcfce7; color:var(--ok);
+    display:flex; align-items:center; justify-content:center; margin:0 auto 16px; font-size:34px; }
+  .eu-ref-box { margin:18px 0; padding:16px; background:#f8fafc; border:1px dashed var(--border); border-radius:12px; }
+  .eu-ref-label { font-size:.72rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
+  .eu-ref { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:1.6rem; font-weight:700; letter-spacing:.04em; margin-top:4px; }
   [hidden] { display:none !important; }
 </style>
 </head>
 <body>
-<main class="wrap">
-  <h1>${esc(dict.title)}</h1>
-  <p class="intro">${esc(dict.intro)}</p>
+<main class="eu-card">
+  <h1 class="eu-title">${esc(dict.title)}</h1>
+  <p class="eu-intro">${esc(dict.intro)}</p>
+
+  <ol class="eu-steps">
+    <li class="eu-step is-active" data-step="0"><span class="eu-dot">1</span><span class="eu-step-label">${esc(step1)}</span></li>
+    <li class="eu-step" data-step="1"><span class="eu-dot">2</span><span class="eu-step-label">${esc(step2)}</span></li>
+    <li class="eu-step" data-step="2"><span class="eu-dot">3</span><span class="eu-step-label">${esc(step3)}</span></li>
+  </ol>
 
   <section id="step1">
-    <h2>${esc(dict.step1Title)}</h2>
-    <label>${esc(dict.nameLabel)}<input id="f-name" type="text" autocomplete="name" /></label>
-    <label>${esc(dict.orderLabel)} *<input id="f-order" type="text" required /></label>
-    <label>${esc(dict.emailLabel)} *<input id="f-email" type="email" required autocomplete="email" /></label>
-    <p class="err" id="err1" hidden></p>
-    <div class="actions"><button class="btn-primary" id="btn-continue" type="button">${esc(dict.continue)}</button></div>
+    <label class="eu-field">${esc(dict.nameLabel)}<input id="f-name" type="text" autocomplete="name" /></label>
+    <label class="eu-field">${esc(dict.orderLabel)} <span class="eu-req">*</span><input id="f-order" type="text" required /></label>
+    <label class="eu-field">${esc(dict.emailLabel)} <span class="eu-req">*</span><input id="f-email" type="email" required autocomplete="email" /></label>
+    <p class="eu-err" id="err1" hidden></p>
+    <div class="eu-actions"><button class="eu-btn-primary" id="btn-continue" type="button">${esc(dict.continue)}</button></div>
   </section>
 
   <section id="step2" hidden>
-    <h2>${esc(dict.step2Title)}</h2>
-    <p class="banner" id="banner"></p>
+    <p class="eu-banner" id="banner"></p>
     <div id="items"></div>
-    <button class="btn-ghost" id="btn-add" type="button" hidden>${esc(dict.addItem)}</button>
-    <label>${esc(dict.reasonLabel)}<textarea id="f-reason" placeholder="${esc(dict.reasonPlaceholder)}"></textarea></label>
-    <p class="err" id="err2" hidden></p>
-    <div class="actions">
-      <button class="btn-ghost" id="btn-back" type="button">${esc(dict.back)}</button>
-      <button class="btn-primary" id="btn-submit" type="button">${esc(dict.submit)}</button>
+    <button class="eu-add" id="btn-add" type="button" hidden>+ ${esc(dict.addItem)}</button>
+    <label class="eu-field">${esc(dict.reasonLabel)}<textarea id="f-reason" placeholder="${esc(dict.reasonPlaceholder)}"></textarea></label>
+    <p class="eu-err" id="err2" hidden></p>
+    <div class="eu-actions">
+      <button class="eu-btn-ghost" id="btn-back" type="button">${esc(dict.back)}</button>
+      <button class="eu-btn-primary" id="btn-submit" type="button">${esc(dict.submit)}</button>
     </div>
   </section>
 
   <section id="step3" hidden>
-    <h2>${esc(dict.step3Title)}</h2>
-    <p>${esc(dict.confirmation)}</p>
-    <p class="ref">${esc(dict.referenceLabel)} : <strong id="ref"></strong></p>
+    <div class="eu-done">
+      <div class="eu-check">&#10003;</div>
+      <h2 class="eu-title" style="font-size:1.15rem">${esc(dict.step3Title)}</h2>
+      <p class="eu-intro" style="margin:6px 0 0">${esc(dict.confirmation)}</p>
+      <div class="eu-ref-box">
+        <div class="eu-ref-label">${esc(dict.referenceLabel)}</div>
+        <div class="eu-ref" id="ref"></div>
+      </div>
+    </div>
   </section>
 </main>
 
@@ -89,21 +165,25 @@ export function renderFormPage(locale: Locale, dict: ProxyDict): string {
   var state = { orderVerified:false, country:null, shopifyOrderId:null, shippedAt:null, category:'standard' };
   var $ = function(id){ return document.getElementById(id); };
 
-  function show(n){ ['step1','step2','step3'].forEach(function(s,i){ $(s).hidden = (i !== n); }); }
+  function setStep(n){
+    ['step1','step2','step3'].forEach(function(s,i){ $(s).hidden = (i !== n); });
+    document.querySelectorAll('.eu-step').forEach(function(el){
+      var i = Number(el.getAttribute('data-step'));
+      el.classList.toggle('is-active', i === n);
+      el.classList.toggle('is-done', i < n);
+    });
+    window.scrollTo(0,0);
+  }
 
   function post(payload){
     return fetch(ENDPOINT, {
-      method:'POST',
-      headers:{ 'content-type':'application/json' },
-      body: JSON.stringify(payload)
+      method:'POST', headers:{ 'content-type':'application/json' }, body: JSON.stringify(payload)
     }).then(function(r){ if(!r.ok) throw new Error('http'); return r.json(); });
   }
 
-  function itemTitlePlaceholder(){ return D.itemTitlePlaceholder; }
-
   function addManualRow(){
     var row = document.createElement('div'); row.className = 'item-row';
-    var t = document.createElement('input'); t.type='text'; t.placeholder = itemTitlePlaceholder(); t.className='it-title';
+    var t = document.createElement('input'); t.type='text'; t.placeholder = D.itemTitlePlaceholder; t.className='it-title';
     var q = document.createElement('input'); q.type='number'; q.min='1'; q.value='1'; q.className='it-qty'; q.setAttribute('aria-label', D.qtyPlaceholder);
     row.appendChild(t); row.appendChild(q);
     $('items').appendChild(row);
@@ -112,7 +192,7 @@ export function renderFormPage(locale: Locale, dict: ProxyDict): string {
   function renderVerifiedItems(items){
     var box = $('items'); box.innerHTML='';
     items.forEach(function(it){
-      var row = document.createElement('label'); row.className='item-row';
+      var row = document.createElement('label'); row.className='item-row check';
       var cb = document.createElement('input'); cb.type='checkbox'; cb.checked=true; cb.className='it-check';
       cb.dataset.title = it.title; cb.dataset.qty = it.quantity; cb.dataset.line = it.lineItemId || '';
       var span = document.createElement('span'); span.textContent = it.title + ' (×' + it.quantity + ')';
@@ -146,36 +226,31 @@ export function renderFormPage(locale: Locale, dict: ProxyDict): string {
         state.shopifyOrderId = res.shopify_order_id || null;
         state.shippedAt = res.shipped_at || null;
         state.category = res.category || 'standard';
-        $('banner').textContent = state.orderVerified ? D.verifiedBanner : D.manualBanner;
+        var banner = $('banner');
+        banner.textContent = state.orderVerified ? D.verifiedBanner : D.manualBanner;
+        banner.className = 'eu-banner' + (state.orderVerified ? '' : ' warn');
         if (state.orderVerified) { renderVerifiedItems(res.items || []); $('btn-add').hidden=true; }
         else { $('items').innerHTML=''; addManualRow(); $('btn-add').hidden=false; }
-        show(1);
+        setStep(1);
       })
       .catch(function(){ $('err1').textContent = D.genericError; $('err1').hidden=false; })
       .finally(function(){ $('btn-continue').disabled=false; });
   });
 
   $('btn-add').addEventListener('click', addManualRow);
-  $('btn-back').addEventListener('click', function(){ show(0); });
+  $('btn-back').addEventListener('click', function(){ setStep(0); });
 
   $('btn-submit').addEventListener('click', function(){
     var items = collectItems();
     if (items.length === 0) { $('err2').textContent = D.requiredError; $('err2').hidden=false; return; }
     $('err2').hidden=true; this.disabled=true;
     post({
-      action:'submit',
-      name:$('f-name').value.trim(),
-      orderNumber:$('f-order').value.trim(),
-      email:$('f-email').value.trim(),
-      orderVerified: state.orderVerified,
-      country: state.country,
-      shopifyOrderId: state.shopifyOrderId,
-      shippedAt: state.shippedAt,
-      category: state.category,
-      reason: $('f-reason').value.trim(),
-      items: items
+      action:'submit', name:$('f-name').value.trim(), orderNumber:$('f-order').value.trim(),
+      email:$('f-email').value.trim(), orderVerified: state.orderVerified, country: state.country,
+      shopifyOrderId: state.shopifyOrderId, shippedAt: state.shippedAt, category: state.category,
+      reason: $('f-reason').value.trim(), items: items
     })
-      .then(function(res){ $('ref').textContent = res.reference; show(2); })
+      .then(function(res){ $('ref').textContent = res.reference; setStep(2); })
       .catch(function(){ $('err2').textContent = D.genericError; $('err2').hidden=false; })
       .finally(function(){ $('btn-submit').disabled=false; });
   });
