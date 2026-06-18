@@ -11,7 +11,10 @@ import {
 import { sendAcknowledgement } from "@/lib/email/send";
 import { computeDeadline } from "@/lib/withdrawal/deadline";
 import { loadRuleSet } from "@/lib/withdrawal/rules";
-import { createWithdrawal } from "@/lib/withdrawals/repository";
+import {
+  createWithdrawal,
+  findActiveWithdrawalForOrder,
+} from "@/lib/withdrawals/repository";
 import type { WithdrawalItem } from "@/lib/withdrawal/types";
 
 export const dynamic = "force-dynamic";
@@ -110,6 +113,23 @@ async function handleSubmit(
     return NextResponse.json({ error: "unknown_shop" }, { status: 404 });
   }
 
+  const shopifyOrderId =
+    body.shopifyOrderId != null ? Number(body.shopifyOrderId) : null;
+
+  // Reject duplicates: one active request per order.
+  const existing = await findActiveWithdrawalForOrder({
+    shopId: shopRow.id,
+    shopifyOrderId,
+    orderNumber,
+    customerEmail: email,
+  });
+  if (existing) {
+    return NextResponse.json({
+      error: "duplicate",
+      reference: existing.reference,
+    });
+  }
+
   const items: WithdrawalItem[] = rawItems.map((raw) => {
     const it = raw as Record<string, unknown>;
     return {
@@ -141,8 +161,7 @@ async function handleSubmit(
     customerName: name || null,
     customerEmail: email,
     orderNumber,
-    shopifyOrderId:
-      body.shopifyOrderId != null ? Number(body.shopifyOrderId) : null,
+    shopifyOrderId,
     orderVerified: body.orderVerified === true,
     customerCountry: country,
     items,

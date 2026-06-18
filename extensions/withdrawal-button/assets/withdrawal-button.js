@@ -22,6 +22,20 @@
     document.documentElement.style.overflow = "";
   }
 
+  function setHeight(h) {
+    var m = modal();
+    if (!m) return;
+    var dialog = m.querySelector(".eu-wd-dialog");
+    if (!dialog) return;
+    var max = Math.round(window.innerHeight * 0.9);
+    dialog.style.height = Math.min(h + 4, max) + "px";
+  }
+
+  window.addEventListener("message", function (e) {
+    var d = e && e.data;
+    if (d && typeof d.eu_wd_height === "number") setHeight(d.eu_wd_height);
+  });
+
   document.addEventListener("click", function (e) {
     if (e.target.closest("[data-eu-wd-open]")) {
       e.preventDefault();

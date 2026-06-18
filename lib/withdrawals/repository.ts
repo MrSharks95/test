@@ -30,6 +30,39 @@ export interface CreatedWithdrawal {
   reference: string;
 }
 
+/**
+ * Find an existing, still-active withdrawal for the same order so we can reject
+ * duplicates. Matches by Shopify order id when verified, else by order number +
+ * customer email. "Active" = any status except `refused` (a refused request may
+ * legitimately be re-filed). Scoped by shop_id.
+ */
+export async function findActiveWithdrawalForOrder(params: {
+  shopId: string;
+  shopifyOrderId: number | null;
+  orderNumber: string;
+  customerEmail: string;
+}): Promise<{ reference: string } | null> {
+  const supabase = getServiceClient();
+  let query = supabase
+    .from("withdrawals")
+    .select("reference")
+    .eq("shop_id", params.shopId)
+    .neq("status", "refused")
+    .limit(1);
+
+  if (params.shopifyOrderId != null) {
+    query = query.eq("shopify_order_id", params.shopifyOrderId);
+  } else {
+    query = query
+      .eq("order_number", params.orderNumber)
+      .eq("customer_email", params.customerEmail);
+  }
+
+  const { data, error } = await query.maybeSingle();
+  if (error) throw new Error(`findActiveWithdrawalForOrder failed: ${error.message}`);
+  return (data as { reference: string } | null) ?? null;
+}
+
 const UNIQUE_VIOLATION = "23505";
 const MAX_REFERENCE_RETRIES = 5;
 

@@ -28,6 +28,7 @@ export interface ProxyDict {
   referenceLabel: string;
   requiredError: string;
   genericError: string;
+  duplicateError: string;
 }
 
 const FR: ProxyDict = {
@@ -57,6 +58,7 @@ const FR: ProxyDict = {
   referenceLabel: "Référence",
   requiredError: "Veuillez remplir les champs obligatoires.",
   genericError: "Une erreur est survenue. Veuillez réessayer.",
+  duplicateError: "Une demande de rétractation est déjà en cours pour cette commande.",
 };
 
 const EN: ProxyDict = {
@@ -85,6 +87,7 @@ const EN: ProxyDict = {
   referenceLabel: "Reference",
   requiredError: "Please fill in the required fields.",
   genericError: "Something went wrong. Please try again.",
+  duplicateError: "A withdrawal request is already in progress for this order.",
 };
 
 export function getDict(locale: string | null): { locale: Locale; dict: ProxyDict } {

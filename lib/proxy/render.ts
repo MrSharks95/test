@@ -110,6 +110,10 @@ export function renderFormPage(locale: Locale, dict: ProxyDict): string {
   .eu-ref-box { margin:18px 0; padding:16px; background:#f8fafc; border:1px dashed var(--border); border-radius:12px; }
   .eu-ref-label { font-size:.72rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
   .eu-ref { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:1.6rem; font-weight:700; letter-spacing:.04em; margin-top:4px; }
+
+  /* Embedded in the theme popup: the dialog already provides the card frame. */
+  body.eu-embedded { background:#fff; padding:14px 16px; min-height:0; display:block; }
+  .eu-embedded .eu-card { max-width:none; border:0; box-shadow:none; padding:4px 2px 8px; }
   [hidden] { display:none !important; }
 </style>
 </head>
@@ -165,6 +169,13 @@ export function renderFormPage(locale: Locale, dict: ProxyDict): string {
   var state = { orderVerified:false, country:null, shopifyOrderId:null, shippedAt:null, category:'standard' };
   var $ = function(id){ return document.getElementById(id); };
 
+  var EMBEDDED = window.self !== window.top;
+  if (EMBEDDED) document.body.classList.add('eu-embedded');
+  function postHeight(){
+    if (!EMBEDDED) return;
+    try { parent.postMessage({ eu_wd_height: document.documentElement.scrollHeight }, '*'); } catch (e) {}
+  }
+
   function setStep(n){
     ['step1','step2','step3'].forEach(function(s,i){ $(s).hidden = (i !== n); });
     document.querySelectorAll('.eu-step').forEach(function(el){
@@ -173,6 +184,7 @@ export function renderFormPage(locale: Locale, dict: ProxyDict): string {
       el.classList.toggle('is-done', i < n);
     });
     window.scrollTo(0,0);
+    postHeight();
   }
 
   function post(payload){
@@ -187,6 +199,7 @@ export function renderFormPage(locale: Locale, dict: ProxyDict): string {
     var q = document.createElement('input'); q.type='number'; q.min='1'; q.value='1'; q.className='it-qty'; q.setAttribute('aria-label', D.qtyPlaceholder);
     row.appendChild(t); row.appendChild(q);
     $('items').appendChild(row);
+    postHeight();
   }
 
   function renderVerifiedItems(items){
@@ -250,10 +263,19 @@ export function renderFormPage(locale: Locale, dict: ProxyDict): string {
       shopifyOrderId: state.shopifyOrderId, shippedAt: state.shippedAt, category: state.category,
       reason: $('f-reason').value.trim(), items: items
     })
-      .then(function(res){ $('ref').textContent = res.reference; setStep(2); })
+      .then(function(res){
+        if (res && res.error === 'duplicate') {
+          $('err2').textContent = D.duplicateError + (res.reference ? ' (' + res.reference + ')' : '');
+          $('err2').hidden=false; postHeight(); return;
+        }
+        $('ref').textContent = res.reference; setStep(2);
+      })
       .catch(function(){ $('err2').textContent = D.genericError; $('err2').hidden=false; })
       .finally(function(){ $('btn-submit').disabled=false; });
   });
+
+  window.addEventListener('load', postHeight);
+  postHeight();
 })();
 </script>
 </body>
