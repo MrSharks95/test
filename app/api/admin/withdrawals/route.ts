@@ -40,5 +40,18 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "query_failed" }, { status: 500 });
   }
 
-  return NextResponse.json({ withdrawals: data ?? [] });
+  // Stats over the whole shop (status column only, cheap).
+  const { data: statusRows } = await supabase
+    .from("withdrawals")
+    .select("status")
+    .eq("shop_id", shop.id);
+
+  const stats = { total: 0, new: 0, in_progress: 0, done: 0, refused: 0 };
+  for (const r of statusRows ?? []) {
+    stats.total += 1;
+    const s = r.status as keyof typeof stats;
+    if (s in stats && s !== "total") stats[s] += 1;
+  }
+
+  return NextResponse.json({ withdrawals: data ?? [], stats });
 }

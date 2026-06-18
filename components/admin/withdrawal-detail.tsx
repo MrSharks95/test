@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import { DeadlineBadge, StatusBadge, VerifiedBadge } from "@/components/admin/badges";
+
 interface Item {
   title: string;
   quantity: number;
@@ -49,12 +51,6 @@ const STATUS_LABEL: Record<string, string> = {
   in_progress: "En cours",
   done: "Traitée",
   refused: "Refusée",
-};
-const DEADLINE_LABEL: Record<string, string> = {
-  within: "Dans les délais",
-  late: "Hors délai",
-  exempt: "Exonéré",
-  unknown: "—",
 };
 const EVENT_LABEL: Record<string, string> = {
   created: "Demande créée",
@@ -140,36 +136,47 @@ export function WithdrawalDetail({
     : null;
 
   return (
-    <div className="space-y-5 rounded-lg border border-border p-4">
-      <div className="flex items-start justify-between">
-        <div>
-          <h2 className="font-mono text-lg font-semibold">{w.reference}</h2>
-          <p className="text-sm text-muted-foreground">
-            {fmt(w.created_at)} · {STATUS_LABEL[w.status] ?? w.status}
-          </p>
-        </div>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
         <button
-          className="rounded-md border border-input px-3 py-1 text-sm hover:bg-accent"
+          className="text-sm text-slate-500 hover:text-slate-900"
           onClick={onClose}
         >
-          Fermer
+          ← Retour aux demandes
         </button>
       </div>
 
-      {/* Infos */}
-      <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-        <Info label="Client" value={w.customer_name || "—"} />
-        <Info label="Email" value={w.customer_email} />
-        <Info
-          label="Commande"
-          value={`#${w.order_number}${w.order_verified ? " ✅ vérifiée" : " (non vérifiée)"}`}
-        />
-        <Info label="Pays" value={w.customer_country || "—"} />
-        <Info label="Délai" value={DEADLINE_LABEL[w.deadline_status] ?? w.deadline_status} />
-        <Info label="Échéance" value={w.deadline_at ? fmt(w.deadline_at) : "—"} />
-        <Info label="Expédiée le" value={w.shipped_at ? fmt(w.shipped_at) : "—"} />
-        <Info label="Remb. avant" value={w.refund_deadline_at ? fmt(w.refund_deadline_at) : "—"} />
-      </div>
+      <div className="space-y-5 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex items-start justify-between">
+          <div>
+            <h2 className="font-mono text-lg font-semibold text-slate-900">
+              {w.reference}
+            </h2>
+            <p className="mt-0.5 text-sm text-slate-500">{fmt(w.created_at)}</p>
+          </div>
+          <StatusBadge status={w.status} />
+        </div>
+
+        {/* Infos */}
+        <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+          <Info label="Client" value={w.customer_name || "—"} />
+          <Info label="Email" value={w.customer_email} />
+          <div>
+            <div className="text-slate-500">Commande</div>
+            <div className="flex items-center gap-2">
+              <span className="text-slate-900">#{w.order_number}</span>
+              <VerifiedBadge verified={w.order_verified} />
+            </div>
+          </div>
+          <Info label="Pays" value={w.customer_country || "—"} />
+          <div>
+            <div className="text-slate-500">Délai</div>
+            <DeadlineBadge status={w.deadline_status} />
+          </div>
+          <Info label="Échéance" value={w.deadline_at ? fmt(w.deadline_at) : "—"} />
+          <Info label="Expédiée le" value={w.shipped_at ? fmt(w.shipped_at) : "—"} />
+          <Info label="Remb. avant" value={w.refund_deadline_at ? fmt(w.refund_deadline_at) : "—"} />
+        </div>
 
       {/* Articles */}
       <div>
@@ -264,6 +271,7 @@ export function WithdrawalDetail({
             </li>
           ))}
         </ul>
+        </div>
       </div>
     </div>
   );
@@ -272,8 +280,8 @@ export function WithdrawalDetail({
 function Info({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <div className="text-muted-foreground">{label}</div>
-      <div>{value}</div>
+      <div className="text-slate-500">{label}</div>
+      <div className="text-slate-900">{value}</div>
     </div>
   );
 }
