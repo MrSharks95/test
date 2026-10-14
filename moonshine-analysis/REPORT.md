@@ -427,6 +427,7 @@ Le même squelette narratif fonctionne pour n'importe quel produit à mécanique
 - `REPORT.md` — ce rapport.
 - `ASSETS.csv` — 189 lignes : `url, type, poids_octets, content_type, notes` (clé manifeste, format réel, dimensions, extension trompeuse).
 - `data/glb_meta.json` — en‑têtes des 4 GLB (nœuds, meshes, triangles, matériaux, extensions). `data/bin_meta.json` — points/poids des 6 nuages. `data/img_dims.tsv` — dimensions/formats réels des images. `data/http_log.tsv` — codes HTTP, tailles, content‑types. `data/manifest_ms2_assets.tsv` — les 69 clés logiques → URL.
+- `screens/*.jpg` — captures Chromium headless (desktop `A*`/`B*`, pages `C*`, mobile `M*`) ; `obs/*.json` — états DOM, console et réseau relevés à chaque capture ; `OBSERVATIONS.md` — galerie commentée + tableaux réseau (voir § 14).
 - Non versionnés (`.gitignore`) : `html/` (4 pages), `extra/` (pages complémentaires, sitemaps, `product.js`), `dl/` (161 assets, 37 Mo), fichiers de travail.
 
 Méthode : `curl -sL -A <UA Chrome>` ; extraction des URLs par regex (`/cdn/shop/t/29/assets/`, `/cdn/shop/files/`, manifeste `window.MS2.assets`, `data-full`, `data-images`) ; téléchargement en parallèle (`xargs -P8`) ; `file`/`identify` pour les formats ; lecture des en‑têtes GLB (JSON du chunk 0) et BIN (`struct`) en Python ; grep des signatures (`__THREE__`, `lenisVersion`, `setMeshoptDecoder`, `cart/add`, `pushState`, `customElements`, `gsap`…) ; reformatage du bundle (découpe sur `;function`/`;let`) pour lire les modules.
