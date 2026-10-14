@@ -522,6 +522,18 @@ hero-scroll-car,
   transform: none;
 }
 
+/* While its card is open the label would sit under the panel: keep dot + line only. */
+.hsc-hotspot.is-active .hsc-hotspot__label {
+  opacity: 0;
+  transform: translateX(-6px);
+  pointer-events: none;
+  transition-delay: 0s;
+}
+
+.hsc-hotspot--left.is-active .hsc-hotspot__label {
+  transform: translateX(6px);
+}
+
 .hsc-hotspot:hover .hsc-hotspot__label,
 .hsc-hotspot.is-active .hsc-hotspot__label {
   border-color: var(--hsc-accent);
