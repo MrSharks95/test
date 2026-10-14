@@ -1,0 +1,205 @@
+{
+ "ms2-boite.glb": {
+  "octets": 3066576,
+  "generator": "glTF-Transform v4.5.1",
+  "extensionsUsed": [
+   "EXT_meshopt_compression",
+   "KHR_mesh_quantization"
+  ],
+  "nodes": [
+   "Cube",
+   "Cube.001",
+   "Cube.003",
+   "Cube.004",
+   "Cube.005",
+   "Cube.006",
+   "Cylinder",
+   "Cylinder.001",
+   "Cylinder.002",
+   "Cylinder.003",
+   "Cylinder.004",
+   "Cylinder.005",
+   "Neutre.001",
+   "Neutre.002",
+   "Objet_21.001",
+   "Objet_22.001",
+   "Objet_23.001",
+   "Objet_24.001",
+   "Objet_25.001",
+   "Neutre.003",
+   "Objet_21.002",
+   "Objet_22.002",
+   "Objet_23.002",
+   "Objet_24.002",
+   "Objet_25.002",
+   "Neutre.004",
+   "Objet_21.003",
+   "Objet_22.003",
+   "Objet_23.003",
+   "Objet_24.003",
+   "Objet_25.003",
+   "Neutre.005",
+   "Objet_16 1",
+   "Objet_16 1.001",
+   "porte"
+  ],
+  "meshes": 12,
+  "triangles": 46972,
+  "vertices": 54610,
+  "materials": [
+   {
+    "name": "foam",
+    "doubleSided": true,
+    "pbrMetallicRoughness": {
+     "baseColorFactor": [
+      0.800000011920929,
+      0.800000011920929,
+      0.800000011920929,
+      1
+     ],
+     "roughnessFactor": 0.5,
+     "metallicFactor": 0
+    }
+   },
+   {
+    "name": "Material.026",
+    "doubleSided": true,
+    "pbrMetallicRoughness": {}
+   }
+  ],
+  "textures": 0,
+  "images": 0,
+  "animations": 0
+ },
+ "ms2-boite2.glb": {
+  "octets": 289636,
+  "generator": "glTF-Transform v4.5.1",
+  "extensionsUsed": [
+   "EXT_meshopt_compression",
+   "KHR_mesh_quantization"
+  ],
+  "nodes": [
+   "Cube",
+   "Cube.009",
+   "Cylinder",
+   "Cylinder.002",
+   "Cylinder.003",
+   "goodplace",
+   "model_0",
+   "perfecttrap",
+   "porte",
+   "vanillastate"
+  ],
+  "meshes": 7,
+  "triangles": 24342,
+  "vertices": 27772,
+  "materials": [],
+  "textures": 0,
+  "images": 0,
+  "animations": 0
+ },
+ "ms2-logo.glb": {
+  "octets": 869548,
+  "generator": "glTF-Transform v4.5.1",
+  "extensionsUsed": [
+   "EXT_meshopt_compression",
+   "KHR_mesh_quantization"
+  ],
+  "nodes": [
+   "Objet_16 1"
+  ],
+  "meshes": 1,
+  "triangles": 23178,
+  "vertices": 69534,
+  "materials": [],
+  "textures": 0,
+  "images": 0,
+  "animations": 0
+ },
+ "ms2-moonshine.glb": {
+  "octets": 1269208,
+  "generator": "glTF-Transform v4.5.1",
+  "extensionsUsed": [
+   "EXT_meshopt_compression",
+   "KHR_materials_transmission",
+   "KHR_mesh_quantization"
+  ],
+  "nodes": [
+   "Objet_3",
+   "Objet_16",
+   "Objet_23",
+   "Objet_24",
+   "Objet_25",
+   "Objet_52",
+   "Calque 1",
+   "Objet_4",
+   "Objet_5",
+   "Objet_6",
+   "Objet_7",
+   "Objet_8",
+   "Objet_9",
+   "Objet_12",
+   "Objet_13",
+   "Objet_15",
+   "Objet_18",
+   "Objet_19",
+   "Objet_20",
+   "Défaut",
+   "Objet_21",
+   "Objet_22",
+   "GLASS",
+   "Objet_51_remesh",
+   "Objet_17",
+   "RUBBER PARTS",
+   "Objet_10",
+   "SANDBBLASTED",
+   "Objet_1",
+   "Objet_50",
+   "THREAD",
+   "Objet_14",
+   "vis",
+   "Objet_11",
+   "WHITE THING"
+  ],
+  "meshes": 27,
+  "triangles": 295482,
+  "vertices": 188227,
+  "materials": [
+   {
+    "name": "Matériau_2",
+    "doubleSided": true,
+    "pbrMetallicRoughness": {
+     "baseColorFactor": [
+      0.6831929683685303,
+      0.7238632440567017,
+      0.7238632440567017,
+      1
+     ],
+     "roughnessFactor": 0.5
+    }
+   },
+   {
+    "name": "Material",
+    "doubleSided": true,
+    "pbrMetallicRoughness": {
+     "baseColorFactor": [
+      0.8000074625015259,
+      0.002908555557951331,
+      0,
+      1
+     ],
+     "roughnessFactor": 0.5,
+     "metallicFactor": 0
+    },
+    "extensions": {
+     "KHR_materials_transmission": {
+      "transmissionFactor": 1
+     }
+    }
+   }
+  ],
+  "textures": 0,
+  "images": 0,
+  "animations": 0
+ }
+}

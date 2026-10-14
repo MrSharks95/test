@@ -1,0 +1,32 @@
+{
+ "ms2-nuage-good-place-light.bin": {
+  "octets": 1701492,
+  "points": 212686,
+  "verif_4_plus_8n": true
+ },
+ "ms2-nuage-good-place.bin": {
+  "octets": 3402988,
+  "points": 425373,
+  "verif_4_plus_8n": true
+ },
+ "ms2-nuage-perfect-trap-light.bin": {
+  "octets": 1855444,
+  "points": 231930,
+  "verif_4_plus_8n": true
+ },
+ "ms2-nuage-perfect-trap.bin": {
+  "octets": 3710884,
+  "points": 463860,
+  "verif_4_plus_8n": true
+ },
+ "ms2-nuage-vanilla-state-light.bin": {
+  "octets": 1501444,
+  "points": 187680,
+  "verif_4_plus_8n": true
+ },
+ "ms2-nuage-vanilla-state.bin": {
+  "octets": 3002892,
+  "points": 375361,
+  "verif_4_plus_8n": true
+ }
+}

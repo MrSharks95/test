@@ -1,0 +1,13 @@
+# Fichiers récupérés sur moon-shine.fr : analysés localement, jamais versionnés
+# (on documente la technique, on ne copie ni leurs assets ni leur code).
+dl/
+dl_fonts/
+assets/
+html/
+extra/
+scratch_*
+*_urls.txt
+asset_keys.txt
+asset_map.tsv
+img_dims.tsv
+dl_log*.tsv
