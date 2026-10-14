@@ -154,7 +154,7 @@
       });
     }
 
-    if (sound && audio) {
+    if (sound) {
       sound.addEventListener('click', function () { self.toggleSound(); });
     }
 
@@ -176,7 +176,8 @@
 
     if (this.soundOn) {
       this.soundOn = false;
-      audio.pause();
+      if (audio) audio.pause();
+      else video.muted = true;
       button.setAttribute('aria-pressed', 'false');
       button.setAttribute('aria-label', texts.soundOn || '');
       button.setAttribute('title', texts.soundOn || '');
@@ -189,6 +190,15 @@
     button.setAttribute('title', texts.soundOff || '');
 
     var atEnd = video.ended || (video.duration > 0 && video.currentTime >= video.duration - 0.05);
+    if (!audio) {
+      // No separate audio file: the mp4 carries its own track, so unmuting keeps a perfect sync.
+      video.muted = false;
+      if (atEnd || video.paused) {
+        video.currentTime = 0;
+        video.play().catch(function () {});
+      }
+      return;
+    }
     if (atEnd || video.paused) {
       // Video already finished (or never started): replay video and sound together.
       video.currentTime = 0;

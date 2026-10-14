@@ -7,7 +7,9 @@
 
   ASSETS ATTENDUS DANS /assets
     hero-ignition.mp4   vidéo 16:9, 8 s, sans son (dernière frame = voiture allumée de face)
-    hero-ignition.mp3   son du moteur synchronisé avec la vidéo
+    hero-ignition.mp3   son du moteur synchronisé avec la vidéo — OPTIONNEL : si le mp4 contient déjà
+                        sa piste audio, laissez le champ « Son du moteur » vide : le bouton son démute
+                        simplement la vidéo (synchro parfaite, un fichier de moins)
     hero-poster.jpg     image de la voiture allumée de face (= dernière frame de la vidéo = f_0001)
     f_0001.webp … f_NNNN.webp   séquence 1920 px de large, 16:9, numérotation sur 4 chiffres
     stop-carrosserie.jpg, stop-interieur.jpg, stop-jante.jpg   images statiques pour mobile
@@ -105,9 +107,11 @@
     >
       <source src="{{ video_url }}" type="video/mp4">
     </video>
-    <audio data-hsc-audio preload="none">
-      <source src="{{ audio_url }}" type="audio/mpeg">
-    </audio>
+    {%- if s.audio_file != blank -%}
+      <audio data-hsc-audio preload="none">
+        <source src="{{ audio_url }}" type="audio/mpeg">
+      </audio>
+    {%- endif -%}
     <div class="hsc-hero__shade" aria-hidden="true"></div>
 
     <div class="hsc-overlay" data-hsc-overlay>
