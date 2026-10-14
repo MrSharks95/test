@@ -11,7 +11,10 @@
                         sa piste audio, laissez le champ « Son du moteur » vide : le bouton son démute
                         simplement la vidéo (synchro parfaite, un fichier de moins)
     hero-poster.jpg     image de la voiture allumée de face (= dernière frame de la vidéo = f_0001)
-    f_0001.webp … f_NNNN.webp   séquence 1920 px de large, 16:9, numérotation sur 4 chiffres
+    f_0001.webp … f_0248.webp   séquence extraite du plan-séquence (1280 × 720, 13 Mo au total),
+                        échantillonnée à « mouvement constant » : plus d'images dans les travellings rapides,
+                        moins dans les plans fixes, pour un défilement régulier au scroll.
+                        Arrêts livrés : carrosserie 27 · porte 82 · habitacle 134 · jante 213 · plan final 245.
     stop-carrosserie.jpg, stop-interieur.jpg, stop-jante.jpg   images statiques pour mobile
                         (utilisées si aucune image n'est choisie dans le bloc « Arrêt caméra »)
 
@@ -399,25 +402,25 @@
       "id": "scroll_multiplier",
       "label": "Hauteur de la séquence (× 100vh)",
       "min": 3,
-      "max": 10,
+      "max": 12,
       "step": 1,
-      "default": 5
+      "default": 7
     },
     {
       "type": "number",
       "id": "frames_total",
       "label": "Nombre total de frames",
-      "default": 240,
-      "info": "Numéro de la dernière image (f_0240.webp → 240)."
+      "default": 248,
+      "info": "Numéro de la dernière image (f_0248.webp → 248)."
     },
     {
       "type": "range",
       "id": "stop_range",
       "label": "Plage d'apparition des cartes (± frames)",
-      "min": 10,
-      "max": 120,
-      "step": 5,
-      "default": 40
+      "min": 2,
+      "max": 60,
+      "step": 1,
+      "default": 6
     },
     {
       "type": "checkbox",
@@ -528,7 +531,7 @@
           "type": "number",
           "id": "frame",
           "label": "Frame de l'arrêt",
-          "default": 60,
+          "default": 27,
           "info": "Numéro de l'image où la caméra s'immobilise."
         },
         {
@@ -609,7 +612,7 @@
         {
           "type": "stop",
           "settings": {
-            "frame": 60,
+            "frame": 27,
             "side": "right",
             "title": "Carrosserie",
             "tagline": "Un brillant profond, sans traces.",
@@ -619,11 +622,11 @@
         {
           "type": "stop",
           "settings": {
-            "frame": 140,
+            "frame": 134,
             "side": "left",
             "display": "hotspot",
-            "hotspot_x": 54,
-            "hotspot_y": 58,
+            "hotspot_x": 55,
+            "hotspot_y": 66,
             "hotspot_label": "Habitacle",
             "title": "Intérieur",
             "tagline": "Plastiques et cuirs nourris, odeur de neuf.",
@@ -633,7 +636,7 @@
         {
           "type": "stop",
           "settings": {
-            "frame": 230,
+            "frame": 213,
             "side": "left",
             "title": "Jante",
             "tagline": "Jantes nettes, étriers propres, sans frotter.",
