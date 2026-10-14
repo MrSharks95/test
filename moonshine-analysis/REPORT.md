@@ -431,3 +431,51 @@ Le même squelette narratif fonctionne pour n'importe quel produit à mécanique
 - Non versionnés (`.gitignore`) : `html/` (4 pages), `extra/` (pages complémentaires, sitemaps, `product.js`), `dl/` (161 assets, 37 Mo), fichiers de travail.
 
 Méthode : `curl -sL -A <UA Chrome>` ; extraction des URLs par regex (`/cdn/shop/t/29/assets/`, `/cdn/shop/files/`, manifeste `window.MS2.assets`, `data-full`, `data-images`) ; téléchargement en parallèle (`xargs -P8`) ; `file`/`identify` pour les formats ; lecture des en‑têtes GLB (JSON du chunk 0) et BIN (`struct`) en Python ; grep des signatures (`__THREE__`, `lenisVersion`, `setMeshoptDecoder`, `cart/add`, `pushState`, `customElements`, `gsap`…) ; reformatage du bundle (découpe sur `;function`/`;let`) pour lire les modules.
+
+---
+
+## 14. Observé dans Chromium headless (après l'analyse du code)
+
+### 14.1 Méthode
+
+Playwright 1.56 + Chromium 1194 (headless), WebGL rendu par **ANGLE / SwiftShader (Vulkan, CPU)** : `WebGL 2.0`, textures max 8 192 px. Trois scénarios : desktop 1 280 × 800 (parcours complet : loader, hero, 10 pas de scroll, fiche, variantes, volet, lightbox, univers, footer, switcher, drag, bouchon, menu/FAQ/contact, panier, saut, bascule coffrets, coffret suivant, fiche coffret, retour arrière), pages secondaires (collectibles, FAQ, arrivées directes sur `/collections/coffrets` et une fiche recharge), mobile 390 × 844 ×2 iPhone (`pointer: coarse`). À chaque capture, l'état du DOM est relevé (URL, `history.state`, panneau actif, `--accent`/`--bg-o`/`--hero-o`, classes `body`, variante, photos) → `obs/*.json`, galerie commentée → `OBSERVATIONS.md`, 50 captures → `screens/`.
+
+Le rendu logiciel tourne à **2 à 10 s par image** (au lieu de 16 ms). Pour que les poses convergent quand même, le plafond du pas de temps de la boucle du site a été relevé à la volée (`0,05 s → 0,5 s`, 4 occurrences patchées en mémoire, rien d'écrit) et chaque capture attend un nombre d'images rendues plutôt qu'une durée. Conséquence : **composition, couleurs, états et textes sont fidèles ; la fluidité, les durées perçues et les temps de chargement ne le sont pas.**
+
+### 14.2 Déduit du code → observé à l'écran
+
+| Déduction (§ 6–7) | Observation | Captures |
+|---|---|---|
+| Hero : 3 flacons en anneau, le sélectionné devant et éclairé, les deux autres derrière, assombris ; nuage plein écran ; nom + 3 notes + picto | ✔ Perfect Trap devant (alu brossé, liquide rouge), Vanilla à gauche (brun), Good Place à droite (bleu), tous deux presque noirs ; `--bg-o 0.400`, `--hero-o 1.000` | `A01-hero`, `A01b` (parallaxe pointeur visible : les flacons s'inclinent) |
+| Nuage = décor 2,5D « illustration en relief » | ✔ Perfect Trap : décor rouge de façades/rue nocturne, vignetté, plus lumineux en bas ; Vanilla : décor orangé ; Good Place : poussière bleue (capture prise pendant l'assemblage à 0,4/s, ce qui confirme le morphing depuis des positions dispersées) | `A01`, `A08-parfum-1/2/3` |
+| Pendant la story, le nuage devient le pictogramme | ✔ globe rouge (Perfect Trap) dès t = 1, flèches en boucle cyan (Good Place) sur la fiche recharge et sur mobile | `A02-t1…t5`, `C04`, `M02-*` |
+| 6 poses du flacon | ✔ t = 0,5 : flacon seul, les autres sortis, nuage en poussière, textes du hero éteints · t = 1 : flacon décalé à droite, panneau 0 (nom, pyramide, intro) · t = 2 : **capuchon ×3 avec le « M » en relief, légèrement décollé (aimant)** · t = 2,5–3 : **capuchon retiré, tête de vaporisateur visible, base dévissée qui tombe, recharge qui glisse hors du fourreau** · t = 3,5–4 : vue de dessous, la base se revisse · t = 4,5–5 : flacon couché à ~70°, gravures « Moonshine ©2026 » et pictos sur le fourreau | `A02-t0_5` → `A02-t5` |
+| Fiche : titre, prix, photos, description tronquée, pyramide, variantes, CTA | ✔ « CAPSULE + PARFUM / PERFECT TRAP 30 ML », 89 €, 12 vignettes, « Lire la suite » → texte complet + bouton « Réduire », pyramide tête/cœur/fond, « Plus d'informations », 2 variantes, « Ajouter au panier » | `A02-t5`, `A03`, `A13` |
+| Variante « Parfum 30 ml » : démontage de la capsule, URL et prix changent | ✔ flacon nu (verre rouge + tête spray), 49 €, 7 photos, `location = /products/recharge-perfect-trap-30-ml`, `history.state.ms2 = {sel: perfect-trap, variant: parfum, fiche: true}` ; retour capsule → `/products/coffret-perfect-trap-30-ml` | `A04`, `A04b` |
+| Volet « Plus d'informations » (fixed droite, verre dépoli) | ✔ contenu de boîte (5 photos + 4 puces), liste catégorie / contenu / parfumeur / concentration / cible / origine, ingrédients, notice ; `body.info-open` | `A05`, `M04` |
+| Lightbox, carrousel univers, footer | ✔ `lightbox-open` ; carrousel 4 visuels par écran avec flèche, canvas passé derrière (`past-story`) ; footer newsletter + colonnes + icônes de paiement | `A05b`, `A06`, `A07` |
+| URL synchronisée avec l'état | ✔ hero : l'URL reste `/` quel que soit le parfum ; fiche atteinte : `/products/<handle>` ; après la story (univers, footer) l'URL produit est conservée ; menu FAQ → `/pages/faq`, Contact → `/pages/nous-contacter`, fermeture → URL précédente | `A08`, `A06`, `A11`, `A11b` |
+| Switcher : accent + nuage | ✔ `--accent` `rgb(18,185,255)` → `rgb(138,52,0)` → `rgb(196,8,8)`, `--accent-ui` = `color-mix(... 35%, glow)`, lien « Nos parfums » teinté, dégradé `#bg` teinté, nuage reconstruit | `A08-parfum-1/2/3` |
+| Couvercle à ressort au clic sur le bouchon ; drag = rotation | ✔ volet du capuchon ouvert après clic ; flacon tourné après drag | `A09b`, `A09` |
+| Menu plein écran flouté, 6 entrées numérotées ; drawer panier | ✔ `menu-open`, 01–06 ; panier en carte flottante sous l'icône (« Votre panier est vide »), `cart-open` | `A10`, `A12` |
+| Bascule parfums → coffrets sans rechargement | ✔ clic « Nos coffrets » : `pushState` immédiat vers `/collections/coffrets`, fondu `is-leaving`, scène coffrets prête (préchargée en idle), `--accent #5f7186`, `--accent-ui #fff` | `B00`, `B01` |
+| Coffret : écrin qui s'ouvre, logo script en particules | ✔ écrin gris à mousse noire ouvert : capsule + 3 recharges (bleu/rouge/orange) ; « Moonshine » en écriture script blanc-bleuté en particules derrière ; coffret suivant = **Coffret Découverte** (boîte noire, porte-clés métal + 3 tubes 2 ml colorés) ; fiche coffret `39 €`, liste 01–04 avec flèches vers les parfums, URL `/products/coffret-decouverte` | `B01b`, `B02`, `B03`, `C03` |
+| Retour navigateur = `popstate` → état rejoué | ✔ `goBack()` depuis la fiche coffret : mode parfums restauré directement sur la fiche Perfect Trap, URL `/products/coffret-perfect-trap-30-ml` | `B04` |
+| Arrivée directe sur une URL produit | ✔ `/products/recharge-good-place-30-ml` : loader court (`is-rapide`), fiche ouverte (panneau 4), variante `parfum`, nuage déjà en picto, flacon nu bleu | `C04` |
+| Collectibles : anneau CSS 3D + badges ; FAQ `<details>` | ✔ anneau de cartes en perspective, 3 onglets d'univers, badges brodés avec ombre portée ; FAQ « QUESTIONS » avec accordéons « + » | `C01`, `C01b`, `C02` |
+| Mobile ≤ 820 px : nav compacte, panneaux en bas, switcher centré en bas, fiche en bas avec le flacon recadré au‑dessus, « + infos » | ✔ exactement ; les 3 flacons sont plus grands et inclinés dans le hero ; le nuage « light » est quasi invisible (poussière) ; `pointer: coarse = true`, DPR plafonné : canvas 585 × 1 266 pour 390 × 844 @2x (= 1,5) ; `ms2-nuage-good-place-light.bin` chargé (1,70 Mo) et non la version complète | `M01`, `M02-t2/t3/t5`, `M04`, `M05` |
+| Loader : « M » en particules + barre | ✔ | `A00` |
+
+### 14.3 Ce que l'observation ajoute au code
+
+- **Pas d'erreur JS** sur tout le parcours ; 3 avertissements three.js : `THREE.Clock` déprécié (r186), `Material: parameter 'map' has value of undefined`, et **`PCFSoftShadowMap has been removed. Using PCFShadowMap instead`** — la scène coffrets demande un type d'ombre retiré de r186, les ombres tombent donc en PCF simple. Les seules requêtes échouées sont des balises analytics annulées (monorail, `/api/collect`, merchant‑center).
+- **Poids réellement transférés** (brotli activé par le CDN Shopify sur JS/CSS/GLB, pas sur les `.bin`) : `ms2-app.js` **203 Ko** (772 Ko bruts), `ms2-app.css` 10 Ko, `moonshine.glb` **792 Ko** (1,27 Mo), `boite.glb` 2,22 Mo (3,07), `logo.glb` 684 Ko (870), `boite2.glb` 207 Ko ; nuages **non compressés** : 3,72 / 3,41 / 3,01 Mo (complets), 1,70 Mo (light). Le nuage est donc, de loin, le premier poste réseau.
+- Desktop, parcours complet (3 univers visités + coffrets) : **459 requêtes, 19,7 Mo transférés**, dont les 3 nuages complets (10,1 Mo) et l'écrin (2,2 Mo). Mobile (1 univers, fiche, menu) : 155 requêtes, 6,97 Mo. Navigation desktop : TTFB 365 ms, DOMContentLoaded 3,3 s, `load` 13,0 s, HTML 30 Ko transférés (126 Ko décodés) — temps gonflés par le rendu logiciel, à ne pas prendre pour des mesures.
+- Ordre de chargement observé : HTML → `ms2-app.js` → polices + `m-white.png` (loader) → `logo.glb` + `moonshine.glb` + `brushed.jpg` + nuage du parfum tiré au sort → picto ; puis, ~50 s plus tard en idle, `boite.glb` + `boite2.glb` + `logo-boite.png` **et une seconde fois `moonshine.glb` et `brushed.jpg`** (793 Ko + 243 Ko re‑téléchargés pour la scène coffrets : le `fetch` du second chargeur ne profite pas du cache). Les nuages des deux autres parfums ne sont chargés qu'au clic sur le switcher ; les photos de la fiche à l'approche du panneau 4 ; les visuels du carrousel en `lazy`.
+- Les gravures du fourreau (« Moonshine ©2026 », pictos des 3 univers) sont **dans la géométrie** (le GLB n'a pas de texture) ; le « M » du capuchon est en relief.
+- Sur le hero, le nuage Good Place capturé en « poussière » montre que le changement de parfum **réassemble le décor depuis des positions dispersées** (≈ 2,5 s) et non par fondu.
+- Sur mobile, la zone utile au‑dessus de la fiche est bien calculée : le flacon couché tient entre le header et le haut de la fiche sans chevauchement (`setSheetArea`).
+
+### 14.4 Limites de l'observation
+
+Rendu logiciel : aucune mesure de FPS, d'énergie ou de jank ; anticrénelage, transmission et ombres approximés ; captures prises image par image, donc certains instants (poussière, textes en cours de fondu) reflètent l'état d'une transition et non une pose stable. Aucun ajout au panier ni envoi de formulaire n'a été effectué.
