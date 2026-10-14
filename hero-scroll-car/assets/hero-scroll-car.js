@@ -30,6 +30,10 @@
   var SNAP_IDLE_MS = 220;         // scroll idle time before the sequence settles on the nearest stop
   var SNAP_MIN_DISTANCE = 0.6;    // frames: closer than this to a stop, no snap needed
   var HOTSPOT_CARD_GAP = 108;     // px from the hotspot dot to the opened card (dot + line + spacing)
+  var BLEND_MIN_DELTA = 1 / 32;   // frames: a blended picture is redrawn only once the position moved this much
+  var SCROLL_IDLE_MS = 120;       // ms without a scroll event = the user stopped: settle on a whole frame
+
+  function nowMs() { return (window.performance && performance.now) ? performance.now() : Date.now(); }
 
   function clamp(value, min, max) {
     return Math.min(max, Math.max(min, value));
@@ -90,6 +94,7 @@
       stop.y = clamp(parseFloat(stop.y) || 50, 0, 100);
     }
     config.snapToStops = config.snapToStops !== false;
+    config.blendFrames = config.blendFrames !== false;
     config.texts = config.texts || {};
     return config;
   };
@@ -266,7 +271,13 @@
       state: new Uint8Array(total + 1), // 0 = idle, 1 = loading, 2 = loaded, 3 = failed
       current: 1,
       target: 1,
-      drawn: -1,
+      drawn: -1,        // whole frame currently on the canvas (-1 = a stand-in while it loads)
+      drawnBlend: 0,    // alpha of the next frame blended over it (0 = crisp single frame)
+      drawnPos: -1,     // drawn + drawnBlend, the fractional position actually displayed
+      sourceWidth: 0,   // size of the frames, known after the first one loads
+      sourceHeight: 0,
+      dpr: 1,
+      lastScrollAt: 0,
       rafId: 0,
       lastTime: 0,
       width: 0,
@@ -300,7 +311,7 @@
     if (config.posterUrl) {
       var poster = new Image();
       poster.decoding = 'async';
-      poster.onload = function () { seq.poster = poster; if (seq.drawn === -1) self.drawFrame(Math.round(seq.current)); };
+      poster.onload = function () { seq.poster = poster; if (seq.drawn === -1) self.render(); };
       poster.src = config.posterUrl;
     }
 
@@ -312,7 +323,7 @@
       seq.resizeObserver.observe(stage);
     }
 
-    seq.onScroll = function () { self.startLoop(); self.scheduleSnap(); };
+    seq.onScroll = function () { seq.lastScrollAt = nowMs(); self.startLoop(); self.scheduleSnap(); };
     window.addEventListener('scroll', seq.onScroll, { passive: true });
 
     if ('IntersectionObserver' in window) {
@@ -418,8 +429,9 @@
         var decodePromise = image.decode ? image.decode() : Promise.resolve();
         decodePromise.catch(function () {}).then(function () {
           if (seq.destroyed) { resolve(); return; }
-          // Fix the picture as soon as the exact frame we are waiting for arrives.
-          if (Math.round(seq.current) === index && seq.drawn !== index) self.drawFrame(index);
+          // Fix the picture as soon as a frame we are showing (or blending toward) arrives.
+          var low = Math.floor(seq.current);
+          if (index === low || index === low + 1) { seq.drawn = -1; seq.drawnPos = -1; self.render(); }
           resolve();
         });
       };
@@ -441,15 +453,24 @@
     var height = Math.round(rect.height);
     if (!width || !height) return;
     var dpr = Math.min(window.devicePixelRatio || 1, DPR_CAP);
+    // A backing store finer than the frames adds pixels to fill but no sharpness: a 1280 px sequence
+    // on a 1440 px Retina stage is drawn at 1280 px (4× fewer pixels than at 2× DPR), not upscaled twice.
+    if (seq.sourceWidth && seq.sourceHeight) {
+      var coverScale = Math.max(width / seq.sourceWidth, height / seq.sourceHeight);
+      dpr = Math.min(dpr, Math.max(1, 1 / coverScale));
+    }
     seq.width = width;
     seq.height = height;
+    seq.dpr = dpr;
     seq.canvas.width = Math.round(width * dpr);
     seq.canvas.height = Math.round(height * dpr);
     seq.context.setTransform(dpr, 0, 0, dpr, 0, 0);
     seq.context.imageSmoothingEnabled = true;
     seq.context.imageSmoothingQuality = 'high';
+    seq.cover = null;
     seq.drawn = -1;
-    this.drawFrame(Math.round(seq.current));
+    seq.drawnPos = -1;
+    this.render();
   };
 
   HeroScrollCar.prototype.nearestLoaded = function (index) {
@@ -464,7 +485,9 @@
     return seq.poster || null;
   };
 
-  HeroScrollCar.prototype.drawFrame = function (index) {
+  // Draws frame `index` (or the nearest loaded stand-in) and, optionally, blends frame `blendIndex`
+  // over it with `blendAlpha` (0–1): a fractional scroll position becomes a crossfade instead of a jump.
+  HeroScrollCar.prototype.drawFrame = function (index, blendIndex, blendAlpha) {
     var seq = this.sequence;
     if (!seq || !seq.width || !seq.height) return;
     var exact = seq.state[index] === 2;
@@ -475,17 +498,29 @@
     var imageHeight = image.naturalHeight || image.height;
     if (!imageWidth || !imageHeight) return;
 
-    // "cover": keep the ratio, fill the stage, center the overflow.
-    var scale = Math.max(seq.width / imageWidth, seq.height / imageHeight);
-    var drawWidth = imageWidth * scale;
-    var drawHeight = imageHeight * scale;
-    var offsetX = (seq.width - drawWidth) / 2;
-    var offsetY = (seq.height - drawHeight) / 2;
-    seq.context.drawImage(image, offsetX, offsetY, drawWidth, drawHeight);
-    seq.cover = { ox: offsetX, oy: offsetY, dw: drawWidth, dh: drawHeight };
-    this.positionHotspots();
+    // The first real frame tells the source size: the backing store adapts to it once, then draws.
+    if (exact && (seq.sourceWidth !== imageWidth || seq.sourceHeight !== imageHeight)) {
+      seq.sourceWidth = imageWidth;
+      seq.sourceHeight = imageHeight;
+      this.resizeCanvas();
+      return;
+    }
+
+    var cover = this.coverFor(imageWidth, imageHeight);
+    var context = seq.context;
+    context.globalAlpha = 1;
+    context.drawImage(image, cover.ox, cover.oy, cover.dw, cover.dh);
+    var blended = 0;
+    if (exact && blendIndex && blendAlpha > 0 && seq.state[blendIndex] === 2) {
+      context.globalAlpha = blendAlpha;
+      context.drawImage(seq.frames[blendIndex], cover.ox, cover.oy, cover.dw, cover.dh);
+      context.globalAlpha = 1;
+      blended = blendAlpha;
+    }
 
     seq.drawn = exact ? index : -1;
+    seq.drawnBlend = blended;
+    seq.drawnPos = exact ? index + blended : -1;
     if (!seq.stage.classList.contains('is-ready')) seq.stage.classList.add('is-ready');
 
     // Decode a few frames ahead so the next draws never wait for the decoder.
@@ -495,6 +530,46 @@
         seq.frames[next].decode().catch(function () {});
       }
     }
+  };
+
+  // "cover" geometry (keep the ratio, fill the stage, center the overflow), cached per image size
+  // and stage size; the hotspots are re-anchored only when it changes.
+  HeroScrollCar.prototype.coverFor = function (imageWidth, imageHeight) {
+    var seq = this.sequence;
+    var cover = seq.cover;
+    if (cover && cover.iw === imageWidth && cover.ih === imageHeight && cover.sw === seq.width && cover.sh === seq.height) return cover;
+    var scale = Math.max(seq.width / imageWidth, seq.height / imageHeight);
+    var drawWidth = imageWidth * scale;
+    var drawHeight = imageHeight * scale;
+    seq.cover = {
+      ox: (seq.width - drawWidth) / 2, oy: (seq.height - drawHeight) / 2, dw: drawWidth, dh: drawHeight,
+      iw: imageWidth, ih: imageHeight, sw: seq.width, sh: seq.height
+    };
+    this.positionHotspots();
+    return seq.cover;
+  };
+
+  // Decides what the eased position needs on the canvas: a whole frame, or a crossfade of the two around it.
+  HeroScrollCar.prototype.render = function () {
+    var seq = this.sequence;
+    if (!seq) return;
+    var position = clamp(seq.current, 1, seq.total);
+    var low = Math.floor(position);
+    var alpha = position - low;
+    if (!this.config.blendFrames || low >= seq.total) alpha = 0;
+    if (alpha < 0.03) alpha = 0;
+    else if (alpha > 0.97) { low += 1; alpha = 0; }
+    if (!this.config.blendFrames) low = Math.round(position);
+    if (alpha > 0 && (seq.state[low] !== 2 || seq.state[low + 1] !== 2)) {
+      low = Math.round(position); // one of the pair is still loading: nearest whole frame, no crossfade
+      alpha = 0;
+    }
+    if (alpha === 0) {
+      if (low !== seq.drawn || seq.drawnBlend) this.drawFrame(low);
+      return;
+    }
+    if (seq.drawnPos >= 0 && Math.abs(low + alpha - seq.drawnPos) < BLEND_MIN_DELTA) return;
+    this.drawFrame(low, low + 1, alpha);
   };
 
   /* ---- scroll loop ---------------------------------------------------- */
@@ -544,20 +619,24 @@
     var elapsed = seq.lastTime ? Math.min(100, now - seq.lastTime) : 16.7;
     seq.lastTime = now;
     var factor = 1 - Math.pow(1 - EASE_PER_FRAME, elapsed / 16.7);
-    var distance = seq.target - seq.current;
-    if (Math.abs(distance) <= SNAP_THRESHOLD) seq.current = seq.target;
+    // In motion the picture follows the exact scroll position (crossfading between frames); once the
+    // user stops, it settles on the nearest whole frame so the picture at rest is crisp.
+    var idle = now - seq.lastScrollAt > SCROLL_IDLE_MS;
+    var goal = idle && this.config.blendFrames ? Math.round(seq.target) : seq.target;
+    var distance = goal - seq.current;
+    if (Math.abs(distance) <= SNAP_THRESHOLD) seq.current = goal;
     else seq.current += distance * factor;
 
-    var index = Math.round(seq.current);
-    if (index !== seq.drawn) this.drawFrame(index);
+    this.render();
     this.updateCards(seq.current);
     // Any real scroll closes an opened hotspot card and lets the sequence go on.
     if (seq.openCard && Math.abs(seq.target - seq.openAtTarget) > 0.75) this.closeHotspotCard();
 
     // Help the background loader follow the user when it jumps far ahead.
+    var index = Math.round(seq.current);
     if (seq.wakeBackground && seq.state[index] === 0) seq.wakeBackground();
 
-    if (seq.current !== seq.target && seq.inView) {
+    if ((seq.current !== goal || !idle) && seq.inView) {
       seq.rafId = requestAnimationFrame(this.tick.bind(this));
     }
   };
