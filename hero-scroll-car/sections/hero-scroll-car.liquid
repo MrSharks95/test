@@ -22,6 +22,10 @@
        le côté vide de l'image à cet instant (carrosserie : droite, intérieur : gauche, jante : droite).
     3. « Plage d'apparition » : la carte est visible de (frame − plage) à (frame + plage).
        Les plages de deux arrêts ne doivent pas se chevaucher ; entre deux arrêts, la voiture est seule.
+       « Affichage » par arrêt : « Carte latérale » (la carte apparaît seule) ou « Point d'intérêt » (un rond
+       pulsant + un trait + un libellé, ancrés à Position X / Y en % de l'image, ex. à côté du volant ; un clic
+       ouvre la carte en overlay, un scroll la referme et la séquence continue).
+       « Aimanter les arrêts » : à l'arrêt du scroll dans une plage, la séquence se cale sur la frame exacte.
     4. « Hauteur de la séquence » (N) : la séquence occupe N × 100vh de défilement. 5 est confortable.
     5. Dans l'éditeur de thème, sélectionner un bloc « Arrêt caméra » fait défiler la page jusqu'à sa frame :
        pratique pour vérifier la position de la carte.
@@ -70,6 +74,7 @@
       "posterUrl": {{ poster_url | json }},
       "stopRange": {{ s.stop_range | default: 40 }},
       "priorityCount": {{ s.priority_count | default: 30 }},
+      "snapToStops": {% if s.snap_to_stops %}true{% else %}false{% endif %},
       "cartAddUrl": {{ cart_add_url | json }},
       "cartUrl": {{ cart_url | json }},
       "rootUrl": {{ routes.root_url | json }},
@@ -78,7 +83,10 @@
           {
             "id": {{ block.id | json }},
             "frame": {{ block.settings.frame | default: 1 }},
-            "side": {{ block.settings.side | default: 'right' | json }}
+            "side": {{ block.settings.side | default: 'right' | json }},
+            "display": {{ block.settings.display | default: 'card' | json }},
+            "x": {{ block.settings.hotspot_x | default: 50 }},
+            "y": {{ block.settings.hotspot_y | default: 50 }}
           }{%- unless forloop.last -%},{%- endunless -%}
         {%- endfor -%}
       ],
@@ -166,14 +174,36 @@
           assign product = block.settings.product
           assign variant = product.selected_or_first_available_variant
           assign side = block.settings.side | default: 'right'
+          assign display = block.settings.display | default: 'card'
         -%}
+        {%- if display == 'hotspot' -%}
+          {%- comment -%} Point d'intérêt : rond pulsant + trait + libellé, ancré en % de l'image ; un clic ouvre la carte {%- endcomment -%}
+          <button
+            type="button"
+            class="hsc-hotspot hsc-hotspot--{{ side }}"
+            data-hsc-hotspot
+            data-stop-id="{{ block.id }}"
+            aria-expanded="false"
+            aria-controls="hsc-card-{{ section.id }}-{{ block.id }}"
+            aria-hidden="true"
+            tabindex="-1"
+          >
+            <span class="hsc-hotspot__dot" aria-hidden="true"><i></i></span>
+            <span class="hsc-hotspot__line" aria-hidden="true"></span>
+            <span class="hsc-hotspot__label">{{ block.settings.hotspot_label | default: block.settings.title | escape }}</span>
+          </button>
+        {%- endif -%}
         <article
-          class="hsc-card hsc-card--{{ side }}"
+          id="hsc-card-{{ section.id }}-{{ block.id }}"
+          class="hsc-card hsc-card--{{ side }}{% if display == 'hotspot' %} hsc-card--hotspot{% endif %}"
           data-hsc-card
           data-stop-id="{{ block.id }}"
           aria-hidden="true"
           {{ block.shopify_attributes }}
         >
+          {%- if display == 'hotspot' -%}
+            <button type="button" class="hsc-card__close" data-hsc-close aria-label="{{ s.text_close | default: 'Fermer' | escape }}">&times;</button>
+          {%- endif -%}
           {%- if block.settings.title != blank -%}
             <p class="hsc-card__kicker">{{ block.settings.title | escape }}</p>
           {%- endif -%}
@@ -275,7 +305,7 @@
     <style>
       .hsc-scroller { height: auto !important; }
       .hsc-stage { position: relative !important; height: 100svh !important; }
-      .hsc-canvas, .hsc-stage .hsc-card { display: none !important; }
+      .hsc-canvas, .hsc-stage .hsc-card, .hsc-hotspot { display: none !important; }
       .hsc-static { display: grid !important; }
       .hsc-overlay { opacity: 1 !important; transform: none !important; }
     </style>
@@ -384,6 +414,13 @@
       "default": 40
     },
     {
+      "type": "checkbox",
+      "id": "snap_to_stops",
+      "label": "Aimanter les arrêts",
+      "default": true,
+      "info": "À l'arrêt du scroll dans la plage d'un arrêt, la séquence se cale sur sa frame exacte."
+    },
+    {
       "type": "number",
       "id": "priority_count",
       "label": "Frames chargées en priorité",
@@ -454,6 +491,12 @@
       "default": "Impossible d'ajouter ce produit. Réessayez."
     },
     {
+      "type": "text",
+      "id": "text_close",
+      "label": "Bouton de fermeture (point d'intérêt)",
+      "default": "Fermer"
+    },
+    {
       "type": "header",
       "content": "Style"
     },
@@ -481,6 +524,40 @@
           "label": "Frame de l'arrêt",
           "default": 60,
           "info": "Numéro de l'image où la caméra s'immobilise."
+        },
+        {
+          "type": "select",
+          "id": "display",
+          "label": "Affichage",
+          "options": [
+            { "value": "card", "label": "Carte latérale (apparaît seule)" },
+            { "value": "hotspot", "label": "Point d'intérêt (clic pour ouvrir)" }
+          ],
+          "default": "card"
+        },
+        {
+          "type": "range",
+          "id": "hotspot_x",
+          "label": "Point d'intérêt — position X (% de l'image)",
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "default": 50
+        },
+        {
+          "type": "range",
+          "id": "hotspot_y",
+          "label": "Point d'intérêt — position Y (% de l'image)",
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "default": 50
+        },
+        {
+          "type": "text",
+          "id": "hotspot_label",
+          "label": "Point d'intérêt — libellé",
+          "default": "Voir le produit"
         },
         {
           "type": "select",
@@ -537,7 +614,11 @@
           "type": "stop",
           "settings": {
             "frame": 140,
-            "side": "left",
+            "side": "right",
+            "display": "hotspot",
+            "hotspot_x": 66,
+            "hotspot_y": 42,
+            "hotspot_label": "Habitacle",
             "title": "Intérieur",
             "tagline": "Plastiques et cuirs nourris, odeur de neuf.",
             "mobile_image_file": "stop-interieur.jpg"

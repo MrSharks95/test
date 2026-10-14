@@ -27,6 +27,9 @@
   var AUDIO_DRIFT_SECONDS = 0.25; // resync audio when it drifts further than this
   var DECODE_AHEAD = 3;           // frames decoded ahead of the current one
   var HERO_SCROLL_RATIO = 0.4;    // share of a viewport height used to fade the hero texts before scrubbing
+  var SNAP_IDLE_MS = 220;         // scroll idle time before the sequence settles on the nearest stop
+  var SNAP_MIN_DISTANCE = 0.6;    // frames: closer than this to a stop, no snap needed
+  var HOTSPOT_CARD_GAP = 108;     // px from the hotspot dot to the opened card (dot + line + spacing)
 
   function clamp(value, min, max) {
     return Math.min(max, Math.max(min, value));
@@ -54,6 +57,7 @@
 
     this.setupHero();
     this.setupCart();
+    this.setupHotspots();
     this.setupEditor();
 
     this.onMediaChange = this.applyMode.bind(this);
@@ -67,6 +71,7 @@
     removeMediaListener(this.mqReduced, this.onMediaChange);
     this.teardownSequence();
     if (this.onBlockSelect) document.removeEventListener('shopify:block:select', this.onBlockSelect);
+    if (this.onKeydown) document.removeEventListener('keydown', this.onKeydown);
     this.hscReady = false;
   };
 
@@ -78,6 +83,13 @@
     config.stopRange = Math.max(1, parseInt(config.stopRange, 10) || 40);
     config.priorityCount = Math.max(1, parseInt(config.priorityCount, 10) || 30);
     config.stops = (config.stops || []).filter(function (stop) { return stop && stop.frame; });
+    for (var i = 0; i < config.stops.length; i++) {
+      var stop = config.stops[i];
+      stop.display = stop.display === 'hotspot' ? 'hotspot' : 'card';
+      stop.x = clamp(parseFloat(stop.x) || 50, 0, 100);
+      stop.y = clamp(parseFloat(stop.y) || 50, 0, 100);
+    }
+    config.snapToStops = config.snapToStops !== false;
     config.texts = config.texts || {};
     return config;
   };
@@ -273,9 +285,16 @@
       });
     };
 
-    // Product cards living inside the stage, keyed by block id.
+    // Product cards and hotspot markers living inside the stage, keyed by block id.
     var cards = stage.querySelectorAll('[data-hsc-card]');
     for (var i = 0; i < cards.length; i++) seq.cards[cards[i].getAttribute('data-stop-id')] = cards[i];
+    seq.hotspots = {};
+    var markers = stage.querySelectorAll('[data-hsc-hotspot]');
+    for (var m = 0; m < markers.length; m++) seq.hotspots[markers[m].getAttribute('data-stop-id')] = markers[m];
+    seq.stopsById = {};
+    for (var k = 0; k < config.stops.length; k++) seq.stopsById[config.stops[k].id] = config.stops[k];
+    seq.openCard = null;
+    seq.cover = null;
 
     // The poster (= last video frame = f_0001) is the safety net drawn until the first frame arrives.
     if (config.posterUrl) {
@@ -293,7 +312,7 @@
       seq.resizeObserver.observe(stage);
     }
 
-    seq.onScroll = function () { self.startLoop(); };
+    seq.onScroll = function () { self.startLoop(); self.scheduleSnap(); };
     window.addEventListener('scroll', seq.onScroll, { passive: true });
 
     if ('IntersectionObserver' in window) {
@@ -317,8 +336,12 @@
     window.removeEventListener('scroll', seq.onScroll);
     if (seq.resizeObserver) seq.resizeObserver.disconnect();
     if (seq.intersection) seq.intersection.disconnect();
+    clearTimeout(seq.snapTimer);
+    this.closeHotspotCard();
     var ids = Object.keys(seq.cards);
     for (var i = 0; i < ids.length; i++) this.setCardVisible(seq.cards[ids[i]], false);
+    var hids = Object.keys(seq.hotspots);
+    for (var h = 0; h < hids.length; h++) this.setHotspotVisible(seq.hotspots[hids[h]], false);
     seq.stage.classList.remove('is-scrubbing');
     seq.stage.style.removeProperty('--hsc-hero-o');
     this.sequence = null;
@@ -459,6 +482,8 @@
     var offsetX = (seq.width - drawWidth) / 2;
     var offsetY = (seq.height - drawHeight) / 2;
     seq.context.drawImage(image, offsetX, offsetY, drawWidth, drawHeight);
+    seq.cover = { ox: offsetX, oy: offsetY, dw: drawWidth, dh: drawHeight };
+    this.positionHotspots();
 
     seq.drawn = exact ? index : -1;
     if (!seq.stage.classList.contains('is-ready')) seq.stage.classList.add('is-ready');
@@ -526,6 +551,8 @@
     var index = Math.round(seq.current);
     if (index !== seq.drawn) this.drawFrame(index);
     this.updateCards(seq.current);
+    // Any real scroll closes an opened hotspot card and lets the sequence go on.
+    if (seq.openCard && Math.abs(seq.target - seq.openAtTarget) > 0.75) this.closeHotspotCard();
 
     // Help the background loader follow the user when it jumps far ahead.
     if (seq.wakeBackground && seq.state[index] === 0) seq.wakeBackground();
@@ -568,13 +595,147 @@
     var bestId = best ? best.id : null;
     if (bestId === seq.activeStop) return;
     seq.activeStop = bestId;
-    var ids = Object.keys(seq.cards);
-    for (var k = 0; k < ids.length; k++) this.setCardVisible(seq.cards[ids[k]], ids[k] === bestId);
+    if (seq.openCard && seq.openCard !== bestId) this.closeHotspotCard();
+    for (var k = 0; k < stops.length; k++) {
+      var stop = stops[k];
+      var active = stop.id === bestId;
+      if (stop.display === 'hotspot') {
+        if (seq.hotspots[stop.id]) this.setHotspotVisible(seq.hotspots[stop.id], active);
+        if (!active && seq.cards[stop.id]) this.setCardVisible(seq.cards[stop.id], false);
+      } else if (seq.cards[stop.id]) {
+        this.setCardVisible(seq.cards[stop.id], active);
+      }
+    }
   };
 
   HeroScrollCar.prototype.setCardVisible = function (card, visible) {
     card.classList.toggle('is-visible', visible);
+    if (!visible) card.classList.remove('is-open');
     card.setAttribute('aria-hidden', visible ? 'false' : 'true');
+  };
+
+  HeroScrollCar.prototype.setHotspotVisible = function (marker, visible) {
+    marker.classList.toggle('is-visible', visible);
+    marker.setAttribute('aria-hidden', visible ? 'false' : 'true');
+    marker.setAttribute('tabindex', visible ? '0' : '-1');
+    if (!visible) { marker.classList.remove('is-active'); marker.setAttribute('aria-expanded', 'false'); }
+  };
+
+  /* ---- hotspots: pulsing dot + line + label, click opens the product card ---- */
+
+  HeroScrollCar.prototype.positionHotspots = function () {
+    var seq = this.sequence;
+    if (!seq || !seq.cover) return;
+    var ids = Object.keys(seq.hotspots);
+    for (var i = 0; i < ids.length; i++) {
+      var stop = seq.stopsById[ids[i]];
+      var marker = seq.hotspots[ids[i]];
+      if (!stop) continue;
+      // Image-space percentages → stage pixels, through the same "cover" mapping as the canvas.
+      var x = clamp(seq.cover.ox + seq.cover.dw * stop.x / 100, 24, seq.width - 24);
+      var y = clamp(seq.cover.oy + seq.cover.dh * stop.y / 100, 24, seq.height - 24);
+      marker.style.left = x.toFixed(1) + 'px';
+      marker.style.top = y.toFixed(1) + 'px';
+    }
+    if (seq.openCard) this.placeHotspotCard(seq.openCard);
+  };
+
+  HeroScrollCar.prototype.placeHotspotCard = function (id) {
+    var seq = this.sequence;
+    var card = seq.cards[id];
+    var marker = seq.hotspots[id];
+    var stop = seq.stopsById[id];
+    if (!card || !marker || !stop) return;
+    var mx = parseFloat(marker.style.left) || 0;
+    var my = parseFloat(marker.style.top) || 0;
+    var cardWidth = card.offsetWidth || 320;
+    var cardHeight = card.offsetHeight || 360;
+    var left = stop.side === 'left' ? mx - HOTSPOT_CARD_GAP - cardWidth : mx + HOTSPOT_CARD_GAP;
+    left = clamp(left, 16, Math.max(16, seq.width - cardWidth - 16));
+    var top = clamp(my - cardHeight / 2, 16, Math.max(16, seq.height - cardHeight - 16));
+    card.style.left = left.toFixed(1) + 'px';
+    card.style.top = top.toFixed(1) + 'px';
+  };
+
+  HeroScrollCar.prototype.openHotspotCard = function (id) {
+    var seq = this.sequence;
+    if (!seq || !seq.cards[id]) return;
+    if (seq.openCard && seq.openCard !== id) this.closeHotspotCard();
+    seq.openCard = id;
+    seq.openAtTarget = seq.target;
+    this.placeHotspotCard(id);
+    var card = seq.cards[id];
+    card.classList.add('is-visible', 'is-open');
+    card.setAttribute('aria-hidden', 'false');
+    var marker = seq.hotspots[id];
+    if (marker) { marker.classList.add('is-active'); marker.setAttribute('aria-expanded', 'true'); }
+    var close = card.querySelector('[data-hsc-close]');
+    if (close) close.focus({ preventScroll: true });
+  };
+
+  HeroScrollCar.prototype.closeHotspotCard = function (returnFocus) {
+    var seq = this.sequence;
+    if (!seq || !seq.openCard) return;
+    var id = seq.openCard;
+    seq.openCard = null;
+    var card = seq.cards[id];
+    if (card) { card.classList.remove('is-visible', 'is-open'); card.setAttribute('aria-hidden', 'true'); }
+    var marker = seq.hotspots[id];
+    if (marker) {
+      marker.classList.remove('is-active');
+      marker.setAttribute('aria-expanded', 'false');
+      if (returnFocus) marker.focus({ preventScroll: true });
+    }
+  };
+
+  HeroScrollCar.prototype.setupHotspots = function () {
+    var self = this;
+    this.addEventListener('click', function (event) {
+      var seq = self.sequence;
+      if (!seq) return;
+      var marker = event.target.closest('[data-hsc-hotspot]');
+      if (marker) {
+        event.preventDefault();
+        var id = marker.getAttribute('data-stop-id');
+        if (seq.openCard === id) self.closeHotspotCard(true);
+        else self.openHotspotCard(id);
+        return;
+      }
+      if (event.target.closest('[data-hsc-close]')) { event.preventDefault(); self.closeHotspotCard(true); return; }
+      if (seq.openCard && !event.target.closest('[data-hsc-card]')) self.closeHotspotCard();
+    });
+    this.onKeydown = function (event) {
+      if (event.key === 'Escape' && self.sequence && self.sequence.openCard) self.closeHotspotCard(true);
+    };
+    document.addEventListener('keydown', this.onKeydown);
+  };
+
+  /* ---- snap: settle on the exact stop frame when the user stops scrolling in its range ---- */
+
+  HeroScrollCar.prototype.scheduleSnap = function () {
+    var self = this;
+    var seq = this.sequence;
+    if (!seq || !this.config.snapToStops) return;
+    clearTimeout(seq.snapTimer);
+    seq.snapTimer = setTimeout(function () { self.snapToNearestStop(); }, SNAP_IDLE_MS);
+  };
+
+  HeroScrollCar.prototype.snapToNearestStop = function () {
+    var seq = this.sequence;
+    if (!seq || seq.destroyed || !seq.inView) return;
+    var range = this.scrollRange();
+    var scrolled = window.pageYOffset - range.top;
+    if (scrolled <= range.heroPx || scrolled >= range.distance) return; // hero phase or past the sequence
+    if (seq.target >= seq.total - 0.5) return;                          // the very end never pulls back
+    var stops = this.config.stops;
+    var best = null;
+    var bestDistance = Infinity;
+    for (var i = 0; i < stops.length; i++) {
+      var distance = Math.abs(seq.target - stops[i].frame);
+      if (distance <= this.config.stopRange && distance < bestDistance) { best = stops[i]; bestDistance = distance; }
+    }
+    if (!best || bestDistance < SNAP_MIN_DISTANCE) return;
+    this.scrollToFrame(best.frame, this.mqReduced.matches ? 'auto' : 'smooth');
   };
 
   /* ------------------------------------------------------------------ cart */
@@ -680,7 +841,11 @@
       if (!card) return;
       var id = card.getAttribute('data-stop-id');
       for (var i = 0; i < self.config.stops.length; i++) {
-        if (self.config.stops[i].id === id) { self.scrollToFrame(self.config.stops[i].frame, 'smooth'); break; }
+        if (self.config.stops[i].id === id) {
+          self.scrollToFrame(self.config.stops[i].frame, 'smooth');
+          if (self.config.stops[i].display === 'hotspot') setTimeout(function () { self.openHotspotCard(id); }, 900);
+          break;
+        }
       }
     };
     document.addEventListener('shopify:block:select', this.onBlockSelect);
