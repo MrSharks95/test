@@ -1,0 +1,560 @@
+{% comment %}
+  ==========================================================================================
+  HERO SCROLL CAR — hero vidéo « allumage » + séquence d'images pilotée au scroll
+  ==========================================================================================
+  Fichiers : sections/hero-scroll-car.liquid · assets/hero-scroll-car.js · assets/hero-scroll-car.css
+  (le JS et le CSS ne sont chargés que par cette section).
+
+  ASSETS ATTENDUS DANS /assets
+    hero-ignition.mp4   vidéo 16:9, 8 s, sans son (dernière frame = voiture allumée de face)
+    hero-ignition.mp3   son du moteur synchronisé avec la vidéo
+    hero-poster.jpg     image de la voiture allumée de face (= dernière frame de la vidéo = f_0001)
+    f_0001.webp … f_NNNN.webp   séquence 1920 px de large, 16:9, numérotation sur 4 chiffres
+    stop-carrosserie.jpg, stop-interieur.jpg, stop-jante.jpg   images statiques pour mobile
+                        (utilisées si aucune image n'est choisie dans le bloc « Arrêt caméra »)
+
+  RÉGLER LES FRAMES D'ARRÊT
+    1. « Nombre total de frames » = numéro de la dernière image (f_0240.webp → 240).
+    2. Dans chaque bloc « Arrêt caméra » : la « Frame de l'arrêt » est le numéro de l'image où la
+       caméra s'immobilise (carrosserie = X, intérieur = Y, jante = Z). Le « Côté de la carte » est
+       le côté vide de l'image à cet instant (carrosserie : droite, intérieur : gauche, jante : droite).
+    3. « Plage d'apparition » : la carte est visible de (frame − plage) à (frame + plage).
+       Les plages de deux arrêts ne doivent pas se chevaucher ; entre deux arrêts, la voiture est seule.
+    4. « Hauteur de la séquence » (N) : la séquence occupe N × 100vh de défilement. 5 est confortable.
+    5. Dans l'éditeur de thème, sélectionner un bloc « Arrêt caméra » fait défiler la page jusqu'à sa frame :
+       pratique pour vérifier la position de la carte.
+
+  REMPLACER LES ASSETS
+    Uploader les nouveaux fichiers sous le même nom dans /assets, ou changer les noms dans le groupe
+    « Fichiers (dans /assets) ». Les URL CDN des frames sont reconstruites à partir de l'URL de la
+    première image : garder la même largeur de numérotation (f_0001 → 4 chiffres) et la même extension.
+
+  COMPORTEMENTS
+    Desktop : hero vidéo → textes en fondu à la fin de la vidéo → séquence sticky au scroll → cartes produit.
+    Mobile (< 768 px) : hero vidéo, puis les 3 produits empilés avec leur image statique (aucune frame chargée).
+    prefers-reduced-motion : même rendu que mobile sur toute largeur ; la vidéo ne démarre pas seule
+    (poster + textes affichés, le bouton son lance vidéo + son à la demande).
+  ==========================================================================================
+{% endcomment %}
+
+{{ 'hero-scroll-car.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'hero-scroll-car.js' | asset_url }}" defer="defer"></script>
+
+{%- liquid
+  assign s = section.settings
+  assign frames_total = s.frames_total | default: 240
+  assign first_frame_url = s.frame_first_file | asset_url
+  assign poster_url = s.poster_file | asset_url
+  assign video_url = s.video_file | asset_url
+  assign audio_url = s.audio_file | asset_url
+  assign heading_tag = s.heading_tag | default: 'h1'
+  assign cart_add_url = routes.cart_add_url | append: '.js'
+  assign cart_url = routes.cart_url | append: '.js'
+-%}
+
+<hero-scroll-car
+  class="hsc"
+  id="hsc-{{ section.id }}"
+  data-section-id="{{ section.id }}"
+  data-mode="static"
+  style="--hsc-accent: {{ s.accent_color | default: '#FF7A1A' }}; --hsc-n: {{ s.scroll_multiplier | default: 5 }};"
+>
+  <script type="application/json" data-hsc-config>
+    {
+      "framesTotal": {{ frames_total }},
+      "firstFrameUrl": {{ first_frame_url | json }},
+      "posterUrl": {{ poster_url | json }},
+      "stopRange": {{ s.stop_range | default: 40 }},
+      "priorityCount": {{ s.priority_count | default: 30 }},
+      "cartAddUrl": {{ cart_add_url | json }},
+      "cartUrl": {{ cart_url | json }},
+      "rootUrl": {{ routes.root_url | json }},
+      "stops": [
+        {%- for block in section.blocks -%}
+          {
+            "id": {{ block.id | json }},
+            "frame": {{ block.settings.frame | default: 1 }},
+            "side": {{ block.settings.side | default: 'right' | json }}
+          }{%- unless forloop.last -%},{%- endunless -%}
+        {%- endfor -%}
+      ],
+      "texts": {
+        "add": {{ s.text_add | json }},
+        "added": {{ s.text_added | json }},
+        "error": {{ s.text_error | json }},
+        "soundOn": {{ s.text_sound_on | json }},
+        "soundOff": {{ s.text_sound_off | json }}
+      }
+    }
+  </script>
+
+  {%- comment -%} ---------- Partie 1 : hero allumage ---------- {%- endcomment -%}
+  <section class="hsc-hero" data-hsc-hero aria-label="{{ s.heading | escape }}">
+    <video
+      class="hsc-video"
+      data-hsc-video
+      autoplay
+      muted
+      playsinline
+      preload="auto"
+      poster="{{ poster_url }}"
+      disablepictureinpicture
+      disableremoteplayback
+      aria-hidden="true"
+      tabindex="-1"
+    >
+      <source src="{{ video_url }}" type="video/mp4">
+    </video>
+    <audio data-hsc-audio preload="none">
+      <source src="{{ audio_url }}" type="audio/mpeg">
+    </audio>
+    <div class="hsc-hero__shade" aria-hidden="true"></div>
+
+    <div class="hsc-overlay" data-hsc-overlay>
+      {%- if s.heading != blank -%}
+        <{{ heading_tag }} class="hsc-title">{{ s.heading | escape }}</{{ heading_tag }}>
+      {%- endif -%}
+      {%- if s.subheading != blank -%}
+        <p class="hsc-subtitle">{{ s.subheading | escape }}</p>
+      {%- endif -%}
+      {%- if s.cta_label != blank -%}
+        <a class="hsc-btn hsc-btn--primary" href="{{ s.cta_link | default: '#' }}" data-hsc-cta>{{ s.cta_label | escape }}</a>
+      {%- endif -%}
+    </div>
+
+    {%- if s.show_sound -%}
+      <button
+        type="button"
+        class="hsc-sound"
+        data-hsc-sound
+        aria-pressed="false"
+        aria-label="{{ s.text_sound_on | escape }}"
+        title="{{ s.text_sound_on | escape }}"
+      >
+        <svg class="hsc-sound__icon hsc-sound__icon--off" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
+          <path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/>
+          <path d="M16 9l5 6M21 9l-5 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+        </svg>
+        <svg class="hsc-sound__icon hsc-sound__icon--on" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
+          <path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/>
+          <path d="M16 8.5a4.5 4.5 0 0 1 0 7M18.5 6a8 8 0 0 1 0 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+        </svg>
+      </button>
+    {%- endif -%}
+
+    <div class="hsc-scroll-hint" aria-hidden="true">
+      <span>{{ s.scroll_hint | escape }}</span>
+      <i></i>
+    </div>
+  </section>
+
+  {%- comment -%} ---------- Partie 2 : séquence au scroll (desktop) ---------- {%- endcomment -%}
+  <section class="hsc-sequence" data-hsc-sequence aria-label="{{ s.sequence_label | escape }}">
+    <div class="hsc-stage" data-hsc-stage>
+      <img
+        class="hsc-stage__fallback"
+        data-hsc-fallback
+        src="{{ poster_url }}"
+        alt=""
+        width="1920"
+        height="1080"
+        decoding="async"
+        aria-hidden="true"
+      >
+      <canvas class="hsc-canvas" data-hsc-canvas role="img" aria-label="{{ s.sequence_label | escape }}"></canvas>
+
+      {%- for block in section.blocks -%}
+        {%- liquid
+          assign product = block.settings.product
+          assign variant = product.selected_or_first_available_variant
+          assign side = block.settings.side | default: 'right'
+        -%}
+        <article
+          class="hsc-card hsc-card--{{ side }}"
+          data-hsc-card
+          data-stop-id="{{ block.id }}"
+          aria-hidden="true"
+          {{ block.shopify_attributes }}
+        >
+          {%- if block.settings.title != blank -%}
+            <p class="hsc-card__kicker">{{ block.settings.title | escape }}</p>
+          {%- endif -%}
+          {%- if product != blank -%}
+            {%- if product.featured_image -%}
+              <a class="hsc-card__media" href="{{ product.url }}" tabindex="-1" aria-hidden="true">
+                {{ product.featured_image | image_url: width: 640 | image_tag: loading: 'lazy', widths: '320, 480, 640', sizes: '200px', alt: '' }}
+              </a>
+            {%- endif -%}
+            <h2 class="hsc-card__title"><a href="{{ product.url }}">{{ product.title | escape }}</a></h2>
+            {%- if block.settings.tagline != blank -%}
+              <p class="hsc-card__tagline">{{ block.settings.tagline | escape }}</p>
+            {%- endif -%}
+            <p class="hsc-card__price">
+              <span>{{ variant.price | money }}</span>
+              {%- if variant.compare_at_price > variant.price -%}
+                <s>{{ variant.compare_at_price | money }}</s>
+              {%- endif -%}
+            </p>
+            <button
+              type="button"
+              class="hsc-btn hsc-btn--primary hsc-card__add"
+              data-hsc-add
+              data-variant-id="{{ variant.id }}"
+              {% unless product.available %}disabled{% endunless %}
+            >
+              <span data-hsc-add-label>{% if product.available %}{{ s.text_add | escape }}{% else %}{{ s.text_unavailable | escape }}{% endif %}</span>
+            </button>
+            <p class="hsc-card__msg" role="status" aria-live="polite" data-hsc-msg></p>
+          {%- else -%}
+            <p class="hsc-card__tagline">Choisissez un produit dans l’éditeur de thème.</p>
+          {%- endif -%}
+        </article>
+      {%- endfor -%}
+    </div>
+  </section>
+
+  {%- comment -%} ---------- Mobile / reduced-motion : produits empilés avec image statique ---------- {%- endcomment -%}
+  <section class="hsc-static" data-hsc-static aria-label="{{ s.sequence_label | escape }}">
+    {%- for block in section.blocks -%}
+      {%- liquid
+        assign product = block.settings.product
+        assign variant = product.selected_or_first_available_variant
+      -%}
+      <article class="hsc-stop">
+        <div class="hsc-stop__media">
+          {%- if block.settings.mobile_image != blank -%}
+            {{ block.settings.mobile_image | image_url: width: 1200 | image_tag: loading: 'lazy', widths: '480, 768, 1200', sizes: '(min-width: 768px) 60vw, 100vw', alt: block.settings.title }}
+          {%- else -%}
+            <img
+              src="{{ block.settings.mobile_image_file | asset_url }}"
+              alt="{{ block.settings.title | escape }}"
+              width="1920"
+              height="1080"
+              loading="lazy"
+              decoding="async"
+            >
+          {%- endif -%}
+        </div>
+        <div class="hsc-card hsc-card--static">
+          {%- if block.settings.title != blank -%}
+            <p class="hsc-card__kicker">{{ block.settings.title | escape }}</p>
+          {%- endif -%}
+          {%- if product != blank -%}
+            {%- if product.featured_image -%}
+              <a class="hsc-card__media" href="{{ product.url }}" tabindex="-1" aria-hidden="true">
+                {{ product.featured_image | image_url: width: 640 | image_tag: loading: 'lazy', widths: '320, 480, 640', sizes: '160px', alt: '' }}
+              </a>
+            {%- endif -%}
+            <h2 class="hsc-card__title"><a href="{{ product.url }}">{{ product.title | escape }}</a></h2>
+            {%- if block.settings.tagline != blank -%}
+              <p class="hsc-card__tagline">{{ block.settings.tagline | escape }}</p>
+            {%- endif -%}
+            <p class="hsc-card__price">
+              <span>{{ variant.price | money }}</span>
+              {%- if variant.compare_at_price > variant.price -%}
+                <s>{{ variant.compare_at_price | money }}</s>
+              {%- endif -%}
+            </p>
+            <button
+              type="button"
+              class="hsc-btn hsc-btn--primary hsc-card__add"
+              data-hsc-add
+              data-variant-id="{{ variant.id }}"
+              {% unless product.available %}disabled{% endunless %}
+            >
+              <span data-hsc-add-label>{% if product.available %}{{ s.text_add | escape }}{% else %}{{ s.text_unavailable | escape }}{% endif %}</span>
+            </button>
+            <p class="hsc-card__msg" role="status" aria-live="polite" data-hsc-msg></p>
+          {%- else -%}
+            <p class="hsc-card__tagline">Choisissez un produit dans l’éditeur de thème.</p>
+          {%- endif -%}
+        </div>
+      </article>
+    {%- endfor -%}
+  </section>
+
+  <noscript>
+    <style>
+      .hsc-sequence { display: none !important; }
+      .hsc-static { display: grid !important; }
+      .hsc-hero .hsc-overlay { opacity: 1 !important; transform: none !important; }
+    </style>
+  </noscript>
+</hero-scroll-car>
+
+{% schema %}
+{
+  "name": "Hero voiture + scroll",
+  "tag": "section",
+  "class": "section-hero-scroll-car",
+  "max_blocks": 3,
+  "disabled_on": {
+    "groups": ["header", "footer"]
+  },
+  "settings": [
+    {
+      "type": "header",
+      "content": "Hero — allumage"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Titre",
+      "default": "Allumez le contact."
+    },
+    {
+      "type": "select",
+      "id": "heading_tag",
+      "label": "Balise du titre",
+      "options": [
+        { "value": "h1", "label": "H1 (page d'accueil)" },
+        { "value": "h2", "label": "H2" }
+      ],
+      "default": "h1"
+    },
+    {
+      "type": "textarea",
+      "id": "subheading",
+      "label": "Sous-titre",
+      "default": "Un garage, une voiture, trois gestes : carrosserie, intérieur, jantes. Des produits pensés pour un résultat net, sans effort."
+    },
+    {
+      "type": "text",
+      "id": "cta_label",
+      "label": "Texte du bouton",
+      "default": "Découvrir les produits"
+    },
+    {
+      "type": "url",
+      "id": "cta_link",
+      "label": "Lien du bouton",
+      "info": "Laissez vide pour faire défiler jusqu'au premier arrêt."
+    },
+    {
+      "type": "checkbox",
+      "id": "show_sound",
+      "label": "Afficher le bouton son",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "text_sound_on",
+      "label": "Libellé « activer le son »",
+      "default": "Activer le son"
+    },
+    {
+      "type": "text",
+      "id": "text_sound_off",
+      "label": "Libellé « couper le son »",
+      "default": "Couper le son"
+    },
+    {
+      "type": "text",
+      "id": "scroll_hint",
+      "label": "Indicateur de défilement",
+      "default": "Faire défiler"
+    },
+    {
+      "type": "header",
+      "content": "Séquence au scroll"
+    },
+    {
+      "type": "range",
+      "id": "scroll_multiplier",
+      "label": "Hauteur de la séquence (× 100vh)",
+      "min": 3,
+      "max": 10,
+      "step": 1,
+      "default": 5
+    },
+    {
+      "type": "number",
+      "id": "frames_total",
+      "label": "Nombre total de frames",
+      "default": 240,
+      "info": "Numéro de la dernière image (f_0240.webp → 240)."
+    },
+    {
+      "type": "range",
+      "id": "stop_range",
+      "label": "Plage d'apparition des cartes (± frames)",
+      "min": 10,
+      "max": 120,
+      "step": 5,
+      "default": 40
+    },
+    {
+      "type": "number",
+      "id": "priority_count",
+      "label": "Frames chargées en priorité",
+      "default": 30,
+      "info": "Chargées avant les autres, dès l'arrivée sur la page."
+    },
+    {
+      "type": "text",
+      "id": "sequence_label",
+      "label": "Description accessible de la séquence",
+      "default": "Dodge Challenger noire dans un garage : carrosserie, habitacle puis jante"
+    },
+    {
+      "type": "header",
+      "content": "Fichiers (dans /assets)"
+    },
+    {
+      "type": "text",
+      "id": "video_file",
+      "label": "Vidéo d'allumage",
+      "default": "hero-ignition.mp4"
+    },
+    {
+      "type": "text",
+      "id": "audio_file",
+      "label": "Son du moteur",
+      "default": "hero-ignition.mp3"
+    },
+    {
+      "type": "text",
+      "id": "poster_file",
+      "label": "Image poster",
+      "default": "hero-poster.jpg"
+    },
+    {
+      "type": "text",
+      "id": "frame_first_file",
+      "label": "Première image de la séquence",
+      "default": "f_0001.webp",
+      "info": "Les URL des autres images sont construites en remplaçant le numéro."
+    },
+    {
+      "type": "header",
+      "content": "Cartes produit"
+    },
+    {
+      "type": "text",
+      "id": "text_add",
+      "label": "Bouton d'ajout",
+      "default": "Ajouter au panier"
+    },
+    {
+      "type": "text",
+      "id": "text_added",
+      "label": "Confirmation d'ajout",
+      "default": "Ajouté au panier"
+    },
+    {
+      "type": "text",
+      "id": "text_unavailable",
+      "label": "Produit indisponible",
+      "default": "Indisponible"
+    },
+    {
+      "type": "text",
+      "id": "text_error",
+      "label": "Message d'erreur",
+      "default": "Impossible d'ajouter ce produit. Réessayez."
+    },
+    {
+      "type": "header",
+      "content": "Style"
+    },
+    {
+      "type": "color",
+      "id": "accent_color",
+      "label": "Couleur d'accent",
+      "default": "#FF7A1A"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "stop",
+      "name": "Arrêt caméra",
+      "limit": 3,
+      "settings": [
+        {
+          "type": "product",
+          "id": "product",
+          "label": "Produit"
+        },
+        {
+          "type": "number",
+          "id": "frame",
+          "label": "Frame de l'arrêt",
+          "default": 60,
+          "info": "Numéro de l'image où la caméra s'immobilise."
+        },
+        {
+          "type": "select",
+          "id": "side",
+          "label": "Côté de la carte",
+          "options": [
+            { "value": "left", "label": "Gauche" },
+            { "value": "right", "label": "Droite" }
+          ],
+          "default": "right"
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Titre court",
+          "default": "Carrosserie"
+        },
+        {
+          "type": "text",
+          "id": "tagline",
+          "label": "Accroche (une ligne)",
+          "default": "Un brillant profond, sans traces."
+        },
+        {
+          "type": "image_picker",
+          "id": "mobile_image",
+          "label": "Image statique (mobile)"
+        },
+        {
+          "type": "text",
+          "id": "mobile_image_file",
+          "label": "… ou fichier dans /assets",
+          "default": "stop-carrosserie.jpg",
+          "info": "Utilisé si aucune image n'est choisie ci-dessus."
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Hero voiture + scroll",
+      "blocks": [
+        {
+          "type": "stop",
+          "settings": {
+            "frame": 60,
+            "side": "right",
+            "title": "Carrosserie",
+            "tagline": "Un brillant profond, sans traces.",
+            "mobile_image_file": "stop-carrosserie.jpg"
+          }
+        },
+        {
+          "type": "stop",
+          "settings": {
+            "frame": 140,
+            "side": "left",
+            "title": "Intérieur",
+            "tagline": "Plastiques et cuirs nourris, odeur de neuf.",
+            "mobile_image_file": "stop-interieur.jpg"
+          }
+        },
+        {
+          "type": "stop",
+          "settings": {
+            "frame": 230,
+            "side": "right",
+            "title": "Jante",
+            "tagline": "Jantes nettes, étriers propres, sans frotter.",
+            "mobile_image_file": "stop-jante.jpg"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}
