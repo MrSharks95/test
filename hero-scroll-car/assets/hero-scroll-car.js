@@ -1,12 +1,16 @@
 /*
- * Hero Scroll Car — ignition hero video + scroll-driven image sequence.
+ * Hero Scroll Car — ignition hero video + scroll-driven image sequence, in ONE fixed scene.
  * Vanilla JS, no dependencies. Loaded only by sections/hero-scroll-car.liquid.
  *
  * Structure:
  *   <hero-scroll-car data-mode="static|scroll">   custom element, one per section instance
- *     [data-hsc-hero]      video + audio + sound button + overlay texts
- *     [data-hsc-sequence]  tall scroll container, sticky stage with the <canvas>
+ *     [data-hsc-scroller]  tall container that provides the scroll distance
+ *       [data-hsc-stage]   sticky 100vh scene: video, canvas (frames), overlay texts, sound button, cards
  *     [data-hsc-static]    stacked fallback (mobile / reduced motion / no JS)
+ *
+ * Scroll phases inside the scroller (desktop):
+ *   0 → HERO_SCROLL_RATIO × viewport : the video stays on its last frame, texts fade out (--hsc-hero-o)
+ *   then                              : frames 1 → N are scrubbed on the canvas, cards appear at the stops
  */
 (function () {
   'use strict';
@@ -22,6 +26,7 @@
   var BACKGROUND_CONCURRENCY = 3; // parallel downloads for the rest
   var AUDIO_DRIFT_SECONDS = 0.25; // resync audio when it drifts further than this
   var DECODE_AHEAD = 3;           // frames decoded ahead of the current one
+  var HERO_SCROLL_RATIO = 0.4;    // share of a viewport height used to fade the hero texts before scrubbing
 
   function clamp(value, min, max) {
     return Math.min(max, Math.max(min, value));
@@ -217,7 +222,7 @@
       this.scrollToFrame(this.config.stops[0].frame, behavior);
       return;
     }
-    var target = this.querySelector('[data-hsc-static]') || this.querySelector('[data-hsc-sequence]');
+    var target = this.querySelector('[data-hsc-static]') || this.querySelector('[data-hsc-scroller]');
     if (target) target.scrollIntoView({ behavior: behavior, block: 'start' });
   };
 
@@ -227,7 +232,7 @@
     if (this.sequence) return;
     var self = this;
     var config = this.config;
-    var section = this.querySelector('[data-hsc-sequence]');
+    var section = this.querySelector('[data-hsc-scroller]');
     var stage = this.querySelector('[data-hsc-stage]');
     var canvas = this.querySelector('[data-hsc-canvas]');
     if (!section || !stage || !canvas) return;
@@ -272,11 +277,12 @@
     var cards = stage.querySelectorAll('[data-hsc-card]');
     for (var i = 0; i < cards.length; i++) seq.cards[cards[i].getAttribute('data-stop-id')] = cards[i];
 
-    // Draw the poster right away so the stage is never empty, even before f_0001 arrives.
-    var fallback = this.querySelector('[data-hsc-fallback]');
-    if (fallback) {
-      if (fallback.complete && fallback.naturalWidth) seq.poster = fallback;
-      else fallback.addEventListener('load', function () { seq.poster = fallback; if (seq.drawn === -1) self.drawFrame(Math.round(seq.current)); });
+    // The poster (= last video frame = f_0001) is the safety net drawn until the first frame arrives.
+    if (config.posterUrl) {
+      var poster = new Image();
+      poster.decoding = 'async';
+      poster.onload = function () { seq.poster = poster; if (seq.drawn === -1) self.drawFrame(Math.round(seq.current)); };
+      poster.src = config.posterUrl;
     }
 
     this.resizeCanvas();
@@ -313,6 +319,8 @@
     if (seq.intersection) seq.intersection.disconnect();
     var ids = Object.keys(seq.cards);
     for (var i = 0; i < ids.length; i++) this.setCardVisible(seq.cards[ids[i]], false);
+    seq.stage.classList.remove('is-scrubbing');
+    seq.stage.style.removeProperty('--hsc-hero-o');
     this.sequence = null;
   };
 
@@ -470,12 +478,14 @@
     return 1 + clamp(progress, 0, 1) * (this.sequence.total - 1);
   };
 
+  // Scroll geometry: [top, top + heroPx] fades the hero texts, [top + heroPx, top + distance] scrubs the frames.
   HeroScrollCar.prototype.scrollRange = function () {
     var seq = this.sequence;
     var rect = seq.section.getBoundingClientRect();
     var top = rect.top + window.pageYOffset;
     var distance = Math.max(1, rect.height - window.innerHeight);
-    return { top: top, distance: distance };
+    var heroPx = Math.min(Math.round(window.innerHeight * HERO_SCROLL_RATIO), distance * 0.5);
+    return { top: top, distance: distance, heroPx: heroPx, frames: Math.max(1, distance - heroPx) };
   };
 
   HeroScrollCar.prototype.scrollToFrame = function (frame, behavior) {
@@ -483,7 +493,7 @@
     if (!seq) return;
     var range = this.scrollRange();
     var progress = (clamp(frame, 1, seq.total) - 1) / Math.max(1, seq.total - 1);
-    window.scrollTo({ top: Math.round(range.top + progress * range.distance), behavior: behavior || 'smooth' });
+    window.scrollTo({ top: Math.round(range.top + range.heroPx + progress * range.frames), behavior: behavior || 'smooth' });
   };
 
   HeroScrollCar.prototype.startLoop = function () {
@@ -499,8 +509,11 @@
     seq.rafId = 0;
 
     var range = this.scrollRange();
-    var progress = (window.pageYOffset - range.top) / range.distance;
+    var scrolled = window.pageYOffset - range.top;
+    var heroProgress = clamp(scrolled / range.heroPx, 0, 1);
+    var progress = (scrolled - range.heroPx) / range.frames;
     seq.target = this.progressToFrame(progress);
+    this.updateHeroPhase(scrolled, heroProgress);
 
     // Ease toward the target, frame-rate independent (same feel at 60 Hz and 120 Hz).
     var elapsed = seq.lastTime ? Math.min(100, now - seq.lastTime) : 16.7;
@@ -519,6 +532,24 @@
 
     if (seq.current !== seq.target && seq.inView) {
       seq.rafId = requestAnimationFrame(this.tick.bind(this));
+    }
+  };
+
+  /* ---- hero phase (texts fade, canvas takes over the video) ------------- */
+
+  HeroScrollCar.prototype.updateHeroPhase = function (scrolled, heroProgress) {
+    var seq = this.sequence;
+    var opacity = (1 - heroProgress).toFixed(3);
+    if (opacity !== seq.heroOpacity) {
+      seq.heroOpacity = opacity;
+      seq.stage.style.setProperty('--hsc-hero-o', opacity);
+    }
+    // As soon as the page moves, the canvas (showing f_0001 = last video frame) covers the video.
+    var scrubbing = scrolled > 1;
+    if (scrubbing !== seq.scrubbing) {
+      seq.scrubbing = scrubbing;
+      seq.stage.classList.toggle('is-scrubbing', scrubbing);
+      if (scrubbing && this.video && !this.video.paused && !this.video.ended) this.video.pause();
     }
   };
 

@@ -32,7 +32,9 @@
     première image : garder la même largeur de numérotation (f_0001 → 4 chiffres) et la même extension.
 
   COMPORTEMENTS
-    Desktop : hero vidéo → textes en fondu à la fin de la vidéo → séquence sticky au scroll → cartes produit.
+    Desktop : la vidéo d'allumage et la séquence partagent la même scène fixe (sticky). La vidéo se fige
+    sur sa dernière image (= f_0001) ; au scroll, les textes s'effacent sur ~40 % d'écran puis les frames
+    défilent sans aucun déplacement de l'image → continuité parfaite bannière → plan-séquence.
     Mobile (< 768 px) : hero vidéo, puis les 3 produits empilés avec leur image statique (aucune frame chargée).
     prefers-reduced-motion : même rendu que mobile sur toute largeur ; la vidéo ne démarre pas seule
     (poster + textes affichés, le bouton son lance vidéo + son à la demande).
@@ -90,82 +92,74 @@
     }
   </script>
 
-  {%- comment -%} ---------- Partie 1 : hero allumage ---------- {%- endcomment -%}
-  <section class="hsc-hero" data-hsc-hero aria-label="{{ s.heading | escape }}">
-    <video
-      class="hsc-video"
-      data-hsc-video
-      autoplay
-      muted
-      playsinline
-      preload="auto"
-      poster="{{ poster_url }}"
-      disablepictureinpicture
-      disableremoteplayback
-      aria-hidden="true"
-      tabindex="-1"
-    >
-      <source src="{{ video_url }}" type="video/mp4">
-    </video>
-    {%- if s.audio_file != blank -%}
-      <audio data-hsc-audio preload="none">
-        <source src="{{ audio_url }}" type="audio/mpeg">
-      </audio>
-    {%- endif -%}
-    <div class="hsc-hero__shade" aria-hidden="true"></div>
-
-    <div class="hsc-overlay" data-hsc-overlay>
-      {%- if s.heading != blank -%}
-        <{{ heading_tag }} class="hsc-title">{{ s.heading | escape }}</{{ heading_tag }}>
-      {%- endif -%}
-      {%- if s.subheading != blank -%}
-        <p class="hsc-subtitle">{{ s.subheading | escape }}</p>
-      {%- endif -%}
-      {%- if s.cta_label != blank -%}
-        <a class="hsc-btn hsc-btn--primary" href="{{ s.cta_link | default: '#' }}" data-hsc-cta>{{ s.cta_label | escape }}</a>
-      {%- endif -%}
-    </div>
-
-    {%- if s.show_sound -%}
-      <button
-        type="button"
-        class="hsc-sound"
-        data-hsc-sound
-        aria-pressed="false"
-        aria-label="{{ s.text_sound_on | escape }}"
-        title="{{ s.text_sound_on | escape }}"
-      >
-        <svg class="hsc-sound__icon hsc-sound__icon--off" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
-          <path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/>
-          <path d="M16 9l5 6M21 9l-5 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/>
-        </svg>
-        <svg class="hsc-sound__icon hsc-sound__icon--on" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
-          <path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/>
-          <path d="M16 8.5a4.5 4.5 0 0 1 0 7M18.5 6a8 8 0 0 1 0 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/>
-        </svg>
-      </button>
-    {%- endif -%}
-
-    <div class="hsc-scroll-hint" aria-hidden="true">
-      <span>{{ s.scroll_hint | escape }}</span>
-      <i></i>
-    </div>
-  </section>
-
-  {%- comment -%} ---------- Partie 2 : séquence au scroll (desktop) ---------- {%- endcomment -%}
-  <section class="hsc-sequence" data-hsc-sequence aria-label="{{ s.sequence_label | escape }}">
-    <div class="hsc-stage" data-hsc-stage>
-      <img
-        class="hsc-stage__fallback"
-        data-hsc-fallback
-        src="{{ poster_url }}"
-        alt=""
-        width="1920"
-        height="1080"
-        decoding="async"
+  {%- comment -%} ---------- Hero allumage + séquence : une seule scène fixe (sticky) ---------- {%- endcomment -%}
+  {%- comment -%}
+    .hsc-scroller donne la hauteur de défilement ; .hsc-stage reste collé à l'écran.
+    La vidéo se fige sur sa dernière image (= f_0001). Au scroll : les textes s'effacent sur
+    ~40 % d'écran, puis le canvas (qui dessine f_0001 par-dessus la vidéo) scrubbe les frames.
+  {%- endcomment -%}
+  <div class="hsc-scroller" data-hsc-scroller>
+    <section class="hsc-stage" data-hsc-stage data-hsc-hero aria-label="{{ s.heading | escape }}">
+      <video
+        class="hsc-video"
+        data-hsc-video
+        autoplay
+        muted
+        playsinline
+        preload="auto"
+        poster="{{ poster_url }}"
+        disablepictureinpicture
+        disableremoteplayback
         aria-hidden="true"
+        tabindex="-1"
       >
+        <source src="{{ video_url }}" type="video/mp4">
+      </video>
+      {%- if s.audio_file != blank -%}
+        <audio data-hsc-audio preload="none">
+          <source src="{{ audio_url }}" type="audio/mpeg">
+        </audio>
+      {%- endif -%}
+
       <canvas class="hsc-canvas" data-hsc-canvas role="img" aria-label="{{ s.sequence_label | escape }}"></canvas>
+      <div class="hsc-hero__shade" aria-hidden="true"></div>
+
+      <div class="hsc-overlay" data-hsc-overlay>
+        {%- if s.heading != blank -%}
+          <{{ heading_tag }} class="hsc-title">{{ s.heading | escape }}</{{ heading_tag }}>
+        {%- endif -%}
+        {%- if s.subheading != blank -%}
+          <p class="hsc-subtitle">{{ s.subheading | escape }}</p>
+        {%- endif -%}
+        {%- if s.cta_label != blank -%}
+          <a class="hsc-btn hsc-btn--primary" href="{{ s.cta_link | default: '#' }}" data-hsc-cta>{{ s.cta_label | escape }}</a>
+        {%- endif -%}
+      </div>
+
+      {%- if s.show_sound -%}
+        <button
+          type="button"
+          class="hsc-sound"
+          data-hsc-sound
+          aria-pressed="false"
+          aria-label="{{ s.text_sound_on | escape }}"
+          title="{{ s.text_sound_on | escape }}"
+        >
+          <svg class="hsc-sound__icon hsc-sound__icon--off" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
+            <path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/>
+            <path d="M16 9l5 6M21 9l-5 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+          </svg>
+          <svg class="hsc-sound__icon hsc-sound__icon--on" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
+            <path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/>
+            <path d="M16 8.5a4.5 4.5 0 0 1 0 7M18.5 6a8 8 0 0 1 0 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+          </svg>
+        </button>
+      {%- endif -%}
+
+      <div class="hsc-scroll-hint" aria-hidden="true">
+        <span>{{ s.scroll_hint | escape }}</span>
+        <i></i>
+      </div>
 
       {%- for block in section.blocks -%}
         {%- liquid
@@ -214,8 +208,8 @@
           {%- endif -%}
         </article>
       {%- endfor -%}
-    </div>
-  </section>
+    </section>
+  </div>
 
   {%- comment -%} ---------- Mobile / reduced-motion : produits empilés avec image statique ---------- {%- endcomment -%}
   <section class="hsc-static" data-hsc-static aria-label="{{ s.sequence_label | escape }}">
@@ -279,9 +273,11 @@
 
   <noscript>
     <style>
-      .hsc-sequence { display: none !important; }
+      .hsc-scroller { height: auto !important; }
+      .hsc-stage { position: relative !important; height: 100svh !important; }
+      .hsc-canvas, .hsc-stage .hsc-card { display: none !important; }
       .hsc-static { display: grid !important; }
-      .hsc-hero .hsc-overlay { opacity: 1 !important; transform: none !important; }
+      .hsc-overlay { opacity: 1 !important; transform: none !important; }
     </style>
   </noscript>
 </hero-scroll-car>
