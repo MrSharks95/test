@@ -40,23 +40,13 @@
     5. Dans l'éditeur de thème, sélectionner un bloc « Arrêt caméra » fait défiler la page jusqu'à sa frame :
        pratique pour vérifier la position de la carte.
 
-  FLUIDITÉ DU DÉFILEMENT
-    - « Fondu entre les images » (activé par défaut) : entre deux images, le JS dessine un fondu proportionnel
-      à la position de scroll au lieu de sauter de l'une à l'autre ; le mouvement paraît continu même quand
-      un cran de molette avance de plusieurs images. Dès que le scroll s'arrête, l'image se cale sur une
-      image entière (aucun effet de double image au repos).
-    - Le canvas n'est jamais plus fin que les images : une séquence 1280 px sur un écran Retina 1440 px est
-      dessinée en 1280 px (4 × moins de pixels à remplir qu'en 2 × DPR), sans perte de netteté.
-    - Plus d'images = plus fluide mais plus lourd. 248 images / 13 Mo (1280 px) est un bon compromis ;
-      au-delà de ~300 images, baisser la qualité WebP (74 → 65) pour rester sous ~20 Mo.
-
   PASSER LA SÉQUENCE EN 1080p
     tools/extract-frames.sh <video-1080p.mp4> <dossier-sortie> [qualité WebP = 74]
     réutilise la liste des images conservées (tools/sampling.json) : mêmes numéros, mêmes arrêts
     (27 / 82 / 134 / 213 / 245), seule la définition change (1920 × 1080). Le script vérifie que la vidéo a le
     même nombre d'images (1211 à 30 i/s) que l'export d'origine. Uploader ensuite les f_XXXX.webp dans
     /assets à la place des anciens (poids attendu ≈ 2 × : ~26 Mo à qualité 74, ~20 Mo à 65) ; rien d'autre
-    à changer, le canvas s'adapte à la taille des images.
+    à changer, le dessin « cover » s'adapte à la taille des images.
 
   REMPLACER LES ASSETS
     Uploader les nouveaux fichiers sous le même nom dans /assets, ou changer les noms dans le groupe
@@ -103,7 +93,6 @@
       "stopRange": {{ s.stop_range | default: 40 }},
       "priorityCount": {{ s.priority_count | default: 30 }},
       "snapToStops": {% if s.snap_to_stops %}true{% else %}false{% endif %},
-      "blendFrames": {% if s.blend_frames %}true{% else %}false{% endif %},
       "cartAddUrl": {{ cart_add_url | json }},
       "cartUrl": {{ cart_url | json }},
       "rootUrl": {{ routes.root_url | json }},
@@ -448,13 +437,6 @@
       "label": "Aimanter les arrêts",
       "default": true,
       "info": "À l'arrêt du scroll dans la plage d'un arrêt, la séquence se cale sur sa frame exacte."
-    },
-    {
-      "type": "checkbox",
-      "id": "blend_frames",
-      "label": "Fondu entre les images",
-      "default": true,
-      "info": "Entre deux images de la séquence, un fondu proportionnel à la position remplace le saut : défilement plus fluide. À l'arrêt, l'image est toujours nette."
     },
     {
       "type": "number",
