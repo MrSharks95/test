@@ -15,16 +15,17 @@
                         échantillonnée à « mouvement constant » : plus d'images dans les travellings rapides,
                         moins dans les plans fixes, pour un défilement régulier au scroll.
                         Arrêts livrés : carrosserie 27 · porte 82 · habitacle 134 · jante 213 · plan final 245.
-    stop-carrosserie.jpg, stop-interieur.jpg, stop-jante.jpg   images statiques pour mobile
+    stop-carrosserie.jpg, stop-porte.jpg, stop-interieur.jpg, stop-jante.jpg   images statiques pour mobile
                         (utilisées si aucune image n'est choisie dans le bloc « Arrêt caméra »)
 
   RÉGLER LES FRAMES D'ARRÊT
     1. « Nombre total de frames » = numéro de la dernière image (f_0240.webp → 240).
     2. Dans chaque bloc « Arrêt caméra » : la « Frame de l'arrêt » est le numéro de l'image où la
-       caméra s'immobilise (carrosserie = X, intérieur = Y, jante = Z). Le « Côté de la carte » est
+       caméra s'immobilise (carrosserie = 27, portière = 82, intérieur = 134, jante = 213). Le « Côté de la carte » est
        le côté vide de l'image à cet instant. Storyboard par défaut :
          1. carrosserie (3/4 avant, voiture à gauche)      → carte à droite
-         2. passage par la porte conducteur                 → transition, aucun produit
+         2. portière conducteur ouverte                     → point d'intérêt sur le panneau de porte (rond + trait),
+                                                              la carte s'ouvre à droite au clic
          3. habitacle, vue fenêtre passager                 → point d'intérêt (rond + trait côté conducteur),
                                                               la carte s'ouvre à gauche au clic
          4. jante                                           → carte à gauche
@@ -326,7 +327,7 @@
   "name": "Hero voiture + scroll",
   "tag": "section",
   "class": "section-hero-scroll-car",
-  "max_blocks": 3,
+  "max_blocks": 4,
   "disabled_on": {
     "groups": ["header", "footer"]
   },
@@ -355,7 +356,7 @@
       "type": "textarea",
       "id": "subheading",
       "label": "Sous-titre",
-      "default": "Un garage, une voiture, trois gestes : carrosserie, intérieur, jantes. Des produits pensés pour un résultat net, sans effort."
+      "default": "Un garage, une voiture, quatre gestes : carrosserie, portière, habitacle, jantes. Des produits pensés pour un résultat net, sans effort."
     },
     {
       "type": "text",
@@ -520,7 +521,7 @@
     {
       "type": "stop",
       "name": "Arrêt caméra",
-      "limit": 3,
+      "limit": 4,
       "settings": [
         {
           "type": "product",
@@ -617,6 +618,20 @@
             "title": "Carrosserie",
             "tagline": "Un brillant profond, sans traces.",
             "mobile_image_file": "stop-carrosserie.jpg"
+          }
+        },
+        {
+          "type": "stop",
+          "settings": {
+            "frame": 82,
+            "side": "right",
+            "display": "hotspot",
+            "hotspot_x": 15,
+            "hotspot_y": 58,
+            "hotspot_label": "Portière",
+            "title": "Portière",
+            "tagline": "Cuir et Alcantara ravivés, sans résidu.",
+            "mobile_image_file": "stop-porte.jpg"
           }
         },
         {
