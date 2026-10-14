@@ -19,7 +19,13 @@
     1. « Nombre total de frames » = numéro de la dernière image (f_0240.webp → 240).
     2. Dans chaque bloc « Arrêt caméra » : la « Frame de l'arrêt » est le numéro de l'image où la
        caméra s'immobilise (carrosserie = X, intérieur = Y, jante = Z). Le « Côté de la carte » est
-       le côté vide de l'image à cet instant (carrosserie : droite, intérieur : gauche, jante : droite).
+       le côté vide de l'image à cet instant. Storyboard par défaut :
+         1. carrosserie (3/4 avant, voiture à gauche)      → carte à droite
+         2. passage par la porte conducteur                 → transition, aucun produit
+         3. habitacle, vue fenêtre passager                 → point d'intérêt (rond + trait côté conducteur),
+                                                              la carte s'ouvre à gauche au clic
+         4. jante                                           → carte à gauche
+         5. plan final voiture                              → aucun produit, la page continue
     3. « Plage d'apparition » : la carte est visible de (frame − plage) à (frame + plage).
        Les plages de deux arrêts ne doivent pas se chevaucher ; entre deux arrêts, la voiture est seule.
        « Affichage » par arrêt : « Carte latérale » (la carte apparaît seule) ou « Point d'intérêt » (un rond
@@ -614,10 +620,10 @@
           "type": "stop",
           "settings": {
             "frame": 140,
-            "side": "right",
+            "side": "left",
             "display": "hotspot",
-            "hotspot_x": 66,
-            "hotspot_y": 42,
+            "hotspot_x": 54,
+            "hotspot_y": 58,
             "hotspot_label": "Habitacle",
             "title": "Intérieur",
             "tagline": "Plastiques et cuirs nourris, odeur de neuf.",
@@ -628,7 +634,7 @@
           "type": "stop",
           "settings": {
             "frame": 230,
-            "side": "right",
+            "side": "left",
             "title": "Jante",
             "tagline": "Jantes nettes, étriers propres, sans frotter.",
             "mobile_image_file": "stop-jante.jpg"
