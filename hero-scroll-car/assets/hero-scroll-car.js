@@ -35,6 +35,11 @@
     return Math.min(max, Math.max(min, value));
   }
 
+  function percent(value) {
+    var number = parseFloat(value);
+    return clamp(isNaN(number) ? 50 : number, 0, 100);
+  }
+
   function pad(number, width) {
     var str = String(number);
     while (str.length < width) str = '0' + str;
@@ -86,19 +91,35 @@
     for (var i = 0; i < config.stops.length; i++) {
       var stop = config.stops[i];
       stop.display = stop.display === 'hotspot' ? 'hotspot' : 'card';
-      stop.x = clamp(parseFloat(stop.x) || 50, 0, 100);
-      stop.y = clamp(parseFloat(stop.y) || 50, 0, 100);
+      stop.x = percent(stop.x);
+      stop.y = percent(stop.y);
+      stop.focus = percent(stop.focus); // abscissa kept on screen when a narrow stage crops the frame
     }
     config.snapToStops = config.snapToStops !== false;
+    config.mobileSequence = config.mobileSequence !== false;
     config.texts = config.texts || {};
     return config;
   };
 
   HeroScrollCar.prototype.isStatic = function () {
-    return this.mqMobile.matches || this.mqReduced.matches;
+    if (this.mqReduced.matches) return true;
+    if (this.mqMobile.matches && !this.config.mobileSequence) return true;
+    var connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    return !!(connection && connection.saveData); // Save-Data: skip the sequence download
   };
 
   HeroScrollCar.prototype.applyMode = function () {
+    // Layout: "compact" (narrow screens: cropped frame that pans toward each stop, bottom-sheet cards)
+    // or "wide" (side cards). Independent from the mode.
+    var compact = this.mqMobile.matches;
+    if (compact !== this.compact) {
+      this.compact = compact;
+      this.setAttribute('data-layout', compact ? 'compact' : 'wide');
+      if (this.sequence) {
+        this.resizeCanvas();
+        if (this.sequence.openCard) this.placeHotspotCard(this.sequence.openCard);
+      }
+    }
     var mode = this.isStatic() ? 'static' : 'scroll';
     if (mode === this.mode) return;
     this.mode = mode;
@@ -314,6 +335,9 @@
 
     seq.onScroll = function () { self.startLoop(); self.scheduleSnap(); };
     window.addEventListener('scroll', seq.onScroll, { passive: true });
+    // overflow: hidden is still scrollable programmatically (focus, scrollIntoView): never let that shift the scene.
+    seq.onStageScroll = function () { if (stage.scrollLeft || stage.scrollTop) { stage.scrollLeft = 0; stage.scrollTop = 0; } };
+    stage.addEventListener('scroll', seq.onStageScroll);
 
     if ('IntersectionObserver' in window) {
       seq.intersection = new IntersectionObserver(function (entries) {
@@ -334,6 +358,7 @@
     if (seq.rafId) cancelAnimationFrame(seq.rafId);
     window.removeEventListener('resize', seq.onResize);
     window.removeEventListener('scroll', seq.onScroll);
+    seq.stage.removeEventListener('scroll', seq.onStageScroll);
     if (seq.resizeObserver) seq.resizeObserver.disconnect();
     if (seq.intersection) seq.intersection.disconnect();
     clearTimeout(seq.snapTimer);
@@ -393,14 +418,20 @@
   HeroScrollCar.prototype.nextFrameToLoad = function () {
     var seq = this.sequence;
     var center = Math.round(seq.target);
-    var best = -1;
-    var bestDistance = Infinity;
-    for (var i = 1; i <= seq.total; i++) {
-      if (seq.state[i] !== 0) continue;
-      var distance = Math.abs(i - center);
-      if (distance < bestDistance) { bestDistance = distance; best = i; }
+    // Pass 1: every other frame, nearest to the target first, so the whole sequence is usable early at
+    // half density (matters on mobile networks). Pass 2: the frames in between.
+    for (var pass = 0; pass < 2; pass++) {
+      var best = -1;
+      var bestDistance = Infinity;
+      for (var i = 1; i <= seq.total; i++) {
+        if (seq.state[i] !== 0) continue;
+        if (pass === 0 && i % 2 === 0) continue;
+        var distance = Math.abs(i - center);
+        if (distance < bestDistance) { bestDistance = distance; best = i; }
+      }
+      if (best !== -1) return best;
     }
-    return best;
+    return -1;
   };
 
   HeroScrollCar.prototype.loadFrame = function (index, highPriority) {
@@ -475,11 +506,13 @@
     var imageHeight = image.naturalHeight || image.height;
     if (!imageWidth || !imageHeight) return;
 
-    // "cover": keep the ratio, fill the stage, center the overflow.
+    // "cover": keep the ratio, fill the stage. Wide stages center the overflow; a narrow (portrait) stage
+    // crops the 16:9 frame a lot, so the crop slides toward each stop's focus abscissa instead.
     var scale = Math.max(seq.width / imageWidth, seq.height / imageHeight);
     var drawWidth = imageWidth * scale;
     var drawHeight = imageHeight * scale;
-    var offsetX = (seq.width - drawWidth) / 2;
+    var focus = this.compact ? this.focusAt(seq.current) / 100 : 0.5;
+    var offsetX = (seq.width - drawWidth) * focus;
     var offsetY = (seq.height - drawHeight) / 2;
     seq.context.drawImage(image, offsetX, offsetY, drawWidth, drawHeight);
     seq.cover = { ox: offsetX, oy: offsetY, dw: drawWidth, dh: drawHeight };
@@ -497,6 +530,32 @@
     }
   };
 
+  // Focus abscissa (0–100) along the sequence: 50 (centered) at both ends, each stop's value at its frame,
+  // eased in between so the pan settles exactly on the stop.
+  HeroScrollCar.prototype.focusAt = function (frame) {
+    var seq = this.sequence;
+    if (!seq.focusAnchors) {
+      var anchors = [{ frame: 1, focus: 50 }];
+      var stops = this.config.stops.slice().sort(function (a, b) { return a.frame - b.frame; });
+      for (var i = 0; i < stops.length; i++) {
+        if (stops[i].frame > 1 && stops[i].frame < seq.total) anchors.push({ frame: stops[i].frame, focus: stops[i].focus });
+      }
+      anchors.push({ frame: seq.total, focus: 50 });
+      seq.focusAnchors = anchors;
+    }
+    var list = seq.focusAnchors;
+    if (frame <= list[0].frame) return list[0].focus;
+    for (var k = 1; k < list.length; k++) {
+      if (frame <= list[k].frame) {
+        var span = list[k].frame - list[k - 1].frame || 1;
+        var t = (frame - list[k - 1].frame) / span;
+        t = t * t * (3 - 2 * t);
+        return list[k - 1].focus + (list[k].focus - list[k - 1].focus) * t;
+      }
+    }
+    return list[list.length - 1].focus;
+  };
+
   /* ---- scroll loop ---------------------------------------------------- */
 
   HeroScrollCar.prototype.progressToFrame = function (progress) {
@@ -508,8 +567,9 @@
     var seq = this.sequence;
     var rect = seq.section.getBoundingClientRect();
     var top = rect.top + window.pageYOffset;
-    var distance = Math.max(1, rect.height - window.innerHeight);
-    var heroPx = Math.min(Math.round(window.innerHeight * HERO_SCROLL_RATIO), distance * 0.5);
+    var stageHeight = seq.stage.offsetHeight || window.innerHeight;
+    var distance = Math.max(1, rect.height - stageHeight);
+    var heroPx = Math.min(Math.round(stageHeight * HERO_SCROLL_RATIO), distance * 0.5);
     return { top: top, distance: distance, heroPx: heroPx, frames: Math.max(1, distance - heroPx) };
   };
 
@@ -636,6 +696,14 @@
       var y = clamp(seq.cover.oy + seq.cover.dh * stop.y / 100, 24, seq.height - 24);
       marker.style.left = x.toFixed(1) + 'px';
       marker.style.top = y.toFixed(1) + 'px';
+      // Compact layout: the line + label flip to the other side of the dot when they would leave the screen.
+      var onLeft = stop.side === 'left';
+      if (this.compact) {
+        var extent = (marker.offsetWidth || 160) - 16; // dot center → far end of the label
+        var flip = onLeft ? x - extent < 8 : x + extent > seq.width - 8;
+        onLeft = onLeft !== flip;
+      }
+      marker.classList.toggle('hsc-hotspot--left', onLeft);
     }
     if (seq.openCard) this.placeHotspotCard(seq.openCard);
   };
@@ -646,6 +714,7 @@
     var marker = seq.hotspots[id];
     var stop = seq.stopsById[id];
     if (!card || !marker || !stop) return;
+    if (this.compact) { card.style.left = ''; card.style.top = ''; return; } // bottom sheet, placed by CSS
     var mx = parseFloat(marker.style.left) || 0;
     var my = parseFloat(marker.style.top) || 0;
     var cardWidth = card.offsetWidth || 320;

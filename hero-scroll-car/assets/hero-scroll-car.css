@@ -40,6 +40,7 @@ hero-scroll-car,
 /* --------------------------------------------------------------------------
    One fixed scene: the scroller gives the scroll distance, the stage sticks.
    Layers inside the stage: video (1) < canvas (2) < shade (3) < texts/hint (4) < cards (5) < sound (6)
+   The JS sets data-mode="scroll" | "static" and data-layout="wide" | "compact" (narrow screens).
    -------------------------------------------------------------------------- */
 
 .hsc-scroller {
@@ -53,6 +54,7 @@ hero-scroll-car,
   position: sticky;
   top: 0;
   height: 100vh;
+  height: 100svh; /* phones: the scene keeps the same height while the browser bar collapses */
   overflow: hidden;
   isolation: isolate;
   background: var(--hsc-bg);
@@ -588,7 +590,7 @@ hero-scroll-car,
 }
 
 /* --------------------------------------------------------------------------
-   Static fallback — mobile, reduced motion, no JS
+   Static fallback — reduced motion, Save-Data, no JS, or mobile with the sequence switched off
    -------------------------------------------------------------------------- */
 
 .hsc-static {
@@ -634,26 +636,126 @@ hero-scroll-car,
   aspect-ratio: 1 / 1;
 }
 
-@media (max-width: 767px), (prefers-reduced-motion: reduce) {
-  .hsc-scroller {
-    height: auto;
+/* Static layout, decided by the JS; CSS-only safety nets below for reduced motion and for the
+   "sequence off on mobile" setting (class set by Liquid) before the JS runs. */
+.hsc[data-mode="static"] .hsc-scroller {
+  height: auto;
+}
+
+.hsc[data-mode="static"] .hsc-stage {
+  position: relative;
+  height: 100vh;
+  height: 100svh;
+  min-height: 520px;
+}
+
+.hsc[data-mode="static"] .hsc-canvas,
+.hsc[data-mode="static"] .hsc-stage .hsc-card,
+.hsc[data-mode="static"] .hsc-hotspot {
+  display: none;
+}
+
+.hsc[data-mode="static"] .hsc-static {
+  display: grid;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hsc .hsc-scroller { height: auto; }
+  .hsc .hsc-stage { position: relative; height: 100vh; height: 100svh; min-height: 520px; }
+  .hsc .hsc-canvas, .hsc .hsc-stage .hsc-card, .hsc .hsc-hotspot { display: none; }
+  .hsc .hsc-static { display: grid; }
+}
+
+@media (max-width: 767px) {
+  .hsc--mobile-static .hsc-scroller { height: auto; }
+  .hsc--mobile-static .hsc-stage { position: relative; height: 100vh; height: 100svh; min-height: 520px; }
+  .hsc--mobile-static .hsc-canvas, .hsc--mobile-static .hsc-stage .hsc-card, .hsc--mobile-static .hsc-hotspot { display: none; }
+  .hsc--mobile-static .hsc-static { display: grid; }
+}
+
+/* --------------------------------------------------------------------------
+   Compact layout — the sequence on narrow screens: the frame is cropped vertically (the JS pans
+   toward each stop's focus) and the product card becomes a sheet docked at the bottom of the scene.
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 767px) {
+  .hsc[data-mode="scroll"] .hsc-stage .hsc-card {
+    top: auto;
+    left: 12px;
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    width: auto;
+    padding: 14px;
+    grid-template-columns: 84px minmax(0, 1fr);
+    grid-template-areas:
+      "media kicker"
+      "media title"
+      "media price"
+      "add add"
+      "msg msg";
+    column-gap: 14px;
+    row-gap: 4px;
+    align-items: center;
+    transform: translateY(24px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
   }
 
-  .hsc-stage {
-    position: relative;
-    height: 100vh;
-    height: 100svh;
-    min-height: 520px;
+  .hsc[data-mode="scroll"] .hsc-stage .hsc-card.is-visible {
+    transform: none;
   }
 
-  .hsc-canvas,
-  .hsc-stage .hsc-card,
-  .hsc-hotspot {
+  .hsc[data-mode="scroll"] .hsc-stage .hsc-card__kicker {
+    grid-area: kicker;
+  }
+
+  .hsc[data-mode="scroll"] .hsc-stage .hsc-card__media {
+    grid-area: media;
+    width: 84px;
+    aspect-ratio: 1 / 1;
+    align-self: start;
+  }
+
+  .hsc[data-mode="scroll"] .hsc-stage .hsc-card__title {
+    grid-area: title;
+    font-size: 1rem;
+    padding-right: 32px;
+  }
+
+  .hsc[data-mode="scroll"] .hsc-stage .hsc-card__tagline {
     display: none;
   }
 
-  .hsc-static {
-    display: grid;
+  .hsc[data-mode="scroll"] .hsc-stage .hsc-card__tagline:only-child {
+    display: block;
+    grid-column: 1 / -1;
+  }
+
+  .hsc[data-mode="scroll"] .hsc-stage .hsc-card__price {
+    grid-area: price;
+    font-size: 1.05rem;
+  }
+
+  .hsc[data-mode="scroll"] .hsc-stage .hsc-card__add {
+    grid-area: add;
+    margin-top: 6px;
+  }
+
+  .hsc[data-mode="scroll"] .hsc-stage .hsc-card__msg {
+    grid-area: msg;
+  }
+
+  .hsc[data-mode="scroll"] .hsc-stage .hsc-card__close {
+    top: 8px;
+    right: 8px;
+  }
+
+  .hsc[data-mode="scroll"] .hsc-hotspot__line {
+    width: 40px;
+  }
+
+  .hsc[data-mode="scroll"] .hsc-hotspot__label {
+    padding: 7px 10px;
+    font-size: 0.62rem;
   }
 }
 

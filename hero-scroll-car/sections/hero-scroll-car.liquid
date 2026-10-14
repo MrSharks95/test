@@ -15,8 +15,9 @@
                         échantillonnée à « mouvement constant » : plus d'images dans les travellings rapides,
                         moins dans les plans fixes, pour un défilement régulier au scroll.
                         Arrêts livrés : carrosserie 27 · porte 82 · habitacle 134 · jante 213 · plan final 245.
-    stop-carrosserie.jpg, stop-porte.jpg, stop-interieur.jpg, stop-jante.jpg   images statiques pour mobile
-                        (utilisées si aucune image n'est choisie dans le bloc « Arrêt caméra »)
+    stop-carrosserie.jpg, stop-porte.jpg, stop-interieur.jpg, stop-jante.jpg   images statiques de la version
+                        empilée (réduire les animations, économiseur de données, ou mobile si la séquence y est
+                        désactivée) ; utilisées si aucune image n'est choisie dans le bloc « Arrêt caméra »
 
   RÉGLER LES FRAMES D'ARRÊT
     1. « Nombre total de frames » = numéro de la dernière image (f_0240.webp → 240).
@@ -57,9 +58,13 @@
     Desktop : la vidéo d'allumage et la séquence partagent la même scène fixe (sticky). La vidéo se fige
     sur sa dernière image (= f_0001) ; au scroll, les textes s'effacent sur ~40 % d'écran puis les frames
     défilent sans aucun déplacement de l'image → continuité parfaite bannière → plan-séquence.
-    Mobile (< 768 px) : hero vidéo, puis les 3 produits empilés avec leur image statique (aucune frame chargée).
-    prefers-reduced-motion : même rendu que mobile sur toute largeur ; la vidéo ne démarre pas seule
-    (poster + textes affichés, le bouton son lance vidéo + son à la demande).
+    Mobile (< 768 px) : même scène au scroll (réglage « Séquence au scroll sur mobile », activé par défaut).
+    L'image 16:9 est recadrée verticalement et glisse vers le « point à garder visible » de chaque arrêt
+    (réglage par bloc, ex. 15 % pour la portière) ; les fiches produit deviennent un volet compact en bas de
+    l'écran ; les images se chargent une sur deux d'abord pour être utilisables vite. Réglage décoché :
+    hero vidéo puis produits empilés avec leur image statique (aucune frame chargée).
+    prefers-reduced-motion / économiseur de données : version empilée sur toute largeur ; la vidéo ne démarre
+    pas seule (poster + textes affichés, le bouton son lance vidéo + son à la demande).
   ==========================================================================================
 {% endcomment %}
 
@@ -79,10 +84,10 @@
 -%}
 
 <hero-scroll-car
-  class="hsc"
+  class="hsc{% unless s.mobile_sequence %} hsc--mobile-static{% endunless %}"
   id="hsc-{{ section.id }}"
   data-section-id="{{ section.id }}"
-  data-mode="static"
+  data-mode="auto"
   style="--hsc-accent: {{ s.accent_color | default: '#FF7A1A' }}; --hsc-n: {{ s.scroll_multiplier | default: 5 }};"
 >
   <script type="application/json" data-hsc-config>
@@ -93,6 +98,7 @@
       "stopRange": {{ s.stop_range | default: 40 }},
       "priorityCount": {{ s.priority_count | default: 30 }},
       "snapToStops": {% if s.snap_to_stops %}true{% else %}false{% endif %},
+      "mobileSequence": {% if s.mobile_sequence %}true{% else %}false{% endif %},
       "cartAddUrl": {{ cart_add_url | json }},
       "cartUrl": {{ cart_url | json }},
       "rootUrl": {{ routes.root_url | json }},
@@ -104,7 +110,8 @@
             "side": {{ block.settings.side | default: 'right' | json }},
             "display": {{ block.settings.display | default: 'card' | json }},
             "x": {{ block.settings.hotspot_x | default: 50 }},
-            "y": {{ block.settings.hotspot_y | default: 50 }}
+            "y": {{ block.settings.hotspot_y | default: 50 }},
+            "focus": {{ block.settings.focus_x | default: 50 }}
           }{%- unless forloop.last -%},{%- endunless -%}
         {%- endfor -%}
       ],
@@ -259,7 +266,7 @@
     </section>
   </div>
 
-  {%- comment -%} ---------- Mobile / reduced-motion : produits empilés avec image statique ---------- {%- endcomment -%}
+  {%- comment -%} ---------- Version empilée (reduced-motion, Save-Data, mobile si séquence désactivée, no-JS) ---------- {%- endcomment -%}
   <section class="hsc-static" data-hsc-static aria-label="{{ s.sequence_label | escape }}">
     {%- for block in section.blocks -%}
       {%- liquid
@@ -439,6 +446,13 @@
       "info": "À l'arrêt du scroll dans la plage d'un arrêt, la séquence se cale sur sa frame exacte."
     },
     {
+      "type": "checkbox",
+      "id": "mobile_sequence",
+      "label": "Séquence au scroll sur mobile",
+      "default": true,
+      "info": "Décoché : sur mobile, la vidéo puis les produits empilés avec leur image statique (aucune frame chargée). Les visiteurs ayant activé « réduire les animations » ou l'économiseur de données voient toujours la version empilée."
+    },
+    {
       "type": "number",
       "id": "priority_count",
       "label": "Frames chargées en priorité",
@@ -578,6 +592,17 @@
           "default": "Voir le produit"
         },
         {
+          "type": "range",
+          "id": "focus_x",
+          "label": "Cadrage mobile : point à garder visible (X %)",
+          "min": 0,
+          "max": 100,
+          "step": 5,
+          "unit": "%",
+          "default": 50,
+          "info": "Sur un écran vertical, l'image 16:9 est recadrée. Abscisse (en % de l'image) à garder à l'écran à cet arrêt : la position du produit ou du point d'intérêt. 50 = centre."
+        },
+        {
           "type": "select",
           "id": "side",
           "label": "Côté de la carte",
@@ -625,6 +650,7 @@
             "side": "right",
             "title": "Carrosserie",
             "tagline": "Un brillant profond, sans traces.",
+            "focus_x": 40,
             "mobile_image_file": "stop-carrosserie.jpg"
           }
         },
@@ -639,6 +665,7 @@
             "hotspot_label": "Portière",
             "title": "Portière",
             "tagline": "Cuir et Alcantara ravivés, sans résidu.",
+            "focus_x": 15,
             "mobile_image_file": "stop-porte.jpg"
           }
         },
@@ -653,6 +680,7 @@
             "hotspot_label": "Habitacle",
             "title": "Intérieur",
             "tagline": "Plastiques et cuirs nourris, odeur de neuf.",
+            "focus_x": 55,
             "mobile_image_file": "stop-interieur.jpg"
           }
         },
@@ -663,6 +691,7 @@
             "side": "left",
             "title": "Jante",
             "tagline": "Jantes nettes, étriers propres, sans frotter.",
+            "focus_x": 65,
             "mobile_image_file": "stop-jante.jpg"
           }
         }
