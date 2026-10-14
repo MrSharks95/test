@@ -7,7 +7,8 @@ html/
 extra/
 scratch_*
 *_urls.txt
+urls_raw.txt
 asset_keys.txt
 asset_map.tsv
-img_dims.tsv
+/img_dims.tsv
 dl_log*.tsv
