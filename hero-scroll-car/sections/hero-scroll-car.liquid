@@ -58,7 +58,8 @@
     de l'écran tant qu'il reste des chapitres ; après le plan final, la page défile normalement.
     Fichiers : plan-sequence.mp4 (avant, avec le son) et plan-sequence-reverse.mp4 (inversée, sans son), 1080p,
     une image clé toutes les 15 images. Chaque bloc a un « temps de l'arrêt » en secondes (10 / 19.8 / 25.27 /
-    34.8) ; « Fin du plan final » = 39.9. Le bouton son active la bande-son du plan-séquence.
+    34.8) ; « Fin du plan final » = 39.9. Chaque bloc peut aussi avoir sa propre vitesse (« vitesse pour arriver
+    ici », ex. × 2,5 pour le premier plan). Le bouton son active la bande-son du plan-séquence.
     Pensé pour la première section de la page (hero). Réduire les animations : version empilée, comme avant.
 
   REMPLACER LES ASSETS
@@ -159,6 +160,7 @@
             "y": {{ block.settings.hotspot_y | default: 50 }},
             "focus": {{ block.settings.focus_x | default: 50 }},
             "time": {{ block.settings.time | default: '' | json }},
+            "rate": {{ block.settings.speed | default: 'auto' | json }},
             "label": {{ block.settings.title | json }}
           }{%- unless forloop.last -%},{%- endunless -%}
         {%- endfor -%}
@@ -804,6 +806,43 @@
         },
         {
           "type": "select",
+          "id": "speed",
+          "label": "Mode chapitres : vitesse pour arriver ici",
+          "options": [
+            {
+              "value": "auto",
+              "label": "Vitesse générale"
+            },
+            {
+              "value": "1",
+              "label": "× 1"
+            },
+            {
+              "value": "1.5",
+              "label": "× 1,5"
+            },
+            {
+              "value": "2",
+              "label": "× 2"
+            },
+            {
+              "value": "2.5",
+              "label": "× 2,5"
+            },
+            {
+              "value": "3",
+              "label": "× 3"
+            },
+            {
+              "value": "4",
+              "label": "× 4"
+            }
+          ],
+          "default": "auto",
+          "info": "Vitesse du trajet qui mène à ce produit (et du retour). Ex. × 2,5 pour raccourcir le premier plan."
+        },
+        {
+          "type": "select",
           "id": "display",
           "label": "Affichage",
           "options": [
@@ -909,7 +948,8 @@
             "title": "Carrosserie",
             "tagline": "Un brillant profond, sans traces.",
             "focus_x": 40,
-            "mobile_image_file": "stop-carrosserie.jpg"
+            "mobile_image_file": "stop-carrosserie.jpg",
+            "speed": "2.5"
           }
         },
         {

@@ -38,6 +38,8 @@
   var CHAPTER_PINNED_PX = 2;        // the scene is "pinned" when its top is this close to the viewport top
   var CHAPTER_SEEK_TIMEOUT_MS = 2500;
   var CHAPTER_CUT_MS = 180;         // fade used for direct jumps (dots, editor) and when no reverse video exists
+  var CHAPTER_BOOST = 1.6;          // each extra gesture during a transition speeds it up by this factor…
+  var CHAPTER_MAX_RATE = 6;         // …up to this playback rate (a stop is never skipped)
 
   function nowMs() { return (window.performance && performance.now) ? performance.now() : Date.now(); }
 
@@ -111,6 +113,7 @@
       stop.y = percent(stop.y);
       stop.focus = percent(stop.focus); // abscissa kept on screen when a narrow stage crops the frame
       stop.time = parseSeconds(stop.time); // chapters mode: where the video stops, in seconds
+      stop.rate = parseSeconds(stop.rate); // chapters mode: playback speed of the segment that leads to this stop
     }
     config.snapToStops = config.snapToStops !== false;
     config.mobileSequence = config.mobileSequence !== false;
@@ -1023,7 +1026,7 @@
   // Next chapter index a gesture in direction `dir` would lead to, or -1 when it falls outside (release).
   HeroScrollCar.prototype.chapterTargetFor = function (dir) {
     var ch = this.chapters;
-    var base = ch.queued !== null ? ch.queued : (ch.busy ? ch.pending : ch.index);
+    var base = ch.busy ? ch.pending : ch.index;
     var target = base + dir;
     return target >= 0 && target < ch.points.length ? target : -1;
   };
@@ -1146,9 +1149,17 @@
     var ch = this.chapters;
     if (!ch) return;
     target = clamp(Math.round(target), 0, ch.points.length - 1);
-    if (ch.busy) { ch.queued = target === ch.pending ? null : target; return; } // played after the current one
+    if (ch.busy) {
+      if (options && options.direct) { ch.queued = target === ch.pending ? null : target; return; } // dot: after this one
+      // Another gesture while the video plays: speed the current segment up instead of skipping the next stop.
+      var playing = ch.pending > ch.index ? 1 : -1;
+      if ((target > ch.pending ? 1 : -1) === playing || target === ch.pending) this.boostChapter();
+      return;
+    }
     if (target === ch.index) return;
     var from = ch.index;
+    ch.boosts = 0;
+    ch.activeVideo = null;
     var direct = (options && options.direct) || Math.abs(target - from) > 1;
     ch.busy = true;
     ch.pending = target;
@@ -1169,14 +1180,11 @@
       ch.busy = false;
       ch.stage.classList.remove('is-playing');
       self.enterChapter(target);
-      // Requests made during the transition are played one chapter at a time.
+      ch.activeVideo = null;
+      // A dot clicked during the transition: jump there now.
       var queued = ch.queued;
       ch.queued = null;
-      if (queued !== null && queued !== target) {
-        var step = queued > target ? 1 : -1;
-        if (target + step !== queued) ch.queued = queued;
-        self.goChapter(target + step);
-      }
+      if (queued !== null && queued !== target) self.goChapter(queued, { direct: true });
     });
   };
 
@@ -1306,6 +1314,21 @@
     });
   };
 
+  HeroScrollCar.prototype.boostChapter = function () {
+    var ch = this.chapters;
+    if (!ch || !ch.activeVideo) return;
+    ch.boosts += 1;
+    ch.activeVideo.playbackRate = Math.min(ch.activeRate * Math.pow(CHAPTER_BOOST, ch.boosts), CHAPTER_MAX_RATE);
+  };
+
+  // Playback speed of the segment between chapters a and b: the speed set on the stop that ends it
+  // (going forward), or the general speed.
+  HeroScrollCar.prototype.segmentRate = function (a, b) {
+    var point = this.chapters.points[Math.max(a, b)];
+    var rate = point && point.stop ? point.stop.rate : NaN;
+    return rate > 0 ? clamp(rate, 0.5, 6) : this.config.chapterRate;
+  };
+
   // Mobile: the crop of the 16:9 video glides toward the next stop's focus while the video plays.
   HeroScrollCar.prototype.panChapterFocus = function (target, seconds) {
     var ch = this.chapters;
@@ -1318,12 +1341,15 @@
     var self = this;
     var ch = this.chapters;
     var video = ch.fwd;
+    var rate = this.segmentRate(target - 1, target);
     return this.seekVideo(video, this.chapterFrameTime(fromTime)).then(function () {
       if (ch.destroyed) return;
       ch.stage.classList.remove('is-reversing');
-      video.playbackRate = self.config.chapterRate;
+      video.playbackRate = rate;
       video.muted = !self.soundOn;
-      self.panChapterFocus(target, (toTime - fromTime) / self.config.chapterRate);
+      ch.activeVideo = video;
+      ch.activeRate = rate;
+      self.panChapterFocus(target, (toTime - fromTime) / rate);
       return self.playVideoUntil(video, Math.round(toTime * ch.fps) / ch.fps);
     }).then(function () {
       if (ch.destroyed) return;
@@ -1341,11 +1367,14 @@
     }
     var startTime = this.reverseTime(fromTime);
     var endTime = this.reverseTime(toTime);
+    var rate = this.segmentRate(target, target + 1);
     return this.seekVideo(rev, startTime).then(function () {
       if (ch.destroyed) return;
-      rev.playbackRate = self.config.chapterRate;
+      rev.playbackRate = rate;
+      ch.activeVideo = rev;
+      ch.activeRate = rate;
       ch.stage.classList.add('is-reversing'); // same frame as the forward video: the swap is invisible
-      self.panChapterFocus(target, (fromTime - toTime) / self.config.chapterRate);
+      self.panChapterFocus(target, (fromTime - toTime) / rate);
       return self.playVideoUntil(rev, endTime - 0.5 / ch.fps);
     }).then(function () {
       if (ch.destroyed) return;
