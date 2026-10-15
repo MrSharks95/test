@@ -6,7 +6,9 @@
   (le JS et le CSS ne sont chargés que par cette section).
 
   ASSETS ATTENDUS DANS /assets
-    hero-ignition.mp4   vidéo 16:9, 8 s, sans son (dernière frame = voiture allumée de face)
+    hero-ignition.mp4   vidéo 16:9, 5 s (dernière frame = voiture allumée de face). De préférence, chargez-la plutôt
+                        dans Contenu > Fichiers et choisissez-la dans « Vidéo d'allumage (Fichiers Shopify) » :
+                        Shopify l'héberge et l'optimise ; le fichier dans /assets ne sert alors plus.
     hero-ignition.mp3   son du moteur synchronisé avec la vidéo — OPTIONNEL : si le mp4 contient déjà
                         sa piste audio, laissez le champ « Son du moteur » vide : le bouton son démute
                         simplement la vidéo (synchro parfaite, un fichier de moins)
@@ -77,6 +79,18 @@
   assign first_frame_url = s.frame_first_file | asset_url
   assign poster_url = s.poster_file | asset_url
   assign video_url = s.video_file | asset_url
+  if s.hero_video != blank
+    comment
+      Vidéo hébergée par Shopify (Contenu > Fichiers) : on prend la source MP4 la plus haute, plafonnée à 1080p.
+    endcomment
+    assign best_height = 0
+    for source in s.hero_video.sources
+      if source.mime_type == 'video/mp4' and source.height <= 1080 and source.height > best_height
+        assign best_height = source.height
+        assign video_url = source.url
+      endif
+    endfor
+  endif
   assign audio_url = s.audio_file | asset_url
   assign heading_tag = s.heading_tag | default: 'h1'
   assign cart_add_url = routes.cart_add_url | append: '.js'
@@ -470,9 +484,15 @@
       "content": "Fichiers (dans /assets)"
     },
     {
+      "type": "video",
+      "id": "hero_video",
+      "label": "Vidéo d'allumage (Fichiers Shopify)",
+      "info": "Recommandé : choisissez ou chargez la vidéo ici (hébergée et optimisée par Shopify). Si vide, le fichier ci-dessous dans /assets est utilisé."
+    },
+    {
       "type": "text",
       "id": "video_file",
-      "label": "Vidéo d'allumage",
+      "label": "… ou vidéo d'allumage dans /assets",
       "default": "hero-ignition.mp4"
     },
     {

@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Aperçu local — Hero Scroll Car</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Aperçu local hors Shopify : mêmes fichiers que la section (../assets), produits et panier simulés. -->
+<link rel="stylesheet" href="../assets/hero-scroll-car.css">
+<script src="../assets/hero-scroll-car.js" defer></script>
+<style>
+/* Demo shell — single dark look, by design (automotive garage). */
+:root { color-scheme: dark; background: #0b0b0d; }
+body { margin: 0; background: #0b0b0d; color: #fff; font-family: "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif; }
+.demo-top { position: fixed; top: 0; left: 0; right: 0; z-index: 50; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: calc(10px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 10px max(16px, env(safe-area-inset-left, 0px)); background: linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,0)); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; }
+.demo-top b { font-weight: 800; letter-spacing: .2em; }
+.demo-top .cart { display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; border: 1px solid rgba(255,255,255,.3); border-radius: 999px; background: rgba(0,0,0,.4); }
+.demo-top .cart span { min-width: 1.4em; padding: 1px 6px; border-radius: 999px; background: #ff7a1a; color: #111; text-align: center; font-weight: 700; }
+.demo-note { position: fixed; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); z-index: 60; transform: translateX(-50%); max-width: min(92vw, 640px); padding: 10px 14px; border: 1px solid rgba(255,122,26,.5); border-radius: 10px; background: rgba(12,12,14,.85); font-size: 12.5px; line-height: 1.45; color: rgba(255,255,255,.85); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); display: flex; gap: 12px; align-items: center; }
+.demo-note button { flex: none; width: 28px; height: 28px; border: 1px solid rgba(255,255,255,.3); border-radius: 50%; background: transparent; color: #fff; cursor: pointer; }
+.demo-note .short { display: none; }
+@media (max-width: 767px) { .demo-note { top: calc(52px + env(safe-area-inset-top, 0px)); bottom: auto; padding: 8px 12px; font-size: 12px; max-width: 94vw; } .demo-note .long { display: none; } .demo-note .short { display: inline; } }
+.demo-after { padding: 72px max(16px, env(safe-area-inset-right, 0px)) 96px max(16px, env(safe-area-inset-left, 0px)); max-width: 72ch; margin: 0 auto; line-height: 1.6; }
+.demo-after h2 { font-size: clamp(1.6rem, 3vw, 2.4rem); margin: 0 0 12px; text-transform: uppercase; letter-spacing: .02em; }
+.demo-after p { color: rgba(255,255,255,.75); margin: 0 0 12px; }
+.demo-after code { background: rgba(255,255,255,.08); padding: .1em .35em; border-radius: 4px; font-size: .9em; }
+</style>
+</head>
+<body>
+<header class="demo-top"><b>Ma marque</b><span class="cart">Panier <span data-cart-count>0</span></span></header>
+<hero-scroll-car class="hsc" data-mode="auto" style="--hsc-accent:#FF7A1A;--hsc-n:7;">
+<script type="application/json" data-hsc-config>{"framesTotal": 248, "firstFrameUrl": "../assets/f_0001.webp", "posterUrl": "../assets/hero-poster.jpg", "stopRange": 6, "priorityCount": 30, "snapToStops": true, "mobileSequence": true, "cartAddUrl": "/cart/add.js", "cartUrl": "/cart.js", "rootUrl": "/", "stops": [{"id": "b1", "frame": 27, "side": "right", "display": "card", "focus": 40}, {"id": "b2", "frame": 82, "side": "right", "display": "hotspot", "x": 15, "y": 58, "focus": 15}, {"id": "b3", "frame": 134, "side": "left", "display": "hotspot", "x": 55, "y": 66, "focus": 55}, {"id": "b4", "frame": 213, "side": "left", "display": "card", "focus": 65}], "texts": {"add": "Ajouter au panier", "added": "Ajouté au panier", "error": "Impossible d'ajouter ce produit. Réessayez.", "soundOn": "Activer le son", "soundOff": "Couper le son"}}</script>
+<div class="hsc-scroller" data-hsc-scroller>
+<section class="hsc-stage" data-hsc-stage data-hsc-hero aria-label="Allumez le contact.">
+  <video class="hsc-video" data-hsc-video autoplay muted playsinline preload="auto" poster="../assets/hero-poster.jpg" disablepictureinpicture aria-hidden="true" tabindex="-1"><source src="../assets/hero-ignition.mp4" type="video/mp4"></video>
+  <canvas class="hsc-canvas" data-hsc-canvas role="img" aria-label="Séquence voiture"></canvas>
+  <div class="hsc-hero__shade" aria-hidden="true"></div>
+  <div class="hsc-overlay" data-hsc-overlay>
+    <h1 class="hsc-title">Allumez le contact.</h1>
+    <p class="hsc-subtitle">Un garage, une voiture, quatre gestes : carrosserie, portière, habitacle, jantes. Des produits pensés pour un résultat net, sans effort.</p>
+    <a class="hsc-btn hsc-btn--primary" href="#" data-hsc-cta>Découvrir les produits</a>
+  </div>
+  <button type="button" class="hsc-sound" data-hsc-sound aria-pressed="false" aria-label="Activer le son" title="Activer le son">
+    <svg class="hsc-sound__icon hsc-sound__icon--off" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 9l5 6M21 9l-5 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/></svg>
+    <svg class="hsc-sound__icon hsc-sound__icon--on" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 8.5a4.5 4.5 0 0 1 0 7M18.5 6a8 8 0 0 1 0 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/></svg>
+  </button>
+  <div class="hsc-scroll-hint" aria-hidden="true"><span>Faire défiler</span><i></i></div>
+  <article class="hsc-card hsc-card--right" id="hsc-card-b1" data-hsc-card data-stop-id="b1" aria-hidden="true">
+  <p class="hsc-card__kicker">Carrosserie</p>
+  <a class="hsc-card__media" href="#" tabindex="-1" aria-hidden="true"><img src="img/product-1.png" alt="" width="640" height="480" loading="lazy"></a>
+  <h2 class="hsc-card__title"><a href="#">Shampoing carrosserie pH neutre</a></h2>
+  <p class="hsc-card__tagline">Un brillant profond, sans traces.</p>
+  <p class="hsc-card__price"><span>24,90 €</span><s>29,90 €</s></p>
+  <button type="button" class="hsc-btn hsc-btn--primary hsc-card__add" data-hsc-add data-variant-id="1001"><span data-hsc-add-label>Ajouter au panier</span></button>
+  <p class="hsc-card__msg" role="status" aria-live="polite" data-hsc-msg></p>
+</article><button type="button" class="hsc-hotspot hsc-hotspot--right" data-hsc-hotspot data-stop-id="b2" aria-expanded="false" aria-controls="hsc-card-b2" aria-hidden="true" tabindex="-1"><span class="hsc-hotspot__dot" aria-hidden="true"><i></i></span><span class="hsc-hotspot__line" aria-hidden="true"></span><span class="hsc-hotspot__label">Portière</span></button><article class="hsc-card hsc-card--right hsc-card--hotspot" id="hsc-card-b2" data-hsc-card data-stop-id="b2" aria-hidden="true"><button type="button" class="hsc-card__close" data-hsc-close aria-label="Fermer">&times;</button>
+  <p class="hsc-card__kicker">Portière</p>
+  <a class="hsc-card__media" href="#" tabindex="-1" aria-hidden="true"><img src="img/product-4.png" alt="" width="640" height="480" loading="lazy"></a>
+  <h2 class="hsc-card__title"><a href="#">Rénovateur cuir &amp; Alcantara</a></h2>
+  <p class="hsc-card__tagline">Cuir et Alcantara ravivés, sans résidu.</p>
+  <p class="hsc-card__price"><span>21,90 €</span></p>
+  <button type="button" class="hsc-btn hsc-btn--primary hsc-card__add" data-hsc-add data-variant-id="1002"><span data-hsc-add-label>Ajouter au panier</span></button>
+  <p class="hsc-card__msg" role="status" aria-live="polite" data-hsc-msg></p>
+</article><button type="button" class="hsc-hotspot hsc-hotspot--left" data-hsc-hotspot data-stop-id="b3" aria-expanded="false" aria-controls="hsc-card-b3" aria-hidden="true" tabindex="-1"><span class="hsc-hotspot__dot" aria-hidden="true"><i></i></span><span class="hsc-hotspot__line" aria-hidden="true"></span><span class="hsc-hotspot__label">Habitacle</span></button><article class="hsc-card hsc-card--left hsc-card--hotspot" id="hsc-card-b3" data-hsc-card data-stop-id="b3" aria-hidden="true"><button type="button" class="hsc-card__close" data-hsc-close aria-label="Fermer">&times;</button>
+  <p class="hsc-card__kicker">Intérieur</p>
+  <a class="hsc-card__media" href="#" tabindex="-1" aria-hidden="true"><img src="img/product-2.png" alt="" width="640" height="480" loading="lazy"></a>
+  <h2 class="hsc-card__title"><a href="#">Nettoyant intérieur multi-surfaces</a></h2>
+  <p class="hsc-card__tagline">Plastiques et cuirs nourris, odeur de neuf.</p>
+  <p class="hsc-card__price"><span>19,90 €</span></p>
+  <button type="button" class="hsc-btn hsc-btn--primary hsc-card__add" data-hsc-add data-variant-id="1003"><span data-hsc-add-label>Ajouter au panier</span></button>
+  <p class="hsc-card__msg" role="status" aria-live="polite" data-hsc-msg></p>
+</article><article class="hsc-card hsc-card--left" id="hsc-card-b4" data-hsc-card data-stop-id="b4" aria-hidden="true">
+  <p class="hsc-card__kicker">Jante</p>
+  <a class="hsc-card__media" href="#" tabindex="-1" aria-hidden="true"><img src="img/product-3.png" alt="" width="640" height="480" loading="lazy"></a>
+  <h2 class="hsc-card__title"><a href="#">Nettoyant jantes &amp; étriers</a></h2>
+  <p class="hsc-card__tagline">Jantes nettes, étriers propres, sans frotter.</p>
+  <p class="hsc-card__price"><span>22,90 €</span></p>
+  <button type="button" class="hsc-btn hsc-btn--primary hsc-card__add" data-hsc-add data-variant-id="1004"><span data-hsc-add-label>Ajouter au panier</span></button>
+  <p class="hsc-card__msg" role="status" aria-live="polite" data-hsc-msg></p>
+</article>
+</section>
+</div>
+<section class="hsc-static" data-hsc-static aria-label="Nos produits"><article class="hsc-stop"><div class="hsc-stop__media"><img src="../assets/stop-carrosserie.jpg" alt="Carrosserie" width="1280" height="720" loading="lazy"></div><article class="hsc-card hsc-card--static" >
+  <p class="hsc-card__kicker">Carrosserie</p>
+  <a class="hsc-card__media" href="#" tabindex="-1" aria-hidden="true"><img src="img/product-1.png" alt="" width="640" height="480" loading="lazy"></a>
+  <h2 class="hsc-card__title"><a href="#">Shampoing carrosserie pH neutre</a></h2>
+  <p class="hsc-card__tagline">Un brillant profond, sans traces.</p>
+  <p class="hsc-card__price"><span>24,90 €</span><s>29,90 €</s></p>
+  <button type="button" class="hsc-btn hsc-btn--primary hsc-card__add" data-hsc-add data-variant-id="1001"><span data-hsc-add-label>Ajouter au panier</span></button>
+  <p class="hsc-card__msg" role="status" aria-live="polite" data-hsc-msg></p>
+</article></article><article class="hsc-stop"><div class="hsc-stop__media"><img src="../assets/stop-porte.jpg" alt="Portière" width="1280" height="720" loading="lazy"></div><article class="hsc-card hsc-card--static" >
+  <p class="hsc-card__kicker">Portière</p>
+  <a class="hsc-card__media" href="#" tabindex="-1" aria-hidden="true"><img src="img/product-4.png" alt="" width="640" height="480" loading="lazy"></a>
+  <h2 class="hsc-card__title"><a href="#">Rénovateur cuir &amp; Alcantara</a></h2>
+  <p class="hsc-card__tagline">Cuir et Alcantara ravivés, sans résidu.</p>
+  <p class="hsc-card__price"><span>21,90 €</span></p>
+  <button type="button" class="hsc-btn hsc-btn--primary hsc-card__add" data-hsc-add data-variant-id="1002"><span data-hsc-add-label>Ajouter au panier</span></button>
+  <p class="hsc-card__msg" role="status" aria-live="polite" data-hsc-msg></p>
+</article></article><article class="hsc-stop"><div class="hsc-stop__media"><img src="../assets/stop-interieur.jpg" alt="Intérieur" width="1280" height="720" loading="lazy"></div><article class="hsc-card hsc-card--static" >
+  <p class="hsc-card__kicker">Intérieur</p>
+  <a class="hsc-card__media" href="#" tabindex="-1" aria-hidden="true"><img src="img/product-2.png" alt="" width="640" height="480" loading="lazy"></a>
+  <h2 class="hsc-card__title"><a href="#">Nettoyant intérieur multi-surfaces</a></h2>
+  <p class="hsc-card__tagline">Plastiques et cuirs nourris, odeur de neuf.</p>
+  <p class="hsc-card__price"><span>19,90 €</span></p>
+  <button type="button" class="hsc-btn hsc-btn--primary hsc-card__add" data-hsc-add data-variant-id="1003"><span data-hsc-add-label>Ajouter au panier</span></button>
+  <p class="hsc-card__msg" role="status" aria-live="polite" data-hsc-msg></p>
+</article></article><article class="hsc-stop"><div class="hsc-stop__media"><img src="../assets/stop-jante.jpg" alt="Jante" width="1280" height="720" loading="lazy"></div><article class="hsc-card hsc-card--static" >
+  <p class="hsc-card__kicker">Jante</p>
+  <a class="hsc-card__media" href="#" tabindex="-1" aria-hidden="true"><img src="img/product-3.png" alt="" width="640" height="480" loading="lazy"></a>
+  <h2 class="hsc-card__title"><a href="#">Nettoyant jantes &amp; étriers</a></h2>
+  <p class="hsc-card__tagline">Jantes nettes, étriers propres, sans frotter.</p>
+  <p class="hsc-card__price"><span>22,90 €</span></p>
+  <button type="button" class="hsc-btn hsc-btn--primary hsc-card__add" data-hsc-add data-variant-id="1004"><span data-hsc-add-label>Ajouter au panier</span></button>
+  <p class="hsc-card__msg" role="status" aria-live="polite" data-hsc-msg></p>
+</article></article></section>
+</hero-scroll-car>
+<section class="demo-after">
+  <h2>Aperçu local</h2>
+  <p>La page continue normalement après la séquence : ici viendraient vos autres sections Shopify (collection, avis, FAQ…).</p>
+  <p>Cette page charge exactement les fichiers de la section (<code>../assets/hero-scroll-car.js</code>, <code>.css</code> et les images) : modifiez-les puis rechargez la page. Cette démo utilise votre vraie bannière d'allumage. La séquence au scroll est <strong>votre vrai plan-séquence</strong> : 248 images (1280 × 720, WebP, 13 Mo au total) extraites de la vidéo à « mouvement constant », c'est-à-dire plus d'images dans les travellings rapides et moins dans les plans fixes, pour un défilement régulier. Les produits et les prix sont fictifs ; l'ajout au panier est simulé.</p>
+  <p>Storyboard : carrosserie → carte à droite (image <code>27</code>) · portière conducteur ouverte → <strong>point d'intérêt</strong> sur le panneau de porte, la carte s'ouvre à droite (<code>82</code>) · habitacle, vue fenêtre passager → <strong>point d'intérêt</strong>, la carte s'ouvre à gauche (<code>134</code>) · jante → carte à gauche (<code>213</code>) · plan final (<code>245</code>) sans produit. Réglages : <code>N = 7</code> (séquence de 7 écrans), plage <code>± 6</code>, aimant sur les arrêts activé. Sur mobile, la séquence tourne aussi : l'image est recadrée verticalement et glisse vers le point à garder visible de chaque arrêt (carrosserie 40 %, portière 15 %, habitacle 55 %, jante 65 %), les fiches deviennent un volet en bas de l'écran.</p>
+</section>
+<div class="demo-note" id="demo-note"><span class="long">Aperçu local : vraie bannière + vrai plan-séquence (248 images). Laissez la vidéo se terminer, puis faites défiler. Sur la portière et dans l'habitacle, cliquez les points orange. Sur mobile, la même séquence défile (image recadrée, fiches en bas) ; avec « réduire les animations », la version empilée s'affiche.</span><span class="short">Démo : laissez la vidéo finir, puis faites défiler. Touchez les points orange.</span><button type="button" aria-label="Fermer" onclick="document.getElementById('demo-note').remove()">×</button></div>
+<script>
+/* Demo only: simulate Shopify cart endpoints so the buttons give feedback. */
+(function () {
+  var realFetch = window.fetch.bind(window); var count = 0;
+  var json = function (obj) { return Promise.resolve(new Response(JSON.stringify(obj), { status: 200, headers: { 'Content-Type': 'application/json' } })); };
+  window.fetch = function (url, opts) {
+    var u = String(url);
+    if (u.indexOf('/cart/add.js') > -1) { count++; return new Promise(function (r) { setTimeout(function () { json({ items: [] }).then(r); }, 450); }); }
+    if (u.indexOf('/cart.js') > -1) return json({ item_count: count });
+    if (u.indexOf('sections=cart-icon-bubble') > -1) return json({});
+    return realFetch(url, opts);
+  };
+})();
+</script>
+</body>
+</html>
