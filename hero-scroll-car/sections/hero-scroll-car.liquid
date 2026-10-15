@@ -107,27 +107,9 @@
   endcomment
   assign sequence_mode = s.sequence_mode | default: 'scrub'
   assign chapter_url = s.chapter_video_file | default: 'plan-sequence.mp4' | asset_url
-  if s.chapter_video != blank
-    assign best_height = 0
-    for source in s.chapter_video.sources
-      if source.mime_type == 'video/mp4' and source.height <= 1080 and source.height > best_height
-        assign best_height = source.height
-        assign chapter_url = source.url
-      endif
-    endfor
-  endif
   assign chapter_rev_url = ''
   if s.chapter_video_reverse_file != blank
     assign chapter_rev_url = s.chapter_video_reverse_file | asset_url
-  endif
-  if s.chapter_video_reverse != blank
-    assign best_height = 0
-    for source in s.chapter_video_reverse.sources
-      if source.mime_type == 'video/mp4' and source.height <= 1080 and source.height > best_height
-        assign best_height = source.height
-        assign chapter_rev_url = source.url
-      endif
-    endfor
   endif
   assign heading_tag = s.heading_tag | default: 'h1'
   assign cart_add_url = routes.cart_add_url | append: '.js'
@@ -148,7 +130,7 @@
   data-section-id="{{ section.id }}"
   data-mode="auto"
   data-sequence="{{ sequence_mode }}"
-  style="--hsc-accent: {{ s.accent_color | default: '#FF7A1A' }}; --hsc-n: {{ s.scroll_multiplier | default: 5 }}; --hsc-title-color: {{ s.color_title | default: '#FFFFFF' }}; --hsc-subtitle-color: {{ s.color_subtitle | default: '#C8C8CC' }}; --hsc-kicker-color: {{ s.color_kicker | default: s.accent_color | default: '#FF7A1A' }}; --hsc-product-title-color: {{ s.color_product_title | default: '#FFFFFF' }}; --hsc-card-text-color: {{ s.color_card_text | default: '#C8C8CC' }}; --hsc-price-color: {{ s.color_price | default: '#FFFFFF' }}; --hsc-btn-text-color: {{ s.color_button_text | default: '#111111' }}; --hsc-ink: {{ s.color_other | default: '#FFFFFF' }}; --hsc-card-bg: {{ card_bg }}; --hsc-card-border: {{ card_border }}; --hsc-product-title-size: {{ s.product_title_size | default: 25 }}px;"
+  style="--hsc-accent: {{ s.accent_color | default: '#FF7A1A' }}; --hsc-n: {{ s.scroll_multiplier | default: 5 }}; --hsc-title-color: {{ s.color_title | default: '#FFFFFF' }}; --hsc-subtitle-color: {{ s.color_subtitle | default: '#C8C8CC' }}; --hsc-kicker-color: {{ s.accent_color | default: '#FF7A1A' }}; --hsc-product-title-color: {{ s.color_product_title | default: '#FFFFFF' }}; --hsc-card-text-color: {{ s.color_card_text | default: '#C8C8CC' }}; --hsc-price-color: {{ s.color_product_title | default: '#FFFFFF' }}; --hsc-btn-text-color: {{ s.color_button_text | default: '#111111' }}; --hsc-ink: {{ s.color_other | default: '#FFFFFF' }}; --hsc-card-bg: {{ card_bg }}; --hsc-card-border: {{ card_border }}; --hsc-product-title-size: {{ s.product_title_size | default: 25 }}px;"
 >
   <script type="application/json" data-hsc-config>
     {
@@ -156,13 +138,13 @@
       "firstFrameUrl": {{ first_frame_url | json }},
       "posterUrl": {{ poster_url | json }},
       "stopRange": {{ s.stop_range | default: 40 }},
-      "priorityCount": {{ s.priority_count | default: 30 }},
+      "priorityCount": 30,
       "snapToStops": {% if s.snap_to_stops %}true{% else %}false{% endif %},
       "mobileSequence": {% if s.mobile_sequence %}true{% else %}false{% endif %},
       "sequenceMode": {{ sequence_mode | json }},
       "chapterRate": {{ s.chapter_rate | default: '1.5' | json }},
       "chapterEnd": {{ s.chapter_end | default: '39.9' | json }},
-      "fps": {{ s.chapter_fps | default: 30 }},
+      "fps": 30,
       "cartAddUrl": {{ cart_add_url | json }},
       "cartUrl": {{ cart_url | json }},
       "rootUrl": {{ routes.root_url | json }},
@@ -187,11 +169,11 @@
         "error": {{ s.text_error | json }},
         "soundOn": {{ s.text_sound_on | json }},
         "soundOff": {{ s.text_sound_off | json }},
-        "next": {{ s.text_next | default: 'Plan suivant' | json }},
-        "prev": {{ s.text_prev | default: 'Plan précédent' | json }},
-        "skip": {{ s.text_skip | default: "Passer l'animation" | json }},
-        "start": {{ s.text_start | default: 'Début' | json }},
-        "end": {{ s.text_end | default: 'Plan final' | json }}
+        "next": "Plan suivant",
+        "prev": "Plan précédent",
+        "skip": "Passer l'animation",
+        "start": "Début",
+        "end": "Plan final"
       }
     }
   </script>
@@ -446,7 +428,10 @@
   "class": "section-hero-scroll-car",
   "max_blocks": 4,
   "disabled_on": {
-    "groups": ["header", "footer"]
+    "groups": [
+      "header",
+      "footer"
+    ]
   },
   "settings": [
     {
@@ -464,8 +449,14 @@
       "id": "heading_tag",
       "label": "Balise du titre",
       "options": [
-        { "value": "h1", "label": "H1 (page d'accueil)" },
-        { "value": "h2", "label": "H2" }
+        {
+          "value": "h1",
+          "label": "H1 (page d'accueil)"
+        },
+        {
+          "value": "h2",
+          "label": "H2"
+        }
       ],
       "default": "h1"
     },
@@ -520,8 +511,14 @@
       "id": "sequence_mode",
       "label": "Mode de défilement",
       "options": [
-        { "value": "scrub", "label": "Image par image (le scroll fait défiler les images)" },
-        { "value": "chapters", "label": "Chapitres (chaque scroll lit la vidéo jusqu'au plan suivant)" }
+        {
+          "value": "scrub",
+          "label": "Image par image (le scroll fait défiler les images)"
+        },
+        {
+          "value": "chapters",
+          "label": "Chapitres (chaque scroll lit la vidéo jusqu'au plan suivant)"
+        }
       ],
       "default": "scrub",
       "info": "Chapitres : un cran de molette, un swipe, une flèche du clavier ou un bouton lance la vraie vidéo jusqu'à l'arrêt suivant ; en remontant, la vidéo inversée est lue. Réglages dans « Mode chapitres » plus bas."
@@ -566,13 +563,6 @@
       "info": "Décoché : sur mobile, la vidéo puis les produits empilés avec leur image statique (aucune frame chargée). Les visiteurs ayant activé « réduire les animations » ou l'économiseur de données voient toujours la version empilée."
     },
     {
-      "type": "number",
-      "id": "priority_count",
-      "label": "Frames chargées en priorité",
-      "default": 30,
-      "info": "Chargées avant les autres, dès l'arrivée sur la page."
-    },
-    {
       "type": "text",
       "id": "sequence_label",
       "label": "Description accessible de la séquence",
@@ -583,26 +573,15 @@
       "content": "Mode chapitres (lecture vidéo)"
     },
     {
-      "type": "video",
-      "id": "chapter_video",
-      "label": "Plan-séquence (Fichiers Shopify)",
-      "info": "Optionnel. Par défaut, le fichier ci-dessous dans /assets est utilisé (recommandé : synchronisation image par image garantie)."
-    },
-    {
       "type": "text",
       "id": "chapter_video_file",
-      "label": "… ou plan-séquence dans /assets",
+      "label": "Plan-séquence (fichier dans /assets)",
       "default": "plan-sequence.mp4"
-    },
-    {
-      "type": "video",
-      "id": "chapter_video_reverse",
-      "label": "Plan-séquence inversé (Fichiers Shopify)"
     },
     {
       "type": "text",
       "id": "chapter_video_reverse_file",
-      "label": "… ou plan-séquence inversé dans /assets",
+      "label": "Plan-séquence inversé (fichier dans /assets)",
       "default": "plan-sequence-reverse.mp4",
       "info": "La même vidéo lue à l'envers : en remontant, la marche arrière est aussi fluide que l'avant. Vide = retour par un court fondu."
     },
@@ -611,12 +590,30 @@
       "id": "chapter_rate",
       "label": "Vitesse de lecture entre deux plans",
       "options": [
-        { "value": "1", "label": "× 1 (vitesse réelle)" },
-        { "value": "1.25", "label": "× 1,25" },
-        { "value": "1.5", "label": "× 1,5" },
-        { "value": "2", "label": "× 2" },
-        { "value": "2.5", "label": "× 2,5" },
-        { "value": "3", "label": "× 3" }
+        {
+          "value": "1",
+          "label": "× 1 (vitesse réelle)"
+        },
+        {
+          "value": "1.25",
+          "label": "× 1,25"
+        },
+        {
+          "value": "1.5",
+          "label": "× 1,5"
+        },
+        {
+          "value": "2",
+          "label": "× 2"
+        },
+        {
+          "value": "2.5",
+          "label": "× 2,5"
+        },
+        {
+          "value": "3",
+          "label": "× 3"
+        }
       ],
       "default": "1.5"
     },
@@ -626,42 +623,6 @@
       "label": "Fin du plan final (secondes)",
       "default": "39.9",
       "info": "Dernier arrêt, sans produit. Ensuite, la page défile normalement."
-    },
-    {
-      "type": "number",
-      "id": "chapter_fps",
-      "label": "Images par seconde des vidéos",
-      "default": 30
-    },
-    {
-      "type": "text",
-      "id": "text_next",
-      "label": "Libellé « plan suivant »",
-      "default": "Plan suivant"
-    },
-    {
-      "type": "text",
-      "id": "text_prev",
-      "label": "Libellé « plan précédent »",
-      "default": "Plan précédent"
-    },
-    {
-      "type": "text",
-      "id": "text_skip",
-      "label": "Libellé « passer l'animation » (clavier)",
-      "default": "Passer l'animation"
-    },
-    {
-      "type": "text",
-      "id": "text_start",
-      "label": "Nom du premier point (navigation)",
-      "default": "Début"
-    },
-    {
-      "type": "text",
-      "id": "text_end",
-      "label": "Nom du dernier point (navigation)",
-      "default": "Plan final"
     },
     {
       "type": "header",
@@ -741,7 +702,7 @@
       "id": "accent_color",
       "label": "Couleur d'accent",
       "default": "#FF7A1A",
-      "info": "Boutons, points d'intérêt, petits titres des cartes."
+      "info": "Boutons, points d'intérêt, petits titres des cartes, navigation des chapitres."
     },
     {
       "type": "header",
@@ -794,26 +755,14 @@
     {
       "type": "color",
       "id": "color_product_title",
-      "label": "Titres des produits",
+      "label": "Titres et prix des produits",
       "default": "#FFFFFF"
-    },
-    {
-      "type": "color",
-      "id": "color_kicker",
-      "label": "Petits titres des cartes (Carrosserie, Jante…)",
-      "default": "#FF7A1A"
     },
     {
       "type": "color",
       "id": "color_card_text",
       "label": "Accroches et prix barrés",
       "default": "#C8C8CC"
-    },
-    {
-      "type": "color",
-      "id": "color_price",
-      "label": "Prix",
-      "default": "#FFFFFF"
     },
     {
       "type": "color",
@@ -857,8 +806,14 @@
           "id": "display",
           "label": "Affichage",
           "options": [
-            { "value": "card", "label": "Carte latérale (apparaît seule)" },
-            { "value": "hotspot", "label": "Point d'intérêt (clic pour ouvrir)" }
+            {
+              "value": "card",
+              "label": "Carte latérale (apparaît seule)"
+            },
+            {
+              "value": "hotspot",
+              "label": "Point d'intérêt (clic pour ouvrir)"
+            }
           ],
           "default": "card"
         },
@@ -902,8 +857,14 @@
           "id": "side",
           "label": "Côté de la carte",
           "options": [
-            { "value": "left", "label": "Gauche" },
-            { "value": "right", "label": "Droite" }
+            {
+              "value": "left",
+              "label": "Gauche"
+            },
+            {
+              "value": "right",
+              "label": "Droite"
+            }
           ],
           "default": "right"
         },
