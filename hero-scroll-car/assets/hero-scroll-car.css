@@ -195,7 +195,8 @@ hero-scroll-car,
 
 .hsc-btn:focus-visible,
 .hsc-sound:focus-visible,
-.hsc-card a:focus-visible {
+.hsc-card a:focus-visible,
+.hsc-shelf__item a:focus-visible {
   outline: 2px solid var(--hsc-accent);
   outline-offset: 3px;
 }
@@ -1245,3 +1246,228 @@ hero-scroll-car,
   }
 }
 
+/* --------------------------------------------------------------------------
+   Présentoir — chapters mode, last shot: every chosen product in a row standing on the counter.
+   Wide screens: the JS sets --hsc-shelf-bottom so the cards sit on the counter line of the video.
+   Narrow screens: a swipeable strip docked at the bottom.
+   -------------------------------------------------------------------------- */
+
+.hsc-shelf {
+  position: absolute;
+  z-index: 5;
+  left: 50%;
+  bottom: var(--hsc-shelf-bottom, calc((100 - var(--hsc-shelf-y, 71)) * 1%));
+  width: min(1240px, calc(100% - 48px));
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateX(-50%);
+  transition: opacity 0.4s ease, visibility 0s linear 0.4s;
+}
+
+.hsc-shelf.is-visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition-delay: 0s;
+}
+
+.hsc .hsc-shelf__title {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--hsc-accent);
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.7);
+}
+
+.hsc-shelf__list {
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: clamp(10px, 1.2vw, 18px);
+}
+
+.hsc-shelf__item {
+  flex: 0 1 clamp(150px, 14vw, 200px);
+  min-width: 0;
+  display: grid;
+  align-content: end;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--hsc-card-border);
+  border-radius: 12px;
+  background: var(--hsc-card-bg);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  backdrop-filter: blur(14px) saturate(1.2);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  transform: translateY(26px);
+  transition: opacity 0.5s ease, transform 0.7s var(--hsc-ease-out);
+  transition-delay: calc(var(--hsc-i, 0) * 70ms);
+}
+
+.hsc-shelf.is-visible .hsc-shelf__item {
+  opacity: 1;
+  transform: none;
+}
+
+.hsc-shelf__item .hsc-card__media {
+  aspect-ratio: 1 / 1;
+  max-height: 19vh;
+}
+
+.hsc .hsc-shelf__item .hsc-card__title {
+  font-size: clamp(14px, calc(var(--hsc-product-title-size) * 0.6), 18px);
+}
+
+.hsc-shelf__item .hsc-card__price {
+  font-size: 1rem;
+}
+
+.hsc-shelf__item .hsc-card__add {
+  min-height: 40px;
+  padding: 0 10px;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+}
+
+.hsc-shelf__item--empty {
+  flex-basis: auto;
+  font-size: 0.9rem;
+  color: var(--hsc-ink-dim);
+}
+
+@media (max-width: 767px) {
+  /* Above the sound button, below the chapter dots: a strip of compact cards (image left, button below). */
+  .hsc[data-mode="scroll"] .hsc-shelf {
+    left: 0;
+    width: 100%;
+    bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    justify-items: stretch;
+    gap: 8px;
+    transform: none;
+  }
+
+  .hsc[data-mode="scroll"] .hsc-shelf__title {
+    padding: 0 16px;
+    font-size: 0.68rem;
+  }
+
+  .hsc[data-mode="scroll"] .hsc-shelf__list {
+    justify-content: flex-start;
+    align-items: stretch;
+    gap: 10px;
+    padding: 0 16px 2px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scroll-padding: 0 16px;
+    scrollbar-width: none;
+  }
+
+  .hsc[data-mode="scroll"] .hsc-shelf__list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .hsc[data-mode="scroll"] .hsc-shelf__item {
+    flex: 0 0 min(72vw, 280px);
+    padding: 10px;
+    grid-template-columns: 64px minmax(0, 1fr);
+    grid-template-areas:
+      "media title"
+      "media price"
+      "add add"
+      "msg msg";
+    column-gap: 12px;
+    row-gap: 4px;
+    align-content: start;
+    align-items: center;
+    scroll-snap-align: start;
+  }
+
+  .hsc[data-mode="scroll"] .hsc-stage .hsc-shelf__item .hsc-card__media {
+    grid-area: media;
+    width: 64px;
+    max-height: none;
+    aspect-ratio: 1 / 1;
+    align-self: start;
+  }
+
+  .hsc[data-mode="scroll"] .hsc-stage .hsc-shelf__item .hsc-card__title {
+    grid-area: title;
+    align-self: end;
+    padding-right: 0;
+    font-size: 14px;
+  }
+
+  .hsc[data-mode="scroll"] .hsc-stage .hsc-shelf__item .hsc-card__price {
+    grid-area: price;
+    align-self: start;
+    font-size: 0.95rem;
+  }
+
+  .hsc[data-mode="scroll"] .hsc-stage .hsc-shelf__item .hsc-card__add {
+    grid-area: add;
+    margin-top: 6px;
+    min-height: 40px;
+  }
+
+  .hsc[data-mode="scroll"] .hsc-stage .hsc-shelf__item .hsc-card__msg {
+    grid-area: msg;
+  }
+}
+
+.hsc[data-mode="static"] .hsc-shelf {
+  display: none;
+}
+
+/* Version without animation: the présentoir still, then every product in a grid. */
+.hsc-static-shelf {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+
+.hsc-static-shelf__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 14px;
+}
+
+.hsc .hsc-card--compact {
+  padding: 14px;
+  gap: 8px;
+}
+
+.hsc .hsc-card--compact .hsc-card__media {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+}
+
+.hsc .hsc-card--compact .hsc-card__title {
+  font-size: clamp(14px, calc(var(--hsc-product-title-size) * 0.6), 18px);
+}
+
+.hsc .hsc-card--compact .hsc-card__add {
+  min-height: 40px;
+  padding: 0 10px;
+  font-size: 0.72rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hsc .hsc-shelf {
+    display: none;
+  }
+}

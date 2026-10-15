@@ -16,7 +16,7 @@ hero-scroll-car/
 │   ├── hero-ignition.mp4 / .mp3      vidéo d'allumage avec son (le .mp3 séparé est optionnel)
 │   ├── hero-poster.jpg               dernière image de la vidéo
 │   ├── hero-start.jpg                première image (affichée sous le bouton « Démarrer le moteur »)
-│   └── stop-*.jpg                    images fixes de la version empilée
+│   └── stop-*.jpg                    images fixes de la version empilée (dont le présentoir)
 ├── preview/                          aperçu local hors Shopify (produits et panier simulés)
 └── tools/                            réextraction des images (ex. passage en 1080p)
 ```
@@ -133,9 +133,13 @@ la fluidité d'une vidéo. En remontant, une copie inversée de la vidéo est lu
 fluide. Après le plan final, la page défile normalement.
 
 - Fichiers : `assets/plan-sequence.mp4` (avant, avec le son) et `assets/plan-sequence-reverse.mp4` (inversée),
-  1080p, une image clé toutes les 15 images, moins de 20 Mo chacun (limite d'un fichier de thème).
+  1080p, 48,5 s, une image clé par seconde, moins de 20 Mo chacun (limite d'un fichier de thème).
 - Chaque bloc « Arrêt caméra » a un **temps de l'arrêt** en secondes : 10 / 19.8 / 25.27 / 34.8, et
-  « Fin du plan final » vaut 39.9.
+  « Fin du plan final » vaut 48.4 : la voiture a reculé jusqu'au présentoir.
+- Bloc **« Présentoir (fin) »** : choisir jusqu'à 6 produits ; ils s'affichent ensemble sur le dernier plan,
+  cartes posées sur le comptoir. « Hauteur du comptoir » (71 % par défaut) règle la ligne où elles se posent ;
+  sur mobile, les cartes forment une bande à faire glisser en bas de l'écran. Image fixe de la version sans
+  animation : `assets/stop-presentoir.jpg`.
 - « Vitesse de lecture entre deux plans » : × 1,5 par défaut.
 - Pensé pour la première section de la page d'accueil. Avec « réduire les animations », la version empilée
   s'affiche comme dans l'autre mode.
@@ -143,8 +147,11 @@ fluide. Après le plan final, la page défile normalement.
 Pour réencoder depuis un nouvel export du plan-séquence :
 
 ```bash
-tools/encode-chapters.sh plan-sequence-source.mp4 dossier-sortie 18.4
+GOP=30 PRESET=veryslow tools/encode-chapters.sh plan-sequence-source.mp4 /chemin/absolu/sortie 18.4
 ```
+
+Un export 4K est d'abord ramené en 1080p. `GOP=30` (une image clé par seconde) et `PRESET=veryslow`
+gardent la qualité pour une vidéo longue sous la limite de 20 Mo.
 
 ## 7. Mettre à jour la séquence d'images (nouvel export du plan-séquence)
 

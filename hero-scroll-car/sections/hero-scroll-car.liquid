@@ -22,6 +22,7 @@
     stop-carrosserie.jpg, stop-porte.jpg, stop-interieur.jpg, stop-jante.jpg   images statiques de la version
                         empilée (réduire les animations, économiseur de données, ou mobile si la séquence y est
                         désactivée) ; utilisées si aucune image n'est choisie dans le bloc « Arrêt caméra »
+    stop-presentoir.jpg image fixe du présentoir (dernier plan), au-dessus des cartes dans la version empilée
 
   RÉGLER LES FRAMES D'ARRÊT
     1. « Nombre total de frames » = numéro de la dernière image (f_0240.webp → 240).
@@ -59,9 +60,13 @@
     une copie inversée de la vidéo est lue : marche arrière tout aussi fluide. La scène reste épinglée en haut
     de l'écran tant qu'il reste des chapitres ; après le plan final, la page défile normalement.
     Fichiers : plan-sequence.mp4 (avant, avec le son) et plan-sequence-reverse.mp4 (inversée, sans son), 1080p,
-    une image clé toutes les 15 images. Chaque bloc a un « temps de l'arrêt » en secondes (10 / 19.8 / 25.27 /
-    34.8) ; « Fin du plan final » = 39.9. Chaque bloc peut aussi avoir sa propre vitesse (« vitesse pour arriver
-    ici », ex. × 2,5 pour le premier plan). Le bouton son active la bande-son du plan-séquence.
+    48,5 s, une image clé par seconde. Chaque bloc a un « temps de l'arrêt » en secondes (10 / 19.8 / 25.27 /
+    34.8) ; « Fin du plan final » = 48.4 (la voiture a reculé jusqu'au présentoir). Chaque bloc peut aussi avoir
+    sa propre vitesse (« vitesse pour arriver ici », ex. × 2,5 pour le premier plan). Le bouton son active la
+    bande-son du plan-séquence.
+    Bloc « Présentoir (fin) » : jusqu'à 6 produits au choix, affichés ensemble sur le dernier plan, cartes posées
+    sur le comptoir (« Hauteur du comptoir », 71 % de la hauteur de la vidéo) ; sur mobile, bande de cartes à
+    faire glisser en bas de l'écran.
     Pensé pour la première section de la page (hero). Réduire les animations : version empilée, comme avant.
 
   REMPLACER LES ASSETS
@@ -133,6 +138,15 @@
   assign card_bg = card_bg_base | color_modify: 'alpha', card_alpha
   assign card_title_base = s.color_product_title | default: '#FFFFFF'
   assign card_border = card_title_base | color_modify: 'alpha', 0.16
+  comment
+    Bloc « Présentoir (fin) » : les cartes de tous les produits choisis, sur le dernier plan (mode chapitres).
+  endcomment
+  assign shelf = nil
+  for block in section.blocks
+    if block.type == 'showcase'
+      assign shelf = block
+    endif
+  endfor
 -%}
 
 <hero-scroll-car
@@ -155,14 +169,16 @@
       "mobileSequence": {% if s.mobile_sequence %}true{% else %}false{% endif %},
       "sequenceMode": {{ sequence_mode | json }},
       "chapterRate": {{ s.chapter_rate | default: '1.5' | json }},
-      "chapterEnd": {{ s.chapter_end | default: '39.9' | json }},
+      "chapterEnd": {{ s.chapter_end | default: '48.4' | json }},
       "fps": 30,
       "cartAddUrl": {{ cart_add_url | json }},
       "cartUrl": {{ cart_url | json }},
       "rootUrl": {{ routes.root_url | json }},
       "stops": [
+        {%- assign separator = '' -%}
         {%- for block in section.blocks -%}
-          {
+          {%- if block.type != 'stop' -%}{%- continue -%}{%- endif -%}
+          {{ separator }}{
             "id": {{ block.id | json }},
             "frame": {{ block.settings.frame | default: 1 }},
             "side": {{ block.settings.side | default: 'right' | json }},
@@ -173,9 +189,18 @@
             "time": {{ block.settings.time | default: '' | json }},
             "rate": {{ block.settings.speed | default: 'auto' | json }},
             "label": {{ block.settings.title | json }}
-          }{%- unless forloop.last -%},{%- endunless -%}
+          }
+          {%- assign separator = ',' -%}
         {%- endfor -%}
       ],
+      "showcase": {%- if shelf -%}
+        {
+          "id": {{ shelf.id | json }},
+          "label": {{ shelf.settings.heading | default: 'Présentoir' | json }},
+          "y": {{ shelf.settings.cards_y | default: 71 }},
+          "rate": {{ shelf.settings.speed | default: 'auto' | json }}
+        }
+      {%- else -%} null{%- endif -%},
       "texts": {
         "add": {{ s.text_add | json }},
         "added": {{ s.text_added | json }},
@@ -307,6 +332,7 @@
       </div>
 
       {%- for block in section.blocks -%}
+        {%- if block.type != 'stop' -%}{%- continue -%}{%- endif -%}
         {%- liquid
           assign product = block.settings.product
           assign variant = product.selected_or_first_available_variant
@@ -375,12 +401,60 @@
           {%- endif -%}
         </article>
       {%- endfor -%}
+
+      {%- if shelf -%}
+        {%- comment -%} Présentoir : une rangée de cartes posée sur le comptoir du dernier plan (placée par le JS) {%- endcomment -%}
+        <div
+          class="hsc-shelf"
+          data-hsc-shelf
+          aria-hidden="true"
+          inert
+          style="--hsc-shelf-y: {{ shelf.settings.cards_y | default: 71 }};"
+          {{ shelf.shopify_attributes }}
+        >
+          {%- if shelf.settings.heading != blank -%}
+            <p class="hsc-shelf__title">{{ shelf.settings.heading | escape }}</p>
+          {%- endif -%}
+          <ul class="hsc-shelf__list" role="list">
+            {%- for product in shelf.settings.products -%}
+              {%- assign variant = product.selected_or_first_available_variant -%}
+              <li class="hsc-shelf__item" data-hsc-item style="--hsc-i: {{ forloop.index0 }};">
+                {%- if product.featured_image -%}
+                  <a class="hsc-card__media" href="{{ product.url }}" tabindex="-1" aria-hidden="true">
+                    {{ product.featured_image | image_url: width: 480 | image_tag: loading: 'lazy', widths: '240, 360, 480', sizes: '180px', alt: '' }}
+                  </a>
+                {%- endif -%}
+                <h2 class="hsc-card__title"><a href="{{ product.url }}">{{ product.title | escape }}</a></h2>
+                <p class="hsc-card__price">
+                  <span>{{ variant.price | money }}</span>
+                  {%- if variant.compare_at_price > variant.price -%}
+                    <s>{{ variant.compare_at_price | money }}</s>
+                  {%- endif -%}
+                </p>
+                <button
+                  type="button"
+                  class="hsc-btn hsc-btn--primary hsc-card__add"
+                  data-hsc-add
+                  data-variant-id="{{ variant.id }}"
+                  {% unless product.available %}disabled{% endunless %}
+                >
+                  <span data-hsc-add-label>{% if product.available %}{{ s.text_add | escape }}{% else %}{{ s.text_unavailable | escape }}{% endif %}</span>
+                </button>
+                <p class="hsc-card__msg" role="status" aria-live="polite" data-hsc-msg></p>
+              </li>
+            {%- else -%}
+              <li class="hsc-shelf__item hsc-shelf__item--empty">Choisissez les produits du présentoir dans l’éditeur de thème.</li>
+            {%- endfor -%}
+          </ul>
+        </div>
+      {%- endif -%}
     </section>
   </div>
 
   {%- comment -%} ---------- Version empilée (reduced-motion, Save-Data, mobile si séquence désactivée, no-JS) ---------- {%- endcomment -%}
   <section class="hsc-static" data-hsc-static aria-label="{{ s.sequence_label | escape }}">
     {%- for block in section.blocks -%}
+      {%- if block.type != 'stop' -%}{%- continue -%}{%- endif -%}
       {%- liquid
         assign product = block.settings.product
         assign variant = product.selected_or_first_available_variant
@@ -436,6 +510,54 @@
         </div>
       </article>
     {%- endfor -%}
+    {%- if shelf and shelf.settings.products.size > 0 -%}
+      <article class="hsc-stop hsc-stop--shelf">
+        <div class="hsc-stop__media">
+          <img
+            src="{{ shelf.settings.mobile_image_file | default: 'stop-presentoir.jpg' | asset_url }}"
+            alt="{{ shelf.settings.heading | escape }}"
+            width="1920"
+            height="1080"
+            loading="lazy"
+            decoding="async"
+          >
+        </div>
+        <div class="hsc-static-shelf">
+          {%- if shelf.settings.heading != blank -%}
+            <p class="hsc-card__kicker">{{ shelf.settings.heading | escape }}</p>
+          {%- endif -%}
+          <ul class="hsc-static-shelf__list" role="list">
+            {%- for product in shelf.settings.products -%}
+              {%- assign variant = product.selected_or_first_available_variant -%}
+              <li class="hsc-card hsc-card--static hsc-card--compact">
+                {%- if product.featured_image -%}
+                  <a class="hsc-card__media" href="{{ product.url }}" tabindex="-1" aria-hidden="true">
+                    {{ product.featured_image | image_url: width: 480 | image_tag: loading: 'lazy', widths: '240, 360, 480', sizes: '160px', alt: '' }}
+                  </a>
+                {%- endif -%}
+                <h2 class="hsc-card__title"><a href="{{ product.url }}">{{ product.title | escape }}</a></h2>
+                <p class="hsc-card__price">
+                  <span>{{ variant.price | money }}</span>
+                  {%- if variant.compare_at_price > variant.price -%}
+                    <s>{{ variant.compare_at_price | money }}</s>
+                  {%- endif -%}
+                </p>
+                <button
+                  type="button"
+                  class="hsc-btn hsc-btn--primary hsc-card__add"
+                  data-hsc-add
+                  data-variant-id="{{ variant.id }}"
+                  {% unless product.available %}disabled{% endunless %}
+                >
+                  <span data-hsc-add-label>{% if product.available %}{{ s.text_add | escape }}{% else %}{{ s.text_unavailable | escape }}{% endif %}</span>
+                </button>
+                <p class="hsc-card__msg" role="status" aria-live="polite" data-hsc-msg></p>
+              </li>
+            {%- endfor -%}
+          </ul>
+        </div>
+      </article>
+    {%- endif -%}
   </section>
 
   <noscript>
@@ -677,8 +799,8 @@
       "type": "text",
       "id": "chapter_end",
       "label": "Fin du plan final (secondes)",
-      "default": "39.9",
-      "info": "Dernier arrêt, sans produit. Ensuite, la page défile normalement."
+      "default": "48.4",
+      "info": "Dernier arrêt : le présentoir si le bloc est ajouté. Ensuite, la page défile normalement."
     },
     {
       "type": "header",
@@ -974,6 +1096,62 @@
           "info": "Utilisé si aucune image n'est choisie ci-dessus."
         }
       ]
+    },
+    {
+      "type": "showcase",
+      "name": "Présentoir (fin)",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "paragraph",
+          "content": "Mode chapitres : les cartes s'affichent sur le dernier plan (« Fin du plan final »), posées sur le comptoir."
+        },
+        {
+          "type": "product_list",
+          "id": "products",
+          "label": "Produits",
+          "limit": 6
+        },
+        {
+          "type": "text",
+          "id": "heading",
+          "label": "Titre",
+          "default": "Toute la gamme"
+        },
+        {
+          "type": "range",
+          "id": "cards_y",
+          "label": "Hauteur du comptoir",
+          "min": 40,
+          "max": 95,
+          "step": 1,
+          "unit": "%",
+          "default": 71,
+          "info": "Bas des cartes, en % de la hauteur de la vidéo (ordinateur). Sur mobile, les cartes défilent en bas."
+        },
+        {
+          "type": "select",
+          "id": "speed",
+          "label": "Vitesse pour arriver ici",
+          "options": [
+            { "value": "auto", "label": "Vitesse générale" },
+            { "value": "1", "label": "× 1" },
+            { "value": "1.5", "label": "× 1,5" },
+            { "value": "2", "label": "× 2" },
+            { "value": "2.5", "label": "× 2,5" },
+            { "value": "3", "label": "× 3" },
+            { "value": "4", "label": "× 4" }
+          ],
+          "default": "2"
+        },
+        {
+          "type": "text",
+          "id": "mobile_image_file",
+          "label": "Image fixe (version sans animation)",
+          "default": "stop-presentoir.jpg",
+          "info": "Fichier dans /assets, affiché au-dessus des cartes quand l'animation est désactivée."
+        }
+      ]
     }
   ],
   "presets": [
@@ -1035,6 +1213,12 @@
             "tagline": "Jantes nettes, étriers propres, sans frotter.",
             "focus_x": 65,
             "mobile_image_file": "stop-jante.jpg"
+          }
+        },
+        {
+          "type": "showcase",
+          "settings": {
+            "heading": "Toute la gamme"
           }
         }
       ]

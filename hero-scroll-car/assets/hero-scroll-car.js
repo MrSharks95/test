@@ -129,6 +129,13 @@
     config.chapterRate = clamp(parseSeconds(config.chapterRate) || 1.5, 0.5, 4);
     config.chapterEnd = parseSeconds(config.chapterEnd);
     config.fps = parseSeconds(config.fps) || 30;
+    // "Présentoir (fin)" block: every chosen product, on the counter of the last shot (chapters mode).
+    var showcase = config.showcase && typeof config.showcase === 'object' ? config.showcase : null;
+    if (showcase) {
+      showcase.y = clamp(parseSeconds(showcase.y) || 71, 0, 100);
+      showcase.rate = parseSeconds(showcase.rate);
+    }
+    config.showcase = showcase;
     config.texts = config.texts || {};
     return config;
   };
@@ -1086,10 +1093,21 @@
       points.push({ time: stops[i].time, stop: stops[i], focus: stops[i].focus, label: stops[i].label || '' });
     }
     var last = points[points.length - 1].time;
-    if (config.chapterEnd > last + 0.2) points.push({ time: config.chapterEnd, stop: null, focus: 50, label: config.texts.end || '' });
+    var showcase = config.showcase;
+    if (config.chapterEnd > last + 0.2) {
+      points.push({
+        time: config.chapterEnd,
+        stop: null,
+        focus: 50,
+        label: (showcase && showcase.label) || config.texts.end || '',
+        showcase: !!showcase,
+        rate: showcase ? showcase.rate : NaN
+      });
+    }
 
     var ch = {
       stage: stage,
+      shelf: config.showcase ? this.querySelector('[data-hsc-shelf]') : null,
       fwd: fwd,
       rev: rev && rev.getAttribute('src') ? rev : null,
       nav: nav,
@@ -1201,6 +1219,7 @@
     if (ch.rev) ch.rev.pause();
     this.closeHotspotCard();
     this.showChapterStop(null);
+    this.showShelf(false);
     ch.stage.classList.remove('is-chapters', 'is-away', 'is-reversing', 'is-cutting', 'is-playing');
     if (ch.nav) ch.nav.innerHTML = '';
     this.chapters = null;
@@ -1417,6 +1436,7 @@
     var ch = this.chapters;
     this.closeHotspotCard();
     this.showChapterStop(null);
+    this.showShelf(false);
     if (index === 0) {
       if (this.revealHero) this.revealHero();
       if (this.video && !this.video.paused) this.video.pause();
@@ -1432,7 +1452,29 @@
     this.sequence.target = index;
     this.resizeChapters();
     this.showChapterStop(point.stop ? point.stop.id : null);
+    this.showShelf(!!point.showcase);
     this.updateChapterUI();
+  };
+
+  // The product row of the "Présentoir" shot: shown on arrival, out of the tab order otherwise.
+  HeroScrollCar.prototype.showShelf = function (visible) {
+    var shelf = this.chapters && this.chapters.shelf;
+    if (!shelf) return;
+    shelf.classList.toggle('is-visible', visible);
+    shelf.setAttribute('aria-hidden', visible ? 'false' : 'true');
+    if (visible) shelf.removeAttribute('inert');
+    else shelf.setAttribute('inert', '');
+  };
+
+  // Wide screens: the bottom of the cards sits on the counter line of the video (in % of its height),
+  // wherever the cover crop puts it. Narrow screens dock the row at the bottom instead (CSS).
+  HeroScrollCar.prototype.positionShelf = function () {
+    var ch = this.chapters;
+    var seq = this.sequence;
+    if (!ch || !ch.shelf || !seq || !seq.cover) return;
+    var line = seq.cover.oy + (this.config.showcase.y / 100) * seq.cover.dh;
+    var bottom = Math.max(12, Math.round(seq.height - line));
+    ch.shelf.style.setProperty('--hsc-shelf-bottom', bottom + 'px');
   };
 
   // Shows the card (side card) or the hotspot (dot + line) of the stop `id`; null hides everything.
@@ -1549,7 +1591,7 @@
   // (going forward), or the general speed.
   HeroScrollCar.prototype.segmentRate = function (a, b) {
     var point = this.chapters.points[Math.max(a, b)];
-    var rate = point && point.stop ? point.stop.rate : NaN;
+    var rate = point ? (point.stop ? point.stop.rate : point.rate) : NaN;
     return rate > 0 ? clamp(rate, 0.5, 6) : this.config.chapterRate;
   };
 
@@ -1648,6 +1690,7 @@
     seq.height = height;
     seq.cover = { ox: (width - drawWidth) * focus / 100, oy: (height - drawHeight) / 2, dw: drawWidth, dh: drawHeight };
     this.positionHotspots();
+    this.positionShelf();
     if (seq.openCard) this.placeHotspotCard(seq.openCard);
   };
 
@@ -1713,7 +1756,7 @@
     var texts = config.texts;
     var variantId = parseInt(button.getAttribute('data-variant-id'), 10);
     var label = button.querySelector('[data-hsc-add-label]');
-    var card = button.closest('.hsc-card');
+    var card = button.closest('.hsc-card, [data-hsc-item]');
     var message = card ? card.querySelector('[data-hsc-msg]') : null;
     var originalLabel = label ? label.textContent : '';
     if (!variantId) return;
@@ -1794,6 +1837,12 @@
     if (!window.Shopify || !window.Shopify.designMode) return;
     this.onBlockSelect = function (event) {
       if (!self.contains(event.target) || !self.sequence) return;
+      if (self.chapters && event.target.closest('[data-hsc-shelf]')) {
+        // "Présentoir" block: straight to the last shot, where its cards are.
+        self.pinChapters();
+        self.goChapter(self.chapters.points.length - 1, { fast: true });
+        return;
+      }
       var card = event.target.closest('[data-stop-id]');
       if (!card) return;
       var id = card.getAttribute('data-stop-id');
