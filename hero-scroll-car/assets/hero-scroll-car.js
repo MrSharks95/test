@@ -25,6 +25,8 @@
   var PRIORITY_CONCURRENCY = 6;   // parallel downloads for the first batch
   var BACKGROUND_CONCURRENCY = 3; // parallel downloads for the rest
   var AUDIO_DRIFT_SECONDS = 0.25; // resync audio when it drifts further than this
+  // Events that count as a click for the browsers' sound rules (checked with navigator.userActivation).
+  var SOUND_UNLOCK_EVENTS = ['pointerdown', 'touchend', 'keydown', 'click'];
   var DECODE_AHEAD = 3;           // frames decoded ahead of the current one
   var HERO_SCROLL_RATIO = 0.4;    // share of a viewport height used to fade the hero texts before scrubbing
   var SNAP_IDLE_MS = 220;         // scroll idle time before the sequence settles on the nearest stop
@@ -237,17 +239,31 @@
     }
 
     if (audio) {
+      // An unreadable sound file (missing, corrupted upload…) must not silence the banner: drop it and
+      // use the video's own soundtrack instead.
+      var dropAudio = function () {
+        if (self.audio !== audio) return;
+        self.audio = null;
+        audio.pause();
+        if (self.soundOn && !self.soundBlocked) video.muted = false;
+      };
+      audio.addEventListener('error', dropAudio);
+      var audioSources = audio.querySelectorAll('source');
+      for (var a = 0; a < audioSources.length; a++) audioSources[a].addEventListener('error', dropAudio);
       video.addEventListener('timeupdate', function () {
-        if (!self.soundOn || audio.paused) return;
+        if (self.audio !== audio || !self.soundOn || audio.paused) return;
         if (Math.abs(audio.currentTime - video.currentTime) > AUDIO_DRIFT_SECONDS) {
           audio.currentTime = video.currentTime;
         }
       });
       video.addEventListener('pause', function () { audio.pause(); }); // also fired on "ended"
       video.addEventListener('play', function () {
-        if (!self.soundOn) return;
+        if (self.audio !== audio || !self.soundOn || self.soundBlocked) return;
         audio.currentTime = video.currentTime;
-        audio.play().then(function () { self.setSoundButton(true); }, function () { self.markSoundBlocked(); });
+        audio.play().then(function () { self.setSoundButton(true); }, function (error) {
+          if (error && error.name === 'NotAllowedError') self.markSoundBlocked();
+          else if (error && error.name !== 'AbortError') dropAudio();
+        });
       });
     }
 
@@ -271,7 +287,6 @@
   HeroScrollCar.prototype.setupStartButton = function (button, reveal) {
     var self = this;
     var video = this.video;
-    var audio = this.audio;
     var hero = this.hero;
     video.removeAttribute('autoplay');
     video.pause();
@@ -286,7 +301,7 @@
       hero.classList.add('is-started');
       if (withSound) {
         self.soundOn = true;
-        if (!audio) video.muted = false;
+        if (!self.audio) video.muted = false;
         self.setSoundButton(true);
       } else {
         // Started by a scroll (not a click for the browser): muted for now, the sound comes on by itself
@@ -307,6 +322,17 @@
           }
           reveal();
         });
+      }
+      if (withSound) {
+        // Still inside the click: Safari and every iPhone browser only allow sound on a media element
+        // started from a click / tap, so the engine sound and the plan-séquence get it now.
+        var audio = self.audio;
+        if (audio) {
+          try { audio.currentTime = 0; } catch (error) { /* starts from 0 anyway */ }
+          var audioPromise = audio.play();
+          if (audioPromise && typeof audioPromise.catch === 'function') audioPromise.catch(function () {});
+        }
+        self.primeChapterSound();
       }
       // Safety nets, as for the autoplay: never leave the hero without its texts.
       setTimeout(function () { if (video.paused && !video.ended) reveal(); }, 2500);
@@ -342,10 +368,14 @@
     }
     var unlock = function (event) {
       if (self.soundButton && self.soundButton.contains(event.target)) return; // the button handles itself
+      // A finger counts as a click on touchend only (not on its pointer events): unmuting earlier would be
+      // refused, and the browser even pauses a video unmuted that way.
+      if (event.type === 'pointerdown' && event.pointerType && event.pointerType !== 'mouse') return;
+      if (navigator.userActivation && !navigator.userActivation.isActive) return;
       self.unlockSound();
     };
     this.onSoundUnlock = unlock;
-    ['pointerdown', 'keydown', 'touchend'].forEach(function (type) {
+    SOUND_UNLOCK_EVENTS.forEach(function (type) {
       document.addEventListener(type, unlock, { capture: true, passive: true });
     });
   };
@@ -363,7 +393,7 @@
     if (!this.soundBlocked) return;
     var self = this;
     this.soundBlocked = false;
-    ['pointerdown', 'keydown', 'touchend'].forEach(function (type) {
+    SOUND_UNLOCK_EVENTS.forEach(function (type) {
       document.removeEventListener(type, self.onSoundUnlock, { capture: true, passive: true });
     });
     var texts = this.config.texts;
@@ -386,7 +416,24 @@
       }
     }
     var ch = this.chapters;
-    if (ch && ch.activeVideo === ch.fwd) ch.fwd.muted = false;
+    if (ch && ch.activeVideo === ch.fwd && !ch.fwd.paused) ch.fwd.muted = false;
+    this.primeChapterSound();
+  };
+
+  // Safari and every iPhone browser only let a media element play with sound if it was started once from
+  // a click / tap. Called inside such a gesture: the plan-séquence video is started and paused at once,
+  // so it can later play with its soundtrack when a wheel or a swipe moves on. It stays muted for this
+  // (an iPhone pauses any other video playing with sound, i.e. the banner).
+  HeroScrollCar.prototype.primeChapterSound = function () {
+    var ch = this.chapters;
+    if (!ch || !ch.fwd || !ch.fwd.paused || ch.busy) return;
+    var fwd = ch.fwd;
+    var muted = fwd.muted;
+    fwd.muted = true;
+    var promise = fwd.play();
+    if (promise && typeof promise.catch === 'function') promise.catch(function () {});
+    fwd.pause();
+    fwd.muted = muted;
   };
 
   HeroScrollCar.prototype.toggleSound = function () {
@@ -400,6 +447,7 @@
     var ch = this.chapters;
     if (ch && (ch.index > 0 || ch.busy)) {
       this.soundOn = !this.soundOn;
+      if (this.soundOn) this.primeChapterSound();
       ch.fwd.muted = !this.soundOn;
       if (audio) audio.pause();
       button.setAttribute('aria-pressed', this.soundOn ? 'true' : 'false');
@@ -422,6 +470,7 @@
     button.setAttribute('aria-pressed', 'true');
     button.setAttribute('aria-label', texts.soundOff || '');
     button.setAttribute('title', texts.soundOff || '');
+    this.primeChapterSound();
 
     var atEnd = video.ended || (video.duration > 0 && video.currentTime >= video.duration - 0.05);
     if (!audio) {
@@ -1082,7 +1131,7 @@
     this.sequence = seq;
 
     stage.classList.add('is-chapters');
-    fwd.muted = !this.soundOn;
+    fwd.muted = !this.soundOn || this.soundBlocked;
     fwd.playbackRate = config.chapterRate;
     fwd.preload = 'auto';
     fwd.load();
@@ -1521,7 +1570,7 @@
       if (ch.destroyed) return;
       ch.stage.classList.remove('is-reversing');
       video.playbackRate = rate;
-      video.muted = !self.soundOn || !!rateOverride; // no chipmunk soundtrack while fast-forwarding
+      video.muted = !self.soundOn || self.soundBlocked || !!rateOverride; // no chipmunk soundtrack while fast-forwarding
       ch.activeVideo = video;
       ch.activeRate = rate;
       self.panChapterFocus(target, (toTime - fromTime) / rate);

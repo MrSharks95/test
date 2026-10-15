@@ -13,7 +13,7 @@ hero-scroll-car/
 │   ├── hero-scroll-car.js / .css     le code de la section
 │   ├── f_0001.webp … f_0248.webp     le plan-séquence (1920 × 1080, 23 Mo)
 │   ├── plan-sequence(-reverse).mp4    mode chapitres : le plan-séquence en vidéo, avant et inversé
-│   ├── hero-ignition.mp4 / .mp3      vidéo d'allumage et son moteur
+│   ├── hero-ignition.mp4 / .mp3      vidéo d'allumage avec son (le .mp3 séparé est optionnel)
 │   ├── hero-poster.jpg               dernière image de la vidéo
 │   ├── hero-start.jpg                première image (affichée sous le bouton « Démarrer le moteur »)
 │   └── stop-*.jpg                    images fixes de la version empilée

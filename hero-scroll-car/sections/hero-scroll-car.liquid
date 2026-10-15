@@ -9,9 +9,10 @@
     hero-ignition.mp4   vidéo 16:9, 5 s (dernière frame = voiture allumée de face). De préférence, chargez-la plutôt
                         dans Contenu > Fichiers et choisissez-la dans « Vidéo d'allumage (Fichiers Shopify) » :
                         Shopify l'héberge et l'optimise ; le fichier dans /assets ne sert alors plus.
-    hero-ignition.mp3   son du moteur synchronisé avec la vidéo — OPTIONNEL : si le mp4 contient déjà
-                        sa piste audio, laissez le champ « Son du moteur » vide : le bouton son démute
-                        simplement la vidéo (synchro parfaite, un fichier de moins)
+    hero-ignition.mp3   son du moteur séparé — OPTIONNEL, inutile si le mp4 a sa piste audio (cas de la
+                        vidéo fournie et des vidéos chargées dans Fichiers) : laissez « Son du moteur »
+                        vide, le son vient de la vidéo elle-même (synchro parfaite, un fichier de moins).
+                        Si le mp3 est illisible, la section bascule d'elle-même sur le son de la vidéo.
     hero-poster.jpg     image de la voiture allumée de face (= dernière frame de la vidéo = f_0001)
     hero-start.jpg      première image de la vidéo (voiture éteinte), affichée derrière le bouton « Démarrer le moteur »
     f_0001.webp … f_0248.webp   séquence extraite du plan-séquence (1920 × 1080, 23 Mo au total),
@@ -698,8 +699,8 @@
     {
       "type": "text",
       "id": "audio_file",
-      "label": "Son du moteur",
-      "default": "hero-ignition.mp3"
+      "label": "Son du moteur (mp3, optionnel)",
+      "info": "Vide = son de la vidéo (recommandé)"
     },
     {
       "type": "text",
