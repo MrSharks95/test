@@ -13,7 +13,7 @@
                         sa piste audio, laissez le champ « Son du moteur » vide : le bouton son démute
                         simplement la vidéo (synchro parfaite, un fichier de moins)
     hero-poster.jpg     image de la voiture allumée de face (= dernière frame de la vidéo = f_0001)
-    f_0001.webp … f_0248.webp   séquence extraite du plan-séquence (1280 × 720, 13 Mo au total),
+    f_0001.webp … f_0248.webp   séquence extraite du plan-séquence (1920 × 1080, 23 Mo au total),
                         échantillonnée à « mouvement constant » : plus d'images dans les travellings rapides,
                         moins dans les plans fixes, pour un défilement régulier au scroll.
                         Arrêts livrés : carrosserie 27 · porte 82 · habitacle 134 · jante 213 · plan final 245.
@@ -43,13 +43,13 @@
     5. Dans l'éditeur de thème, sélectionner un bloc « Arrêt caméra » fait défiler la page jusqu'à sa frame :
        pratique pour vérifier la position de la carte.
 
-  PASSER LA SÉQUENCE EN 1080p
+  RÉEXTRAIRE LA SÉQUENCE (nouvel export du même plan-séquence)
     tools/extract-frames.sh <video-1080p.mp4> <dossier-sortie> [qualité WebP = 74]
     réutilise la liste des images conservées (tools/sampling.json) : mêmes numéros, mêmes arrêts
     (27 / 82 / 134 / 213 / 245), seule la définition change (1920 × 1080). Le script vérifie que la vidéo a le
     même nombre d'images (1211 à 30 i/s) que l'export d'origine. Uploader ensuite les f_XXXX.webp dans
-    /assets à la place des anciens (poids attendu ≈ 2 × : ~26 Mo à qualité 74, ~20 Mo à 65) ; rien d'autre
-    à changer, le dessin « cover » s'adapte à la taille des images.
+    /assets à la place des anciens (livré : 1920 × 1080, qualité 74, 23 Mo) ; rien d'autre à changer,
+    le dessin « cover » s'adapte à la taille des images.
 
   REMPLACER LES ASSETS
     Uploader les nouveaux fichiers sous le même nom dans /assets, ou changer les noms dans le groupe
@@ -102,7 +102,7 @@
   id="hsc-{{ section.id }}"
   data-section-id="{{ section.id }}"
   data-mode="auto"
-  style="--hsc-accent: {{ s.accent_color | default: '#FF7A1A' }}; --hsc-n: {{ s.scroll_multiplier | default: 5 }};"
+  style="--hsc-accent: {{ s.accent_color | default: '#FF7A1A' }}; --hsc-n: {{ s.scroll_multiplier | default: 5 }}; --hsc-title-color: {{ s.color_title | default: '#FFFFFF' }}; --hsc-subtitle-color: {{ s.color_subtitle | default: '#C8C8CC' }}; --hsc-kicker-color: {{ s.color_kicker | default: s.accent_color | default: '#FF7A1A' }}; --hsc-product-title-color: {{ s.color_product_title | default: '#FFFFFF' }}; --hsc-card-text-color: {{ s.color_card_text | default: '#C8C8CC' }}; --hsc-price-color: {{ s.color_price | default: '#FFFFFF' }}; --hsc-btn-text-color: {{ s.color_button_text | default: '#111111' }}; --hsc-ink: {{ s.color_other | default: '#FFFFFF' }};"
 >
   <script type="application/json" data-hsc-config>
     {
@@ -556,7 +556,60 @@
       "type": "color",
       "id": "accent_color",
       "label": "Couleur d'accent",
+      "default": "#FF7A1A",
+      "info": "Boutons, points d'intérêt, petits titres des cartes."
+    },
+    {
+      "type": "header",
+      "content": "Couleurs des textes"
+    },
+    {
+      "type": "color",
+      "id": "color_title",
+      "label": "Titre principal",
+      "default": "#FFFFFF"
+    },
+    {
+      "type": "color",
+      "id": "color_subtitle",
+      "label": "Sous-titre",
+      "default": "#C8C8CC"
+    },
+    {
+      "type": "color",
+      "id": "color_product_title",
+      "label": "Titres des produits",
+      "default": "#FFFFFF"
+    },
+    {
+      "type": "color",
+      "id": "color_kicker",
+      "label": "Petits titres des cartes (Carrosserie, Jante…)",
       "default": "#FF7A1A"
+    },
+    {
+      "type": "color",
+      "id": "color_card_text",
+      "label": "Accroches et prix barrés",
+      "default": "#C8C8CC"
+    },
+    {
+      "type": "color",
+      "id": "color_price",
+      "label": "Prix",
+      "default": "#FFFFFF"
+    },
+    {
+      "type": "color",
+      "id": "color_button_text",
+      "label": "Texte des boutons",
+      "default": "#111111"
+    },
+    {
+      "type": "color",
+      "id": "color_other",
+      "label": "Autres textes (libellés des points, « Faire défiler », icône son)",
+      "default": "#FFFFFF"
     }
   ],
   "blocks": [

@@ -11,7 +11,7 @@ hero-scroll-car/
 ├── sections/hero-scroll-car.liquid   la section (réglages, blocs, presets, mode d'emploi en commentaire)
 ├── assets/                           à copier dans /assets du thème
 │   ├── hero-scroll-car.js / .css     le code de la section
-│   ├── f_0001.webp … f_0248.webp     le plan-séquence (13 Mo)
+│   ├── f_0001.webp … f_0248.webp     le plan-séquence (1920 × 1080, 23 Mo)
 │   ├── hero-ignition.mp4 / .mp3      vidéo d'allumage et son moteur
 │   ├── hero-poster.jpg               dernière image de la vidéo
 │   └── stop-*.jpg                    images fixes de la version empilée
@@ -119,10 +119,10 @@ du `.js` ou du `.css`, pas pour charger 248 images une par une.
   dans `refreshCart()`.
 - Bouton son : il lance le son et la vidéo ensemble.
 
-## 6. Mettre à jour la séquence (ex. vidéo 1080p)
+## 6. Mettre à jour la séquence (nouvel export du plan-séquence)
 
 ```bash
-tools/extract-frames.sh video-1080p.mp4 nouvelles-images 74
+tools/extract-frames.sh plan-sequence.mp4 nouvelles-images 74
 ```
 
 Le script reprend les mêmes 248 instants (`tools/sampling.json`) : mêmes numéros, mêmes arrêts.

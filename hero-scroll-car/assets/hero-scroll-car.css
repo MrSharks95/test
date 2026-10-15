@@ -12,6 +12,15 @@ hero-scroll-car,
   --hsc-ink-dim: rgba(255, 255, 255, 0.72);
   --hsc-line: rgba(255, 255, 255, 0.14);
   --hsc-glass: rgba(12, 12, 14, 0.66);
+  /* Text colors (section settings). Applied with ".hsc .x" selectors so the theme's own heading,
+     paragraph and link colors (e.g. "h1, h2 { color: … }") cannot override them. */
+  --hsc-title-color: var(--hsc-ink);
+  --hsc-subtitle-color: var(--hsc-ink-dim);
+  --hsc-product-title-color: var(--hsc-ink);
+  --hsc-card-text-color: var(--hsc-ink-dim);
+  --hsc-price-color: var(--hsc-ink);
+  --hsc-kicker-color: var(--hsc-accent);
+  --hsc-btn-text-color: #111;
   --hsc-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --hsc-pad: clamp(16px, 4vw, 64px);
   display: block;
@@ -838,4 +847,57 @@ hero-scroll-car,
   .hsc-btn--primary:hover {
     transform: none;
   }
+}
+
+/* --------------------------------------------------------------------------
+   Text colors — set from the section settings, stronger than the theme's typography
+   -------------------------------------------------------------------------- */
+
+.hsc .hsc-title {
+  color: var(--hsc-title-color);
+}
+
+.hsc .hsc-subtitle {
+  color: var(--hsc-subtitle-color);
+}
+
+.hsc .hsc-card__kicker {
+  color: var(--hsc-kicker-color);
+}
+
+.hsc .hsc-card__title,
+.hsc .hsc-card__title a,
+.hsc .hsc-card__title a:hover,
+.hsc .hsc-card__title a:visited {
+  color: var(--hsc-product-title-color);
+}
+
+.hsc .hsc-card__tagline,
+.hsc .hsc-card__msg:not(.is-error) {
+  color: var(--hsc-card-text-color);
+}
+
+.hsc .hsc-card__price,
+.hsc .hsc-card__price span {
+  color: var(--hsc-price-color);
+}
+
+.hsc .hsc-card__price s {
+  color: var(--hsc-card-text-color);
+}
+
+.hsc .hsc-btn--primary,
+.hsc .hsc-btn--primary:hover,
+.hsc .hsc-btn--primary:visited {
+  color: var(--hsc-btn-text-color);
+}
+
+.hsc .hsc-btn--primary.is-added {
+  color: #fff;
+}
+
+.hsc .hsc-hotspot,
+.hsc .hsc-scroll-hint,
+.hsc .hsc-card__close {
+  color: var(--hsc-ink);
 }
