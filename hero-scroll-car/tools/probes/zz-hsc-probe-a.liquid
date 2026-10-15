@@ -1,0 +1,25 @@
+<div class="hsc-probe">{{ section.settings | json }}</div>
+{% schema %}
+{
+  "name": "HSC probe A",
+  "settings": [
+    {
+      "type": "select",
+      "id": "sequence_mode",
+      "label": "Mode de défilement",
+      "options": [
+        {
+          "value": "scrub",
+          "label": "Image par image (le scroll fait défiler les images)"
+        },
+        {
+          "value": "chapters",
+          "label": "Chapitres (chaque scroll lit la vidéo jusqu'au plan suivant)"
+        }
+      ],
+      "default": "scrub",
+      "info": "Chapitres : un cran de molette, un swipe, une flèche du clavier ou un bouton lance la vraie vidéo jusqu'à l'arrêt suivant ; en remontant, la vidéo inversée est lue. Réglages dans « Mode chapitres » plus bas."
+    }
+  ]
+}
+{% endschema %}
