@@ -120,7 +120,8 @@
       stop.rate = parseSeconds(stop.rate); // chapters mode: playback speed of the segment that leads to this stop
     }
     config.snapToStops = config.snapToStops !== false;
-    config.soundAutostart = config.soundAutostart === true;
+    config.startMode = config.startMode === 'auto' || config.startMode === 'muted' ? config.startMode : (config.startMode === 'button' ? 'button' : 'muted');
+    config.soundAutostart = config.startMode === 'auto';
     config.mobileSequence = config.mobileSequence !== false;
     config.sequenceMode = config.sequenceMode === 'chapters' ? 'chapters' : 'scrub';
     config.chapterRate = clamp(parseSeconds(config.chapterRate) || 1.5, 0.5, 4);
@@ -194,7 +195,10 @@
 
     video.addEventListener('ended', reveal);
 
-    if (this.mqReduced.matches) {
+    var startButton = this.querySelector('[data-hsc-start]');
+    if (this.config.startMode === 'button' && startButton) {
+      this.setupStartButton(startButton, reveal);
+    } else if (this.mqReduced.matches) {
       // Reduced motion: no autoplay, texts visible at once; the sound button can still start video + audio.
       video.removeAttribute('autoplay');
       video.pause();
@@ -259,6 +263,71 @@
         self.scrollToFirstStop();
       });
     }
+  };
+
+  // "Démarrer le moteur": the car waits, engine off, on the banner's first frame. The click is a user gesture,
+  // so the ignition plays WITH sound in every browser, and the sound stays on for the plan-séquence.
+  // Scrolling before pressing starts the engine muted, so the page never feels stuck.
+  HeroScrollCar.prototype.setupStartButton = function (button, reveal) {
+    var self = this;
+    var video = this.video;
+    var audio = this.audio;
+    var hero = this.hero;
+    video.removeAttribute('autoplay');
+    video.pause();
+    hero.classList.add('is-waiting-start');
+    this.waitingStart = true;
+
+    var start = function (withSound) {
+      if (!self.waitingStart) return;
+      self.waitingStart = false;
+      window.removeEventListener('scroll', onScroll);
+      hero.classList.remove('is-waiting-start');
+      hero.classList.add('is-started');
+      if (withSound) {
+        self.soundOn = true;
+        if (!audio) video.muted = false;
+        self.setSoundButton(true);
+      } else {
+        // Started by a scroll (not a click for the browser): muted for now, the sound comes on by itself
+        // at the first click / tap anywhere — no need to find the sound button.
+        self.soundOn = true;
+        video.muted = true;
+        self.markSoundBlocked();
+      }
+      try { video.currentTime = 0; } catch (error) { /* not seekable yet: plays from the start anyway */ }
+      var promise = video.play();
+      if (promise && typeof promise.catch === 'function') {
+        promise.catch(function () {
+          if (!video.muted) {
+            video.muted = true;
+            self.markSoundBlocked();
+            video.play().catch(reveal);
+            return;
+          }
+          reveal();
+        });
+      }
+      // Safety nets, as for the autoplay: never leave the hero without its texts.
+      setTimeout(function () { if (video.paused && !video.ended) reveal(); }, 2500);
+      setTimeout(reveal, 15000);
+    };
+    this.startEngine = start;
+    var onScroll = function () { if (window.pageYOffset > 4) start(false); };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    button.addEventListener('click', function () {
+      button.classList.add('is-pressed');
+      start(true);
+    });
+    var failed = function () {
+      // No video: drop the button and show the texts over the poster.
+      self.waitingStart = false;
+      hero.classList.remove('is-waiting-start');
+      reveal();
+    };
+    video.addEventListener('error', failed);
+    var sources = video.querySelectorAll('source');
+    for (var i = 0; i < sources.length; i++) sources[i].addEventListener('error', failed);
   };
 
   // The browser refused sound before any user gesture: keep the "sound on" intent, play muted, and
@@ -1132,6 +1201,13 @@
     ch.lastWheel = now;
     if (fresh) { ch.wheelAcc = 0; ch.gestureUsed = false; }
     var dir = dy > 0 ? 1 : -1;
+    if (this.waitingStart && dir > 0 && this.isChaptersPinned()) {
+      // Engine still off: the first scroll starts it (muted: a wheel is not a click for the browser).
+      event.preventDefault();
+      ch.gestureUsed = true;
+      this.startEngine(false);
+      return;
+    }
 
     if (!this.isChaptersPinned()) {
       // Pin the scene when the gesture is about to cross it; anywhere else the page scrolls normally.
@@ -1143,7 +1219,8 @@
       this.pinChapters();
       if (dir > 0 && ch.index === 0 && !ch.busy && !ch.gestureUsed) {
         ch.gestureUsed = true;
-        this.goChapter(1);
+        if (this.waitingStart) this.startEngine(false);
+        else this.goChapter(1);
       }
       return;
     }
@@ -1212,10 +1289,14 @@
     ch.touchDecided = null;
     if (decided === 'pin') {
       this.pinChapters();
-      if (dy > 0 && ch.index === 0 && !ch.busy) this.goChapter(1);
+      if (dy > 0 && ch.index === 0 && !ch.busy) {
+        if (this.waitingStart) this.startEngine(true);
+        else this.goChapter(1);
+      }
       return;
     }
     if (decided !== 1 && decided !== -1) return;
+    if (this.waitingStart) { this.startEngine(true); return; } // a tap/swipe is a user gesture: sound allowed
     if (!ch.busy && nowMs() - (ch.arrivedAt || 0) < CHAPTER_DWELL_MS) return;
     if (Math.abs(dy) >= CHAPTER_SWIPE_PX && (dy > 0 ? 1 : -1) === decided) this.stepChapter(decided);
   };
@@ -1232,6 +1313,7 @@
     else if (key === 'ArrowUp' || key === 'PageUp' || (key === ' ' && event.shiftKey)) dir = -1;
     if (!dir || !this.isChaptersPinned() || this.chapterTargetFor(dir) === -1) return;
     event.preventDefault();
+    if (this.waitingStart) { this.startEngine(true); return; } // a key press is a user gesture: sound allowed
     if (!ch.busy && nowMs() - (ch.arrivedAt || 0) < CHAPTER_DWELL_MS) return;
     this.stepChapter(dir);
   };

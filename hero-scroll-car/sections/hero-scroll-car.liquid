@@ -13,6 +13,7 @@
                         sa piste audio, laissez le champ « Son du moteur » vide : le bouton son démute
                         simplement la vidéo (synchro parfaite, un fichier de moins)
     hero-poster.jpg     image de la voiture allumée de face (= dernière frame de la vidéo = f_0001)
+    hero-start.jpg      première image de la vidéo (voiture éteinte), affichée derrière le bouton « Démarrer le moteur »
     f_0001.webp … f_0248.webp   séquence extraite du plan-séquence (1920 × 1080, 23 Mo au total),
                         échantillonnée à « mouvement constant » : plus d'images dans les travellings rapides,
                         moins dans les plans fixes, pour un défilement régulier au scroll.
@@ -88,7 +89,15 @@
   assign s = section.settings
   assign frames_total = s.frames_total | default: 240
   assign first_frame_url = s.frame_first_file | asset_url
+  assign start_mode = s.start_mode | default: 'button'
   assign poster_url = s.poster_file | asset_url
+  comment
+    Bouton « Démarrer le moteur » : avant le clic, la bannière montre sa première image (voiture éteinte).
+  endcomment
+  assign hero_poster_url = poster_url
+  if start_mode == 'button'
+    assign hero_poster_url = 'hero-start.jpg' | asset_url
+  endif
   assign video_url = s.video_file | asset_url
   if s.hero_video != blank
     comment
@@ -141,7 +150,7 @@
       "stopRange": {{ s.stop_range | default: 40 }},
       "priorityCount": {{ s.priority_count | default: 30 }},
       "snapToStops": {% if s.snap_to_stops %}true{% else %}false{% endif %},
-      "soundAutostart": {% if s.sound_autostart %}true{% else %}false{% endif %},
+      "startMode": {{ start_mode | json }},
       "mobileSequence": {% if s.mobile_sequence %}true{% else %}false{% endif %},
       "sequenceMode": {{ sequence_mode | json }},
       "chapterRate": {{ s.chapter_rate | default: '1.5' | json }},
@@ -196,7 +205,7 @@
         muted
         playsinline
         preload="auto"
-        poster="{{ poster_url }}"
+        poster="{{ hero_poster_url }}"
         disablepictureinpicture
         disableremoteplayback
         aria-hidden="true"
@@ -255,6 +264,21 @@
           <a class="hsc-btn hsc-btn--primary" href="{{ s.cta_link | default: '#' }}" data-hsc-cta>{{ s.cta_label | escape }}</a>
         {%- endif -%}
       </div>
+
+      {%- if start_mode == 'button' -%}
+        {%- comment -%} Bouton « Démarrer le moteur » : le clic lance l'allumage AVEC le son (aucun navigateur ne bloque) {%- endcomment -%}
+        <button type="button" class="hsc-start" data-hsc-start aria-label="Démarrer le moteur, avec le son">
+          <span class="hsc-start__ring" aria-hidden="true"></span>
+          <span class="hsc-start__core" aria-hidden="true">
+            <svg class="hsc-start__icon" viewBox="0 0 24 24" width="26" height="26" focusable="false"><path d="M12 3v8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M6.6 6.6a7.5 7.5 0 1 0 10.8 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <span class="hsc-start__label">Démarrer<br>le moteur</span>
+          </span>
+          <span class="hsc-start__hint" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="14" height="14" focusable="false"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 8.5a4.5 4.5 0 0 1 0 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/></svg>
+            Son activé
+          </span>
+        </button>
+      {%- endif -%}
 
       {%- if s.show_sound -%}
         <button
@@ -488,11 +512,25 @@
       "default": true
     },
     {
-      "type": "checkbox",
-      "id": "sound_autostart",
-      "label": "Son activé dès l'arrivée",
-      "default": true,
-      "info": "Les navigateurs bloquent le son avant le premier clic du visiteur : la vidéo démarre alors muette et le son s'active au premier clic ou toucher (le bouton son clignote en attendant)."
+      "type": "select",
+      "id": "start_mode",
+      "label": "Démarrage de la bannière",
+      "options": [
+        {
+          "value": "button",
+          "label": "Bouton « Démarrer le moteur »"
+        },
+        {
+          "value": "auto",
+          "label": "Automatique, son si possible"
+        },
+        {
+          "value": "muted",
+          "label": "Automatique, sans son"
+        }
+      ],
+      "default": "button",
+      "info": "Bouton : la voiture attend éteinte, le clic lance l'allumage avec le son (garanti). Automatique : les navigateurs bloquent le son jusqu'au premier clic. Image du bouton : hero-start.jpg."
     },
     {
       "type": "text",

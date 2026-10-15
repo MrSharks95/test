@@ -15,6 +15,7 @@ hero-scroll-car/
 │   ├── plan-sequence(-reverse).mp4    mode chapitres : le plan-séquence en vidéo, avant et inversé
 │   ├── hero-ignition.mp4 / .mp3      vidéo d'allumage et son moteur
 │   ├── hero-poster.jpg               dernière image de la vidéo
+│   ├── hero-start.jpg                première image (affichée sous le bouton « Démarrer le moteur »)
 │   └── stop-*.jpg                    images fixes de la version empilée
 ├── preview/                          aperçu local hors Shopify (produits et panier simulés)
 └── tools/                            réextraction des images (ex. passage en 1080p)
@@ -118,7 +119,11 @@ du `.js` ou du `.css`, pas pour charger 248 images une par une.
 - Ajout au panier : le bouton confirme et le compteur du panier se met à jour. Sur un thème non dérivé de
   Dawn, le compteur peut n'apparaître qu'au rechargement : il suffit alors d'adapter le sélecteur du compteur
   dans `refreshCart()`.
-- Bouton son : il lance le son et la vidéo ensemble.
+- Bouton « Démarrer le moteur » (réglage **Démarrage de la bannière**, par défaut) : au centre de la bannière,
+  un clic lance l'allumage **avec le son**, puis le plan-séquence garde le son en avançant. Les navigateurs
+  bloquent tout son sans clic : ce bouton est la seule façon d'avoir le son à coup sûr. Si le visiteur fait
+  défiler sans cliquer, la vidéo démarre sans le son et son premier clic n'importe où l'active.
+- Bouton son (en bas) : il coupe ou remet le son à tout moment.
 
 ## 6. Mode chapitres (lecture vidéo)
 
