@@ -1162,6 +1162,7 @@
       ch.rev.load();
     };
     fwd.addEventListener('canplaythrough', ch.loadReverse, { once: true });
+    if (ch.rev) ch.rev.addEventListener('loadedmetadata', function () { self.preseekReverse(ch.index); }, { once: true });
     ch.reverseTimer = setTimeout(ch.loadReverse, 5000);
 
     this.buildChapterNav();
@@ -1454,6 +1455,17 @@
     this.showChapterStop(point.stop ? point.stop.id : null);
     this.showShelf(!!point.showcase);
     this.updateChapterUI();
+    this.preseekReverse(index);
+  };
+
+  // Videos from Shopify Files have a keyframe every 3 s, so a seek can take a moment: on each arrival the
+  // reversed copy already waits (hidden) on the mirror frame, ready for the next scroll up.
+  HeroScrollCar.prototype.preseekReverse = function (index) {
+    var ch = this.chapters;
+    if (!ch || !ch.rev || ch.busy || index <= 0 || ch.rev.readyState < 1 || !ch.rev.duration) return;
+    var time = this.reverseTime(ch.points[index].time);
+    ch.revSeekTime = time;
+    ch.revSeek = this.seekVideo(ch.rev, time);
   };
 
   // The product row of the "Présentoir" shot: shown on arrival, out of the tab order otherwise.
@@ -1634,7 +1646,9 @@
     var startTime = this.reverseTime(fromTime);
     var endTime = this.reverseTime(toTime);
     var rate = rateOverride || this.segmentRate(target, target + 1);
-    return this.seekVideo(rev, startTime).then(function () {
+    var seek = ch.revSeek && ch.revSeekTime === startTime ? ch.revSeek : this.seekVideo(rev, startTime);
+    ch.revSeek = null;
+    return seek.then(function () {
       if (ch.destroyed) return;
       rev.playbackRate = rate;
       ch.activeVideo = rev;

@@ -127,7 +127,7 @@ du `.js` ou du `.css`, pas pour charger 248 images une par une.
 
 ## 6. Mode chapitres (lecture vidéo)
 
-Réglage de la section **Mode de défilement › Chapitres**. Au lieu de faire défiler des images, chaque cran de
+Réglage de la section **Mode de défilement › Chapitres** (par défaut). Au lieu de faire défiler des images, chaque cran de
 molette, swipe, flèche du clavier ou clic sur la navigation lit la **vraie vidéo** jusqu'au plan suivant, avec
 la fluidité d'une vidéo. En remontant, une copie inversée de la vidéo est lue, donc la marche arrière est aussi
 fluide. Après le plan final, la page défile normalement.

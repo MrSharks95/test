@@ -121,11 +121,21 @@
   comment
     Mode chapitres : plan-séquence lu en vidéo (avant) + copie inversée (marche arrière fluide).
   endcomment
-  assign sequence_mode = s.sequence_mode | default: 'scrub'
-  assign chapter_url = s.chapter_video_file | default: 'plan-sequence.mp4' | asset_url
+  assign sequence_mode = s.sequence_mode | default: 'chapters'
+  comment
+    Chaque champ accepte un fichier de /assets (limité à 20 Mo) ou le lien d'une vidéo de Contenu > Fichiers
+    (aucune limite, Shopify la sert en 1080p).
+  endcomment
+  assign chapter_url = s.chapter_video_file | default: 'plan-sequence.mp4'
+  unless chapter_url contains '://'
+    assign chapter_url = chapter_url | asset_url
+  endunless
   assign chapter_rev_url = ''
   if s.chapter_video_reverse_file != blank
-    assign chapter_rev_url = s.chapter_video_reverse_file | asset_url
+    assign chapter_rev_url = s.chapter_video_reverse_file
+    unless chapter_rev_url contains '://'
+      assign chapter_rev_url = chapter_rev_url | asset_url
+    endunless
   endif
   assign heading_tag = s.heading_tag | default: 'h1'
   assign cart_add_url = routes.cart_add_url | append: '.js'
@@ -691,7 +701,7 @@
           "label": "Chapitres vidéo"
         }
       ],
-      "default": "scrub",
+      "default": "chapters",
       "info": "Image par image : le scroll fait défiler les images. Chapitres vidéo : chaque cran de molette, swipe, flèche ou clic lit la vraie vidéo jusqu'au plan suivant, et la rembobine en remontant."
     },
     {
@@ -753,13 +763,14 @@
     {
       "type": "text",
       "id": "chapter_video_file",
-      "label": "Plan-séquence (fichier dans /assets)",
-      "default": "plan-sequence.mp4"
+      "label": "Plan-séquence (fichier ou lien)",
+      "default": "plan-sequence.mp4",
+      "info": "Nom d'un fichier de /assets, ou lien MP4 d'une vidéo de Contenu > Fichiers (meilleure qualité)."
     },
     {
       "type": "text",
       "id": "chapter_video_reverse_file",
-      "label": "Plan-séquence inversé (fichier dans /assets)",
+      "label": "Plan-séquence inversé (fichier ou lien)",
       "default": "plan-sequence-reverse.mp4",
       "info": "La même vidéo lue à l'envers : en remontant, la marche arrière est aussi fluide que l'avant. Vide = retour par un court fondu."
     },
