@@ -2072,7 +2072,15 @@
       var arrow = event.target.closest('[data-hsc-gallery-prev], [data-hsc-gallery-next]');
       if (arrow) { event.preventDefault(); self.slideGallery(arrow.hasAttribute('data-hsc-gallery-next') ? 1 : -1); return; }
       var dot = event.target.closest('[data-hsc-gallery-dot]');
-      if (dot) { event.preventDefault(); self.slideGalleryTo(parseInt(dot.getAttribute('data-index'), 10)); }
+      if (dot) { event.preventDefault(); self.slideGalleryTo(parseInt(dot.getAttribute('data-index'), 10)); return; }
+      var pill = event.target.closest('[data-hsc-option]');
+      if (pill) { event.preventDefault(); self.selectOption(pill); return; }
+      var step = event.target.closest('[data-hsc-qty-minus], [data-hsc-qty-plus]');
+      if (step) { event.preventDefault(); self.stepQuantity(step); }
+    });
+    root.addEventListener('change', function (event) {
+      var input = event.target.closest('[data-hsc-qty]');
+      if (input) input.value = clamp(parseInt(input.value, 10) || 1, 1, 99);
     });
     root.addEventListener('input', function (event) {
       var range = event.target.closest('[data-hsc-compare-range]');
@@ -2111,6 +2119,90 @@
     var track = this.galleryTrack();
     if (track) track.scrollLeft = 0;
     this.updateGalleryDots();
+    var form = sheet.content.querySelector('[data-hsc-product-form]');
+    if (form) this.syncVariant(form, true); // the gallery opens on its first slide (the before / after)
+  };
+
+  /* ---- the sheet is the whole product page: options, quantity, price and availability follow the variant ---- */
+
+  HeroScrollCar.prototype.selectOption = function (pill) {
+    var group = pill.closest('[data-hsc-option-group]');
+    var form = pill.closest('[data-hsc-product-form]');
+    if (!group || !form) return;
+    var pills = group.querySelectorAll('[data-hsc-option]');
+    for (var i = 0; i < pills.length; i++) {
+      var on = pills[i] === pill;
+      pills[i].classList.toggle('is-selected', on);
+      pills[i].setAttribute('aria-pressed', on ? 'true' : 'false');
+    }
+    var current = group.querySelector('[data-hsc-option-current]');
+    if (current) current.textContent = pill.getAttribute('data-value') || '';
+    this.syncVariant(form);
+  };
+
+  HeroScrollCar.prototype.stepQuantity = function (button) {
+    var wrap = button.closest('[data-hsc-qty-wrap]');
+    var input = wrap && wrap.querySelector('[data-hsc-qty]');
+    if (!input) return;
+    var value = parseInt(input.value, 10) || 1;
+    input.value = clamp(value + (button.hasAttribute('data-hsc-qty-plus') ? 1 : -1), 1, 99);
+  };
+
+  HeroScrollCar.prototype.syncVariant = function (form, keepSlide) {
+    var node = form.querySelector('[data-hsc-variants]');
+    if (!node) return;
+    var variants;
+    try { variants = JSON.parse(node.textContent); } catch (error) { return; }
+    if (!variants || !variants.length) return;
+    var groups = form.querySelectorAll('[data-hsc-option-group]');
+    var selected = [];
+    var g;
+    for (g = 0; g < groups.length; g++) {
+      var on = groups[g].querySelector('[data-hsc-option].is-selected');
+      selected.push(on ? on.getAttribute('data-value') : null);
+    }
+    // A variant matches when every option equals the selection (or `value` for the option `except`).
+    var matches = function (variant, except, value) {
+      var options = variant.options || [];
+      for (var i = 0; i < options.length; i++) {
+        var wanted = i === except ? value : selected[i];
+        if (wanted !== null && wanted !== undefined && options[i] !== wanted) return false;
+      }
+      return true;
+    };
+    var variant = null;
+    for (var v = 0; v < variants.length; v++) {
+      if (matches(variants[v], -1)) { variant = variants[v]; break; }
+    }
+    // Pills that lead to nothing in stock (with the other choices as they are) are dimmed.
+    for (g = 0; g < groups.length; g++) {
+      var pills = groups[g].querySelectorAll('[data-hsc-option]');
+      for (var p = 0; p < pills.length; p++) {
+        var value = pills[p].getAttribute('data-value');
+        var possible = false;
+        for (var k = 0; k < variants.length && !possible; k++) possible = variants[k].available && matches(variants[k], g, value);
+        pills[p].classList.toggle('is-unavailable', !possible);
+      }
+    }
+    var now = form.querySelector('[data-hsc-price-now]');
+    var was = form.querySelector('[data-hsc-price-was]');
+    var button = form.querySelector('[data-hsc-add]');
+    var label = form.querySelector('[data-hsc-add-label]');
+    var available = !!(variant && variant.available);
+    if (variant) {
+      if (now) now.textContent = variant.price || '';
+      if (was) { was.hidden = !variant.compare; was.textContent = variant.compare || ''; }
+      if (button) button.setAttribute('data-variant-id', String(variant.id));
+    }
+    if (button) button.disabled = !available;
+    if (label) label.textContent = form.getAttribute(available ? 'data-text-add' : 'data-text-unavailable') || '';
+    // The chosen variant's own picture comes into view.
+    var track = this.galleryTrack();
+    if (!keepSlide && variant && variant.media && track) {
+      for (var i = 0; i < track.children.length; i++) {
+        if (track.children[i].getAttribute('data-media-id') === String(variant.media)) { this.slideGalleryTo(i); break; }
+      }
+    }
   };
 
   HeroScrollCar.prototype.closeSheet = function () {
@@ -2221,8 +2313,10 @@
     var texts = config.texts;
     var variantId = parseInt(button.getAttribute('data-variant-id'), 10);
     var label = button.querySelector('[data-hsc-add-label]');
-    var card = button.closest('.hsc-card, [data-hsc-item]');
+    var card = button.closest('.hsc-card, [data-hsc-item], [data-hsc-product-form]');
     var message = card ? card.querySelector('[data-hsc-msg]') : null;
+    var quantityInput = card ? card.querySelector('[data-hsc-qty]') : null;
+    var quantity = quantityInput ? clamp(parseInt(quantityInput.value, 10) || 1, 1, 99) : 1;
     var originalLabel = label ? label.textContent : '';
     if (!variantId) return;
 
@@ -2233,7 +2327,7 @@
     fetch(config.cartAddUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({ items: [{ id: variantId, quantity: 1 }] })
+      body: JSON.stringify({ items: [{ id: variantId, quantity: quantity }] })
     })
       .then(function (response) {
         return response.json().catch(function () { return {}; }).then(function (data) {

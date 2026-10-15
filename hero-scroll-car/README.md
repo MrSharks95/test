@@ -148,8 +148,9 @@ fluide. Après le plan final, la page défile normalement.
   et se tait si le visiteur quitte la section. Réglage « Bruit du moteur en boucle » (vide = aucun). Sur
   iPhone, le volume ne se règle pas : la boucle joue à plein ou se tait.
 - **Fiche produit « En savoir plus »** : chaque carte du présentoir (image, titre ou bouton) ouvre un panneau en
-  verre par-dessus la scène, bord néon animé, avec la galerie du produit, sa description, « Ajouter au panier »
-  et le lien vers la page produit. Échap, la croix ou le fond sombre le ferment.
+  verre par-dessus la scène, bord néon animé : galerie, choix des variantes (prix, promo et photo suivent, les
+  combinaisons épuisées sont barrées), quantité, description et « Ajouter au panier ». Tout se passe dans la
+  fenêtre, aucune page produit n'est nécessaire. Échap, la croix ou le fond sombre la ferment.
 - **Avant / après** : donner au produit une « Image avant (hero voiture) » et une « Image après (hero voiture) »
   (métachamps produit, déjà créés sur la boutique), ou deux photos dont le texte alternatif contient « avant »
   et « après » : la galerie commence alors par un comparateur à curseur.
