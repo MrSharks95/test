@@ -193,6 +193,18 @@ hero-scroll-car,
   box-shadow: 0 10px 34px color-mix(in srgb, var(--hsc-accent) 45%, transparent);
 }
 
+.hsc .hsc-btn--ghost {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--hsc-card-border);
+  color: var(--hsc-ink);
+}
+
+.hsc .hsc-btn--ghost:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--hsc-accent) 55%, transparent), 0 10px 30px color-mix(in srgb, var(--hsc-accent) 25%, transparent);
+}
+
 .hsc-btn:focus-visible,
 .hsc-sound:focus-visible,
 .hsc-card a:focus-visible,
@@ -1385,7 +1397,7 @@ hero-scroll-car,
     grid-template-areas:
       "media title"
       "media price"
-      "add add"
+      "actions actions"
       "msg msg";
     column-gap: 12px;
     row-gap: 4px;
@@ -1415,10 +1427,19 @@ hero-scroll-car,
     font-size: 0.95rem;
   }
 
-  .hsc[data-mode="scroll"] .hsc-stage .hsc-shelf__item .hsc-card__add {
-    grid-area: add;
+  .hsc[data-mode="scroll"] .hsc-stage .hsc-shelf__item .hsc-card__actions {
+    grid-area: actions;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
     margin-top: 6px;
+  }
+
+  .hsc[data-mode="scroll"] .hsc-stage .hsc-shelf__item .hsc-card__add,
+  .hsc[data-mode="scroll"] .hsc-stage .hsc-shelf__item .hsc-card__more {
+    grid-area: auto;
+    margin-top: 0;
     min-height: 40px;
+    padding: 0 8px;
+    font-size: 0.66rem;
   }
 
   .hsc[data-mode="scroll"] .hsc-stage .hsc-shelf__item .hsc-card__msg {
@@ -1469,5 +1490,527 @@ hero-scroll-car,
 @media (prefers-reduced-motion: reduce) {
   .hsc .hsc-shelf {
     display: none;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Présentoir cards: cart button + "En savoir plus"
+   -------------------------------------------------------------------------- */
+
+.hsc-card__actions {
+  display: grid;
+  gap: 8px;
+}
+
+.hsc-shelf__item .hsc-card__more,
+.hsc-card--compact .hsc-card__more {
+  min-height: 36px;
+  padding: 0 10px;
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+}
+
+.hsc-shelf__item .hsc-card__media,
+.hsc-card--compact .hsc-card__media {
+  cursor: pointer;
+  transition: box-shadow 0.3s ease, transform 0.4s var(--hsc-ease-out);
+}
+
+.hsc-shelf__item .hsc-card__media:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--hsc-accent) 55%, transparent), 0 14px 36px color-mix(in srgb, var(--hsc-accent) 22%, transparent);
+}
+
+/* --------------------------------------------------------------------------
+   Product sheet — glass panel over the scene with a slowly turning neon edge
+   -------------------------------------------------------------------------- */
+
+@property --hsc-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.hsc-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+  color: var(--hsc-ink);
+}
+
+.hsc-sheet[hidden] {
+  display: none;
+}
+
+.hsc-sheet__backdrop {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(120% 90% at 50% 100%, color-mix(in srgb, var(--hsc-accent) 18%, transparent), transparent 60%), rgba(4, 4, 6, 0.62);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  opacity: 0;
+  transition: opacity 0.32s ease;
+  touch-action: none;
+}
+
+.hsc-sheet__panel {
+  position: relative;
+  width: min(1060px, 100%);
+  max-height: 100%;
+  border-radius: 24px;
+  display: grid;
+  opacity: 0;
+  transform: translateY(26px) scale(0.97);
+  transition: opacity 0.32s ease, transform 0.46s var(--hsc-ease-out);
+  --hsc-neon: conic-gradient(
+    from var(--hsc-angle),
+    transparent 0deg,
+    transparent 190deg,
+    color-mix(in srgb, var(--hsc-accent) 70%, transparent) 240deg,
+    #fff2e3 266deg,
+    var(--hsc-accent) 290deg,
+    transparent 345deg,
+    transparent 360deg
+  );
+}
+
+/* the neon: a thin gradient ring (::before) and its glow (::after), both turning slowly */
+.hsc-sheet__panel::before,
+.hsc-sheet__panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: var(--hsc-neon);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  animation: hsc-neon-spin 5.5s linear infinite;
+}
+
+.hsc-sheet__panel::after {
+  inset: -3px;
+  padding: 4px;
+  filter: blur(9px);
+  opacity: 0.75;
+}
+
+.hsc-sheet.is-open .hsc-sheet__backdrop {
+  opacity: 1;
+}
+
+.hsc-sheet.is-open .hsc-sheet__panel {
+  opacity: 1;
+  transform: none;
+}
+
+.hsc-sheet__content {
+  position: relative;
+  z-index: 1;
+  max-height: min(86vh, 100%);
+  max-height: min(86svh, 100%);
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr);
+  border-radius: inherit;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.015) 45%, rgba(255, 255, 255, 0.05)),
+    color-mix(in srgb, var(--hsc-card-bg) 60%, rgba(10, 10, 12, 0.88));
+  -webkit-backdrop-filter: blur(30px) saturate(1.35);
+  backdrop-filter: blur(30px) saturate(1.35);
+  box-shadow: 0 50px 140px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.hsc-sheet__close {
+  position: absolute;
+  z-index: 3;
+  top: 12px;
+  right: 12px;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 50%;
+  background: rgba(10, 10, 12, 0.55);
+  color: var(--hsc-ink);
+  font: inherit;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.hsc-sheet__close:hover {
+  background: rgba(255, 255, 255, 0.12);
+  transform: rotate(90deg);
+}
+
+.hsc-sheet__close:focus-visible,
+.hsc-sheet__arrow:focus-visible,
+.hsc-sheet__dot:focus-visible,
+.hsc-sheet__track:focus-visible,
+.hsc-compare__range:focus-visible + .hsc-compare__handle {
+  outline: 2px solid var(--hsc-accent);
+  outline-offset: 3px;
+}
+
+/* gallery */
+.hsc-sheet__gallery {
+  position: relative;
+  min-width: 0;
+  background: #07070a;
+}
+
+.hsc-sheet__track {
+  display: flex;
+  height: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.hsc-sheet__track::-webkit-scrollbar {
+  display: none;
+}
+
+.hsc-sheet__slide {
+  position: relative;
+  flex: 0 0 100%;
+  width: 100%;
+  margin: 0;
+  aspect-ratio: 4 / 3;
+  display: grid;
+  place-items: center;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  background: radial-gradient(70% 60% at 50% 60%, color-mix(in srgb, var(--hsc-accent) 12%, transparent), transparent 70%);
+}
+
+.hsc-sheet__slide img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.hsc-sheet__slide--empty {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.hsc-sheet__arrow {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 50%;
+  background: rgba(10, 10, 12, 0.55);
+  color: var(--hsc-ink);
+  cursor: pointer;
+  transform: translateY(-50%);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  transition: background 0.2s ease, opacity 0.2s ease;
+}
+
+.hsc-sheet__arrow--prev { left: 12px; }
+.hsc-sheet__arrow--next { right: 12px; }
+
+.hsc-sheet__arrow:hover {
+  background: color-mix(in srgb, var(--hsc-accent) 35%, rgba(10, 10, 12, 0.6));
+}
+
+.hsc-sheet__arrow:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
+.hsc-sheet__dots {
+  position: absolute;
+  z-index: 2;
+  left: 0;
+  right: 0;
+  bottom: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
+.hsc-sheet__dot {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.hsc-sheet__dot i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+  transition: transform 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
+}
+
+.hsc-sheet__dot.is-active i {
+  background: var(--hsc-accent);
+  transform: scale(1.35);
+  box-shadow: 0 0 12px var(--hsc-accent);
+}
+
+.hsc-sheet__gallery--single .hsc-sheet__arrow,
+.hsc-sheet__gallery--single .hsc-sheet__dots {
+  display: none;
+}
+
+/* before / after comparison: the "before" picture is clipped at --hsc-cut, the handle follows */
+.hsc-sheet__slide--compare {
+  --hsc-cut: 50%;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.hsc-sheet__slide--compare .hsc-compare__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hsc-compare__img--before {
+  clip-path: inset(0 calc(100% - var(--hsc-cut)) 0 0);
+}
+
+.hsc-compare__label {
+  position: absolute;
+  top: 14px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(8, 8, 10, 0.62);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--hsc-ink);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+}
+
+.hsc-compare__label--before { left: 14px; }
+.hsc-compare__label--after { right: 14px; color: var(--hsc-accent); }
+
+.hsc-compare__handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--hsc-cut);
+  width: 2px;
+  margin-left: -1px;
+  background: #fff;
+  box-shadow: 0 0 12px var(--hsc-accent), 0 0 32px color-mix(in srgb, var(--hsc-accent) 60%, transparent);
+  pointer-events: none;
+}
+
+.hsc-compare__handle i {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: color-mix(in srgb, var(--hsc-accent) 85%, #000);
+  box-shadow: 0 0 18px var(--hsc-accent), 0 10px 30px rgba(0, 0, 0, 0.5);
+  transform: translate(-50%, -50%);
+}
+
+.hsc-compare__handle i::before,
+.hsc-compare__handle i::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 0;
+  height: 0;
+  border: 6px solid transparent;
+  transform: translateY(-50%);
+}
+
+.hsc-compare__handle i::before { left: 7px; border-right: 7px solid #fff; border-left: 0; }
+.hsc-compare__handle i::after { right: 7px; border-left: 7px solid #fff; border-right: 0; }
+
+.hsc-compare__range {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+  cursor: ew-resize;
+  -webkit-appearance: none;
+  appearance: none;
+  background: none;
+  touch-action: pan-y;
+}
+
+.hsc-compare__range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 48px;
+  height: 100vh;
+}
+
+.hsc-compare__range::-moz-range-thumb {
+  width: 48px;
+  height: 100vh;
+  border: 0;
+}
+
+/* info column */
+.hsc-sheet__info {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  padding: clamp(22px, 3vw, 36px) clamp(22px, 3vw, 36px) clamp(22px, 3vw, 36px);
+  padding-right: max(clamp(22px, 3vw, 36px), 64px);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.hsc .hsc-sheet__title {
+  margin: 0;
+  font-family: var(--font-heading-family, inherit);
+  font-size: clamp(1.4rem, 2.4vw, 2rem);
+  font-weight: 700;
+  line-height: 1.12;
+  color: var(--hsc-product-title-color);
+  text-wrap: balance;
+}
+
+.hsc-sheet__info .hsc-card__price {
+  font-size: 1.35rem;
+}
+
+.hsc-sheet__desc {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--hsc-card-text-color);
+  max-height: 34vh;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding-right: 6px;
+}
+
+.hsc-sheet__desc > :first-child { margin-top: 0; }
+.hsc-sheet__desc > :last-child { margin-bottom: 0; }
+.hsc-sheet__desc img { max-width: 100%; height: auto; }
+
+.hsc-sheet__actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  gap: 10px;
+}
+
+.hsc-sheet__actions .hsc-btn {
+  padding: 0 14px;
+  font-size: 0.74rem;
+}
+
+@keyframes hsc-neon-spin {
+  to { --hsc-angle: 360deg; }
+}
+
+@media (max-width: 767px) {
+  .hsc-sheet {
+    padding: 0;
+    align-items: end;
+  }
+
+  .hsc-sheet__panel {
+    width: 100%;
+    max-height: 100%;
+    border-radius: 22px 22px 0 0;
+    transform: translateY(40px);
+  }
+
+  .hsc-sheet__panel::after {
+    display: none;
+  }
+
+  .hsc-sheet__content {
+    max-height: 92vh;
+    max-height: 92svh;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    border-bottom: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .hsc-sheet__slide {
+    aspect-ratio: 4 / 3;
+  }
+
+  /* the close button sits over the gallery here: the compare labels move to the bottom corners */
+  .hsc-compare__label {
+    top: auto;
+    bottom: 14px;
+  }
+
+  .hsc-sheet__dots {
+    bottom: 18px;
+  }
+
+  .hsc-sheet__info {
+    padding: 18px 18px calc(18px + env(safe-area-inset-bottom, 0px));
+    padding-right: 18px;
+  }
+
+  .hsc-sheet__desc {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .hsc-sheet__actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hsc-sheet__panel::before,
+  .hsc-sheet__panel::after {
+    animation: none;
+  }
+
+  .hsc-sheet__panel,
+  .hsc-sheet__backdrop {
+    transition: none;
+    transform: none;
   }
 }

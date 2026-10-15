@@ -140,6 +140,19 @@ fluide. Après le plan final, la page défile normalement.
   cartes posées sur le comptoir. « Hauteur du comptoir » (71 % par défaut) règle la ligne où elles se posent ;
   sur mobile, les cartes forment une bande à faire glisser en bas de l'écran. Image fixe de la version sans
   animation : `assets/stop-presentoir.jpg`.
+- **Le plan reste vivant** : à l'arrivée sur le présentoir, les dernières secondes de la vidéo sont rejouées en
+  va-et-vient (fumée, lumières), en ralentissant avant chaque demi-tour. Réglage « Boucle vivante » du bloc
+  (2,4 s par défaut, 0 = image fixe) et « Vitesse de la boucle ».
+- **Bruit du moteur en continu** : `assets/engine-idle.mp3` (ralenti extrait de la vidéo, boucle sans raccord)
+  joue entre les plans et sur le présentoir ; il se fait discret pendant qu'un plan avance avec sa propre bande-son
+  et se tait si le visiteur quitte la section. Réglage « Bruit du moteur en boucle » (vide = aucun). Sur
+  iPhone, le volume ne se règle pas : la boucle joue à plein ou se tait.
+- **Fiche produit « En savoir plus »** : chaque carte du présentoir (image, titre ou bouton) ouvre un panneau en
+  verre par-dessus la scène, bord néon animé, avec la galerie du produit, sa description, « Ajouter au panier »
+  et le lien vers la page produit. Échap, la croix ou le fond sombre le ferment.
+- **Avant / après** : donner au produit une « Image avant (hero voiture) » et une « Image après (hero voiture) »
+  (métachamps produit, déjà créés sur la boutique), ou deux photos dont le texte alternatif contient « avant »
+  et « après » : la galerie commence alors par un comparateur à curseur.
 - « Vitesse de lecture entre deux plans » : × 1,5 par défaut.
 - Pensé pour la première section de la page d'accueil. Avec « réduire les animations », la version empilée
   s'affiche comme dans l'autre mode.

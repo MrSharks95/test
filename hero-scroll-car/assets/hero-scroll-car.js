@@ -46,6 +46,11 @@
   var CHAPTER_FAST_SECONDS = 1.8;   // dots: the video fast-forwards (or rewinds) to the chosen stop in about this time…
   var CHAPTER_FAST_MIN = 2.5;       // …at a playback rate between these bounds
   var CHAPTER_FAST_MAX = 8;
+  var AMBIENT_VOLUME = 0.85;        // engine loop level between the shots…
+  var AMBIENT_DUCK = 0.3;           // …and behind a forward transition, which plays the video's own soundtrack
+  var IDLE_EASE_SECONDS = 0.45;     // the living loop of the last shot slows down this long before each turnaround
+  var IDLE_DELAY_MS = 500;          // and starts this long after the arrival
+  var SHEET_CLOSE_MS = 320;         // product sheet closing animation
 
   function nowMs() { return (window.performance && performance.now) ? performance.now() : Date.now(); }
 
@@ -84,8 +89,10 @@
     this.sequence = null;
 
     this.setupHero();
+    this.setupAmbient();
     this.setupCart();
     this.setupHotspots();
+    this.setupSheet();
     this.setupEditor();
 
     this.onMediaChange = this.applyMode.bind(this);
@@ -99,6 +106,7 @@
     removeMediaListener(this.mqReduced, this.onMediaChange);
     this.teardownChapters();
     this.teardownSequence();
+    this.teardownAmbient();
     if (this.onBlockSelect) document.removeEventListener('shopify:block:select', this.onBlockSelect);
     if (this.onKeydown) document.removeEventListener('keydown', this.onKeydown);
     this.hscReady = false;
@@ -134,8 +142,11 @@
     if (showcase) {
       showcase.y = clamp(parseSeconds(showcase.y) || 71, 0, 100);
       showcase.rate = parseSeconds(showcase.rate);
+      showcase.idle = clamp(parseSeconds(showcase.idle) || 0, 0, 6);           // seconds of video kept alive (ping-pong) on arrival
+      showcase.idleRate = clamp(parseSeconds(showcase.idleRate) || 0.7, 0.3, 1.5);
     }
     config.showcase = showcase;
+    config.ambient = typeof config.ambient === 'string' ? config.ambient : '';
     config.texts = config.texts || {};
     return config;
   };
@@ -203,6 +214,8 @@
     this.revealHero = reveal;
 
     video.addEventListener('ended', reveal);
+    video.addEventListener('play', function () { self.engineStarted = true; self.updateAmbient(); });
+    video.addEventListener('pause', function () { self.updateAmbient(); }); // also fired on "ended"
 
     var startButton = this.querySelector('[data-hsc-start]');
     if (this.config.startMode === 'button' && startButton) {
@@ -332,7 +345,7 @@
       }
       if (withSound) {
         // Still inside the click: Safari and every iPhone browser only allow sound on a media element
-        // started from a click / tap, so the engine sound and the plan-séquence get it now.
+        // started from a click / tap, so the engine sound, the engine loop and the plan-séquence get it now.
         var audio = self.audio;
         if (audio) {
           try { audio.currentTime = 0; } catch (error) { /* starts from 0 anyway */ }
@@ -340,6 +353,7 @@
           if (audioPromise && typeof audioPromise.catch === 'function') audioPromise.catch(function () {});
         }
         self.primeChapterSound();
+        self.primeAmbient();
       }
       // Safety nets, as for the autoplay: never leave the hero without its texts.
       setTimeout(function () { if (video.paused && !video.ended) reveal(); }, 2500);
@@ -425,6 +439,7 @@
     var ch = this.chapters;
     if (ch && ch.activeVideo === ch.fwd && !ch.fwd.paused) ch.fwd.muted = false;
     this.primeChapterSound();
+    this.primeAmbient();
   };
 
   // Safari and every iPhone browser only let a media element play with sound if it was started once from
@@ -454,12 +469,13 @@
     var ch = this.chapters;
     if (ch && (ch.index > 0 || ch.busy)) {
       this.soundOn = !this.soundOn;
-      if (this.soundOn) this.primeChapterSound();
+      if (this.soundOn) { this.primeChapterSound(); this.primeAmbient(); }
       ch.fwd.muted = !this.soundOn;
       if (audio) audio.pause();
       button.setAttribute('aria-pressed', this.soundOn ? 'true' : 'false');
       button.setAttribute('aria-label', (this.soundOn ? texts.soundOff : texts.soundOn) || '');
       button.setAttribute('title', (this.soundOn ? texts.soundOff : texts.soundOn) || '');
+      this.updateAmbient();
       return;
     }
 
@@ -470,6 +486,7 @@
       button.setAttribute('aria-pressed', 'false');
       button.setAttribute('aria-label', texts.soundOn || '');
       button.setAttribute('title', texts.soundOn || '');
+      this.updateAmbient();
       return;
     }
 
@@ -478,6 +495,7 @@
     button.setAttribute('aria-label', texts.soundOff || '');
     button.setAttribute('title', texts.soundOff || '');
     this.primeChapterSound();
+    this.primeAmbient();
 
     var atEnd = video.ended || (video.duration > 0 && video.currentTime >= video.duration - 0.05);
     if (!audio) {
@@ -499,6 +517,114 @@
       audio.currentTime = video.currentTime;
       audio.play().catch(function () {});
     }
+  };
+
+  /* ------------------------------------------------------------------ ambient engine loop */
+
+  // The car never goes silent: a looped idle recording plays between the shots and on the présentoir.
+  // The ignition and the forward transitions carry their own soundtrack, so the loop waits (or ducks)
+  // behind them and comes back the moment the car stops.
+  HeroScrollCar.prototype.setupAmbient = function () {
+    var self = this;
+    var audio = this.querySelector('[data-hsc-ambient]');
+    this.ambient = null;
+    this.engineStarted = false;
+    if (!audio) return;
+    var ambient = { el: audio, primed: false, inView: true, canVolume: true, target: 0, raf: 0 };
+    try {
+      audio.volume = 0.5;
+      ambient.canVolume = Math.abs(audio.volume - 0.5) < 0.01; // iPhone: the volume is read-only
+      audio.volume = 1;
+    } catch (error) { ambient.canVolume = false; }
+    audio.loop = true;
+    // Unreadable file: no loop (with several <source>, only the last one failing means that).
+    audio.addEventListener('error', function () { self.ambient = null; });
+    var sources = audio.querySelectorAll('source');
+    if (sources.length) sources[sources.length - 1].addEventListener('error', function () { self.ambient = null; });
+    this.ambient = ambient;
+    // Off screen (the visitor scrolled on): the loop and the living last shot pause.
+    var stage = this.querySelector('[data-hsc-stage]');
+    if (stage && 'IntersectionObserver' in window) {
+      ambient.observer = new IntersectionObserver(function (entries) {
+        self.onStageVisibility(entries[0].isIntersecting);
+      }, { threshold: 0.35 });
+      ambient.observer.observe(stage);
+    }
+  };
+
+  HeroScrollCar.prototype.teardownAmbient = function () {
+    var ambient = this.ambient;
+    if (!ambient) return;
+    if (ambient.observer) ambient.observer.disconnect();
+    cancelAnimationFrame(ambient.raf);
+    ambient.el.pause();
+  };
+
+  HeroScrollCar.prototype.onStageVisibility = function (visible) {
+    if (this.ambient) this.ambient.inView = visible;
+    this.updateAmbient();
+    var ch = this.chapters;
+    if (!ch) return;
+    if (!visible) this.stopIdleLoop();
+    else if (!ch.busy) this.startIdleLoop();
+  };
+
+  // Called inside a click / tap: starts the loop (silent) so it may play and unmute later on every browser.
+  HeroScrollCar.prototype.primeAmbient = function () {
+    var ambient = this.ambient;
+    if (!ambient || ambient.primed) return;
+    ambient.primed = true;
+    var audio = ambient.el;
+    audio.muted = true;
+    if (ambient.canVolume) audio.volume = 0;
+    var promise = audio.play();
+    if (promise && typeof promise.catch === 'function') promise.catch(function () { ambient.primed = false; });
+    this.updateAmbient();
+  };
+
+  // 0: silent (ignition or sound off) · AMBIENT_DUCK: behind a forward transition · 1: the car idles.
+  HeroScrollCar.prototype.ambientLevel = function () {
+    var ambient = this.ambient;
+    if (!ambient || !ambient.inView || !this.soundOn || this.soundBlocked || !this.engineStarted) return 0;
+    var video = this.video;
+    if (video && !video.paused && !video.ended && !video.muted) return 0;
+    if (this.audio && !this.audio.paused) return 0;
+    var ch = this.chapters;
+    if (ch && ch.busy && ch.pending > ch.index && !ch.fast) return AMBIENT_DUCK;
+    return 1;
+  };
+
+  HeroScrollCar.prototype.updateAmbient = function () {
+    var ambient = this.ambient;
+    if (!ambient || !ambient.primed) return;
+    var level = this.ambientLevel();
+    var audio = ambient.el;
+    if (ambient.canVolume) {
+      audio.muted = false;
+      this.fadeAmbient(level * AMBIENT_VOLUME, level === 0 ? 300 : 700);
+    } else {
+      audio.muted = level < 1; // no volume control: the loop plays at full or waits
+    }
+    if (audio.paused) {
+      var promise = audio.play();
+      if (promise && typeof promise.catch === 'function') promise.catch(function () {});
+    }
+  };
+
+  HeroScrollCar.prototype.fadeAmbient = function (target, duration) {
+    var ambient = this.ambient;
+    var audio = ambient.el;
+    cancelAnimationFrame(ambient.raf);
+    ambient.target = target;
+    var from = audio.volume;
+    if (Math.abs(from - target) < 0.005) { audio.volume = target; return; }
+    var t0 = nowMs();
+    var step = function () {
+      var p = Math.min(1, (nowMs() - t0) / duration);
+      audio.volume = from + (target - from) * p;
+      if (p < 1) ambient.raf = requestAnimationFrame(step);
+    };
+    ambient.raf = requestAnimationFrame(step);
   };
 
   HeroScrollCar.prototype.scrollToFirstStop = function () {
@@ -1031,6 +1157,11 @@
       if (seq.openCard && !event.target.closest('[data-hsc-card]')) self.closeHotspotCard();
     });
     this.onKeydown = function (event) {
+      if (self.sheet && self.sheet.open) {
+        if (event.key === 'Escape') { event.preventDefault(); self.closeSheet(); }
+        else if (event.key === 'Tab') self.trapSheetFocus(event);
+        return;
+      }
       if (event.key === 'Escape' && self.sequence && self.sequence.openCard) self.closeHotspotCard(true);
     };
     document.addEventListener('keydown', this.onKeydown);
@@ -1108,6 +1239,9 @@
     var ch = {
       stage: stage,
       shelf: config.showcase ? this.querySelector('[data-hsc-shelf]') : null,
+      idle: null,
+      idleToken: 0,
+      fast: false,
       fwd: fwd,
       rev: rev && rev.getAttribute('src') ? rev : null,
       nav: nav,
@@ -1216,6 +1350,7 @@
     window.removeEventListener('touchend', ch.onTouchEnd);
     document.removeEventListener('keydown', ch.onKey);
     this.removeEventListener('click', ch.onClick);
+    this.stopIdleLoop();
     ch.fwd.pause();
     if (ch.rev) ch.rev.pause();
     this.closeHotspotCard();
@@ -1265,6 +1400,11 @@
     if (event.deltaMode === 1) dy *= 16;
     else if (event.deltaMode === 2) dy *= window.innerHeight;
     if (!dy) return;
+    if (this.sheet && this.sheet.open) {
+      // Product sheet open: only its own scrollable areas move; the page behind it never does.
+      if (event.cancelable && !this.sheetCanScroll(event.target, dy)) event.preventDefault();
+      return;
+    }
     var now = nowMs();
     var fresh = now - ch.lastWheel > CHAPTER_GESTURE_GAP_MS;
     ch.lastWheel = now;
@@ -1317,6 +1457,7 @@
   HeroScrollCar.prototype.onChapterTouchStart = function (event) {
     var ch = this.chapters;
     if (!ch) return;
+    if (this.sheet && this.sheet.open) { ch.touchY = null; return; }
     if (event.touches.length !== 1 || (!this.contains(event.target) && !this.isChaptersPinned())) { ch.touchY = null; return; }
     ch.touchY = event.touches[0].clientY;
     ch.touchX = event.touches[0].clientX;
@@ -1373,6 +1514,7 @@
   HeroScrollCar.prototype.onChapterKey = function (event) {
     var ch = this.chapters;
     if (!ch || event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
+    if (this.sheet && this.sheet.open) return;
     var target = event.target || {};
     if (/^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName || '') || target.isContentEditable) return;
     var key = event.key;
@@ -1404,13 +1546,15 @@
     ch.boosts = 0;
     ch.activeVideo = null;
     var fast = (options && options.fast) || Math.abs(target - from) > 1;
+    var fromTime = this.currentChapterTime(from); // the living last shot may have moved away from its own time
     ch.busy = true;
     ch.pending = target;
+    ch.fast = fast;
     ch.stage.classList.add('is-playing');
     this.leaveChapter(from);
     this.updateChapterUI();
+    this.updateAmbient();
 
-    var fromTime = ch.points[from].time;
     var toTime = ch.points[target].time;
     // Dots / far jumps: the video runs at high speed straight to the chosen stop (no stop on the way).
     var rate = fast ? clamp(Math.abs(toTime - fromTime) / CHAPTER_FAST_SECONDS, CHAPTER_FAST_MIN, CHAPTER_FAST_MAX) : null;
@@ -1422,10 +1566,12 @@
       if (ch.destroyed) return;
       ch.index = target;
       ch.busy = false;
+      ch.fast = false;
       ch.arrivedAt = nowMs();
       ch.stage.classList.remove('is-playing');
       self.enterChapter(target);
       ch.activeVideo = null;
+      self.updateAmbient();
       // A dot clicked during the transition: jump there now.
       var queued = ch.queued;
       ch.queued = null;
@@ -1435,6 +1581,7 @@
 
   HeroScrollCar.prototype.leaveChapter = function (index) {
     var ch = this.chapters;
+    this.stopIdleLoop();
     this.closeHotspotCard();
     this.showChapterStop(null);
     this.showShelf(false);
@@ -1456,6 +1603,152 @@
     this.showShelf(!!point.showcase);
     this.updateChapterUI();
     this.preseekReverse(index);
+    if (point.showcase) {
+      var self = this;
+      var token = ch.idleToken;
+      setTimeout(function () {
+        if (ch.destroyed || ch.busy || ch.index !== index || ch.idleToken !== token) return;
+        self.startIdleLoop();
+      }, IDLE_DELAY_MS);
+    }
+  };
+
+  /* ---- the living last shot: the video breathes back and forth over its last seconds (smoke, lights) ---- */
+
+  HeroScrollCar.prototype.startIdleLoop = function () {
+    var self = this;
+    var ch = this.chapters;
+    var showcase = this.config.showcase;
+    if (!ch || !ch.rev || !showcase || !(showcase.idle > 0) || ch.busy || ch.destroyed) return;
+    if (ch.idle && ch.idle.active) return;
+    if (this.ambient && !this.ambient.inView) return;
+    var point = ch.points[ch.index];
+    if (!point || !point.showcase) return;
+    if (ch.rev.readyState < 2 || !ch.rev.duration) {
+      // The reversed copy is still loading: start as soon as it can play.
+      if (!ch.idleWait) {
+        ch.idleWait = function () { ch.idleWait = null; self.startIdleLoop(); };
+        ch.rev.addEventListener('canplay', ch.idleWait, { once: true });
+      }
+      return;
+    }
+    var end = point.time;
+    var start = Math.max(0, end - showcase.idle);
+    if (end - start < 0.2) return;
+    ch.idle = { active: true, token: ++ch.idleToken, dir: -1, start: start, end: end };
+    ch.revSeek = null;
+    this.idleLeg();
+  };
+
+  HeroScrollCar.prototype.idleLeg = function () {
+    var self = this;
+    var ch = this.chapters;
+    var idle = ch && ch.idle;
+    if (!idle || !idle.active || ch.busy || ch.destroyed) return;
+    var token = idle.token;
+    var fwd = ch.fwd;
+    var rev = ch.rev;
+    var alive = function () { return idle.active && idle.token === token && !ch.destroyed; };
+    if (idle.dir < 0) {
+      // Back: the reversed copy waits on the mirror frame of the end; the hidden forward video moves to the start.
+      this.seekVideo(rev, this.reverseTime(idle.end)).then(function () {
+        if (!alive()) return;
+        ch.stage.classList.add('is-reversing');
+        fwd.pause();
+        self.seekVideo(fwd, self.chapterFrameTime(idle.start));
+        return self.playIdleLeg(rev, self.reverseTime(idle.start), token);
+      }).then(function () {
+        if (!alive()) return;
+        idle.dir = 1;
+        self.idleLeg();
+      });
+      return;
+    }
+    this.seekVideo(fwd, this.chapterFrameTime(idle.start)).then(function () {
+      if (!alive()) return;
+      ch.stage.classList.remove('is-reversing');
+      rev.pause();
+      self.seekVideo(rev, self.reverseTime(idle.end));
+      return self.playIdleLeg(fwd, self.chapterFrameTime(idle.end), token);
+    }).then(function () {
+      if (!alive()) return;
+      idle.dir = -1;
+      self.idleLeg();
+    });
+  };
+
+  // Plays `video` (muted) up to `end` at the idle speed, slowing down near both ends so each turnaround
+  // feels like a breath rather than a bounce.
+  HeroScrollCar.prototype.playIdleLeg = function (video, end, token) {
+    var ch = this.chapters;
+    var idle = ch.idle;
+    var rate = this.config.showcase.idleRate;
+    var fps = ch.fps;
+    var from = video.currentTime;
+    video.muted = true;
+    return new Promise(function (resolve) {
+      var done = false;
+      var timer;
+      var finish = function () {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        video.removeEventListener('ended', finish);
+        video.pause();
+        resolve();
+      };
+      var speed = function (t) {
+        var s = clamp(Math.min(t - from, end - t) / IDLE_EASE_SECONDS, 0, 1);
+        s = s * s * (3 - 2 * s);
+        return Math.max(0.3, rate * (0.35 + 0.65 * s));
+      };
+      var check = function (now, meta) {
+        if (done) return;
+        if (!idle.active || idle.token !== token || ch.destroyed) { finish(); return; }
+        var t = meta && typeof meta.mediaTime === 'number' ? meta.mediaTime : video.currentTime;
+        if (t >= end - 0.75 / fps || video.ended) { finish(); return; }
+        video.playbackRate = speed(t);
+        schedule();
+      };
+      var schedule = typeof video.requestVideoFrameCallback === 'function'
+        ? function () { video.requestVideoFrameCallback(check); }
+        : function () { requestAnimationFrame(function () { check(); }); };
+      video.addEventListener('ended', finish);
+      timer = setTimeout(finish, Math.max(0, end - from) / (rate * 0.35) * 1000 + 4000);
+      video.playbackRate = speed(from);
+      var promise = video.play();
+      if (promise && typeof promise.catch === 'function') promise.catch(finish);
+      schedule();
+    });
+  };
+
+  HeroScrollCar.prototype.stopIdleLoop = function () {
+    var ch = this.chapters;
+    if (!ch) return;
+    if (ch.idleWait && ch.rev) {
+      ch.rev.removeEventListener('canplay', ch.idleWait);
+      ch.idleWait = null;
+    }
+    var idle = ch.idle;
+    if (!idle || !idle.active) return;
+    idle.active = false;
+    ch.idleToken++;
+    ch.revSeek = null;
+    ch.fwd.pause();
+    if (ch.rev) ch.rev.pause();
+  };
+
+  // Forward-equivalent time shown right now: the chapter's own time, unless the living loop moved away from it.
+  HeroScrollCar.prototype.currentChapterTime = function (index) {
+    var ch = this.chapters;
+    var idle = ch.idle;
+    if (!idle || !idle.active) return ch.points[index].time;
+    var fps = ch.fps;
+    if (ch.stage.classList.contains('is-reversing')) {
+      var frames = Math.round((ch.rev.duration || ch.fwd.duration || 0) * fps);
+      return Math.max(0, frames - 1 - Math.floor(ch.rev.currentTime * fps)) / fps;
+    }
+    return Math.floor(ch.fwd.currentTime * fps) / fps;
   };
 
   // Videos from Shopify Files have a keyframe every 3 s, so a seek can take a moment: on each arrival the
@@ -1627,6 +1920,7 @@
       video.muted = !self.soundOn || self.soundBlocked || !!rateOverride; // no chipmunk soundtrack while fast-forwarding
       ch.activeVideo = video;
       ch.activeRate = rate;
+      self.updateAmbient();
       self.panChapterFocus(target, (toTime - fromTime) / rate);
       return self.playVideoUntil(video, Math.round(toTime * ch.fps) / ch.fps);
     }).then(function () {
@@ -1751,6 +2045,163 @@
   }
 
   function escapeAttr(value) { return escapeHtml(value); }
+
+  /* ------------------------------------------------------------------ product sheet */
+
+  // "En savoir plus" on a présentoir card: a glass panel over the scene with the product's gallery
+  // (before / after comparison first, when the product has both pictures), its description and the cart button.
+  HeroScrollCar.prototype.setupSheet = function () {
+    var self = this;
+    var root = this.querySelector('[data-hsc-sheet]');
+    this.sheet = null;
+    if (!root) return;
+    var sheet = {
+      root: root,
+      panel: root.querySelector('[data-hsc-sheet-panel]'),
+      content: root.querySelector('[data-hsc-sheet-content]'),
+      open: false,
+      opener: null,
+      timer: 0,
+      raf: 0
+    };
+    this.sheet = sheet;
+    this.addEventListener('click', function (event) {
+      var more = event.target.closest('[data-hsc-more]');
+      if (more) { event.preventDefault(); self.openSheet(more.getAttribute('data-hsc-more'), more); return; }
+      if (event.target.closest('[data-hsc-sheet-close]')) { event.preventDefault(); self.closeSheet(); return; }
+      var arrow = event.target.closest('[data-hsc-gallery-prev], [data-hsc-gallery-next]');
+      if (arrow) { event.preventDefault(); self.slideGallery(arrow.hasAttribute('data-hsc-gallery-next') ? 1 : -1); return; }
+      var dot = event.target.closest('[data-hsc-gallery-dot]');
+      if (dot) { event.preventDefault(); self.slideGalleryTo(parseInt(dot.getAttribute('data-index'), 10)); }
+    });
+    root.addEventListener('input', function (event) {
+      var range = event.target.closest('[data-hsc-compare-range]');
+      if (!range) return;
+      var compare = range.closest('[data-hsc-compare]');
+      if (compare) compare.style.setProperty('--hsc-cut', range.value + '%');
+    });
+    root.addEventListener('scroll', function (event) {
+      if (!event.target || !event.target.hasAttribute || !event.target.hasAttribute('data-hsc-track')) return;
+      cancelAnimationFrame(sheet.raf);
+      sheet.raf = requestAnimationFrame(function () { self.updateGalleryDots(); });
+    }, true);
+  };
+
+  HeroScrollCar.prototype.openSheet = function (id, opener) {
+    var sheet = this.sheet;
+    if (!sheet || !/^[\w-]+$/.test(id || '')) return;
+    var template = this.querySelector('template[data-hsc-product="' + id + '"]');
+    if (!template) return;
+    clearTimeout(sheet.timer);
+    sheet.content.innerHTML = '';
+    sheet.content.appendChild(template.content.cloneNode(true));
+    sheet.opener = opener || null;
+    sheet.open = true;
+    sheet.root.hidden = false;
+    var title = sheet.content.querySelector('[data-hsc-sheet-title]');
+    if (title) {
+      title.id = 'hsc-sheet-title-' + id;
+      sheet.root.setAttribute('aria-labelledby', title.id);
+    }
+    this.setAttribute('data-sheet-open', '');
+    var root = sheet.root;
+    requestAnimationFrame(function () { root.classList.add('is-open'); });
+    var close = sheet.panel.querySelector('[data-hsc-sheet-close]');
+    if (close) close.focus({ preventScroll: true });
+    var track = this.galleryTrack();
+    if (track) track.scrollLeft = 0;
+    this.updateGalleryDots();
+  };
+
+  HeroScrollCar.prototype.closeSheet = function () {
+    var sheet = this.sheet;
+    if (!sheet || !sheet.open) return;
+    sheet.open = false;
+    sheet.root.classList.remove('is-open');
+    this.removeAttribute('data-sheet-open');
+    sheet.timer = setTimeout(function () {
+      if (sheet.open) return;
+      sheet.root.hidden = true;
+      sheet.content.innerHTML = '';
+    }, SHEET_CLOSE_MS);
+    // Focus goes back where it came from: the card's button when the picture or the title was clicked.
+    var opener = sheet.opener;
+    sheet.opener = null;
+    if (opener && opener.getAttribute('tabindex') === '-1') {
+      var card = opener.closest('[data-hsc-item], .hsc-card');
+      var button = card && card.querySelector('.hsc-card__more');
+      if (button) opener = button;
+    }
+    if (opener && typeof opener.focus === 'function' && opener.isConnected) opener.focus({ preventScroll: true });
+  };
+
+  // True when an area of the open sheet, under `target`, can still scroll in the wheel's direction.
+  HeroScrollCar.prototype.sheetCanScroll = function (target, dy) {
+    var panel = this.sheet.panel;
+    var node = target && target.nodeType === 1 ? target : null;
+    while (node && node !== panel && panel.contains(node)) {
+      var overflow = getComputedStyle(node).overflowY;
+      if ((overflow === 'auto' || overflow === 'scroll') && node.scrollHeight > node.clientHeight + 1) {
+        if (dy > 0 && node.scrollTop + node.clientHeight < node.scrollHeight - 1) return true;
+        if (dy < 0 && node.scrollTop > 0) return true;
+      }
+      node = node.parentElement;
+    }
+    return false;
+  };
+
+  // Tab stays inside the open sheet.
+  HeroScrollCar.prototype.trapSheetFocus = function (event) {
+    var panel = this.sheet.panel;
+    var items = panel.querySelectorAll('a[href], button:not([disabled]), input, [tabindex]:not([tabindex="-1"])');
+    if (!items.length) return;
+    var first = items[0];
+    var last = items[items.length - 1];
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    else if (!panel.contains(document.activeElement)) { event.preventDefault(); first.focus(); }
+  };
+
+  HeroScrollCar.prototype.galleryTrack = function () {
+    var sheet = this.sheet;
+    return sheet && sheet.open ? sheet.content.querySelector('[data-hsc-track]') : null;
+  };
+
+  HeroScrollCar.prototype.galleryIndex = function (track) {
+    return Math.round(track.scrollLeft / Math.max(1, track.clientWidth));
+  };
+
+  HeroScrollCar.prototype.slideGallery = function (dir) {
+    var track = this.galleryTrack();
+    if (!track) return;
+    this.slideGalleryTo(clamp(this.galleryIndex(track) + dir, 0, track.children.length - 1));
+  };
+
+  HeroScrollCar.prototype.slideGalleryTo = function (index) {
+    var track = this.galleryTrack();
+    if (!track || !track.children[index]) return;
+    var left = index * track.clientWidth;
+    if (typeof track.scrollTo === 'function') track.scrollTo({ left: left, behavior: this.mqReduced.matches ? 'auto' : 'smooth' });
+    else track.scrollLeft = left;
+  };
+
+  HeroScrollCar.prototype.updateGalleryDots = function () {
+    var track = this.galleryTrack();
+    if (!track) return;
+    var index = this.galleryIndex(track);
+    var content = this.sheet.content;
+    var dots = content.querySelectorAll('[data-hsc-gallery-dot]');
+    for (var i = 0; i < dots.length; i++) {
+      var active = i === index;
+      dots[i].classList.toggle('is-active', active);
+      if (active) dots[i].setAttribute('aria-current', 'true');
+      else dots[i].removeAttribute('aria-current');
+    }
+    var prev = content.querySelector('[data-hsc-gallery-prev]');
+    var next = content.querySelector('[data-hsc-gallery-next]');
+    if (prev) prev.disabled = index <= 0;
+    if (next) next.disabled = index >= track.children.length - 1;
+  };
 
   /* ------------------------------------------------------------------ cart */
 

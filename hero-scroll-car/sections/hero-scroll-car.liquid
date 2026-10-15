@@ -23,6 +23,8 @@
                         empilée (réduire les animations, économiseur de données, ou mobile si la séquence y est
                         désactivée) ; utilisées si aucune image n'est choisie dans le bloc « Arrêt caméra »
     stop-presentoir.jpg image fixe du présentoir (dernier plan), au-dessus des cartes dans la version empilée
+    engine-idle.mp3     bruit du moteur au ralenti, en boucle : joué entre les plans et sur le présentoir
+                        (réglage « Bruit du moteur en boucle », vide = aucun)
 
   RÉGLER LES FRAMES D'ARRÊT
     1. « Nombre total de frames » = numéro de la dernière image (f_0240.webp → 240).
@@ -66,7 +68,11 @@
     bande-son du plan-séquence.
     Bloc « Présentoir (fin) » : jusqu'à 6 produits au choix, affichés ensemble sur le dernier plan, cartes posées
     sur le comptoir (« Hauteur du comptoir », 71 % de la hauteur de la vidéo) ; sur mobile, bande de cartes à
-    faire glisser en bas de l'écran.
+    faire glisser en bas de l'écran. À l'arrivée, le plan reste vivant : les dernières secondes de la vidéo
+    sont lues en va-et-vient (fumée, lumières), réglage « Boucle vivante ». « En savoir plus » ouvre la fiche
+    produit par-dessus la scène (galerie, description, panier). Avant / après : donner à un produit les images
+    « Image avant (hero voiture) » et « Image après (hero voiture) » (Produits › métachamps), ou deux photos dont
+    le texte alternatif contient « avant » et « après » : la fiche commence alors par le comparateur.
     Pensé pour la première section de la page (hero). Réduire les animations : version empilée, comme avant.
 
   REMPLACER LES ASSETS
@@ -137,6 +143,12 @@
       assign chapter_rev_url = chapter_rev_url | asset_url
     endunless
   endif
+  assign ambient_url = s.ambient_file
+  if ambient_url != blank
+    unless ambient_url contains '://'
+      assign ambient_url = ambient_url | asset_url
+    endunless
+  endif
   assign heading_tag = s.heading_tag | default: 'h1'
   assign cart_add_url = routes.cart_add_url | append: '.js'
   assign cart_url = routes.cart_url | append: '.js'
@@ -173,7 +185,7 @@
       "firstFrameUrl": {{ first_frame_url | json }},
       "posterUrl": {{ poster_url | json }},
       "stopRange": {{ s.stop_range | default: 40 }},
-      "priorityCount": {{ s.priority_count | default: 30 }},
+      "priorityCount": 30,
       "snapToStops": {% if s.snap_to_stops %}true{% else %}false{% endif %},
       "startMode": {{ start_mode | json }},
       "mobileSequence": {% if s.mobile_sequence %}true{% else %}false{% endif %},
@@ -184,6 +196,7 @@
       "cartAddUrl": {{ cart_add_url | json }},
       "cartUrl": {{ cart_url | json }},
       "rootUrl": {{ routes.root_url | json }},
+      "ambient": {{ ambient_url | default: '' | json }},
       "stops": [
         {%- assign separator = '' -%}
         {%- for block in section.blocks -%}
@@ -208,7 +221,9 @@
           "id": {{ shelf.id | json }},
           "label": {{ shelf.settings.heading | default: 'Présentoir' | json }},
           "y": {{ shelf.settings.cards_y | default: 71 }},
-          "rate": {{ shelf.settings.speed | default: 'auto' | json }}
+          "rate": {{ shelf.settings.speed | default: 'auto' | json }},
+          "idle": {{ shelf.settings.idle_seconds | default: 2.4 | json }},
+          "idleRate": {{ shelf.settings.idle_speed | default: '0.7' | json }}
         }
       {%- else -%} null{%- endif -%},
       "texts": {
@@ -221,7 +236,10 @@
         "prev": "Plan précédent",
         "skip": "Passer l'animation",
         "start": "Début",
-        "end": "Plan final"
+        "end": "Plan final",
+        "more": {{ shelf.settings.text_more | default: 'En savoir plus' | json }},
+        "before": {{ shelf.settings.text_before | default: 'Avant' | json }},
+        "after": {{ shelf.settings.text_after | default: 'Après' | json }}
       }
     }
   </script>
@@ -252,6 +270,12 @@
       {%- if s.audio_file != blank -%}
         <audio data-hsc-audio preload="none">
           <source src="{{ audio_url }}" type="audio/mpeg">
+        </audio>
+      {%- endif -%}
+      {%- if ambient_url != blank -%}
+        {%- comment -%} Bruit du moteur au ralenti : joué en boucle entre les plans et sur le présentoir {%- endcomment -%}
+        <audio data-hsc-ambient preload="auto" loop>
+          <source src="{{ ambient_url }}" type="audio/mpeg">
         </audio>
       {%- endif -%}
 
@@ -430,17 +454,136 @@
               {%- assign variant = product.selected_or_first_available_variant -%}
               <li class="hsc-shelf__item" data-hsc-item style="--hsc-i: {{ forloop.index0 }};">
                 {%- if product.featured_image -%}
-                  <a class="hsc-card__media" href="{{ product.url }}" tabindex="-1" aria-hidden="true">
+                  <a class="hsc-card__media" href="{{ product.url }}" data-hsc-more="{{ product.id }}" tabindex="-1" aria-hidden="true">
                     {{ product.featured_image | image_url: width: 480 | image_tag: loading: 'lazy', widths: '240, 360, 480', sizes: '180px', alt: '' }}
                   </a>
                 {%- endif -%}
-                <h2 class="hsc-card__title"><a href="{{ product.url }}">{{ product.title | escape }}</a></h2>
+                <h2 class="hsc-card__title"><a href="{{ product.url }}" data-hsc-more="{{ product.id }}">{{ product.title | escape }}</a></h2>
                 <p class="hsc-card__price">
                   <span>{{ variant.price | money }}</span>
                   {%- if variant.compare_at_price > variant.price -%}
                     <s>{{ variant.compare_at_price | money }}</s>
                   {%- endif -%}
                 </p>
+                <div class="hsc-card__actions">
+                  <button
+                    type="button"
+                    class="hsc-btn hsc-btn--primary hsc-card__add"
+                    data-hsc-add
+                    data-variant-id="{{ variant.id }}"
+                    {% unless product.available %}disabled{% endunless %}
+                  >
+                    <span data-hsc-add-label>{% if product.available %}{{ s.text_add | escape }}{% else %}{{ s.text_unavailable | escape }}{% endif %}</span>
+                  </button>
+                  <button type="button" class="hsc-btn hsc-btn--ghost hsc-card__more" data-hsc-more="{{ product.id }}">{{ shelf.settings.text_more | default: 'En savoir plus' | escape }}</button>
+                </div>
+                <p class="hsc-card__msg" role="status" aria-live="polite" data-hsc-msg></p>
+              </li>
+            {%- else -%}
+              <li class="hsc-shelf__item hsc-shelf__item--empty">Choisissez les produits du présentoir dans l’éditeur de thème.</li>
+            {%- endfor -%}
+          </ul>
+        </div>
+
+        {%- comment -%}
+          Fiches produit (une par produit du présentoir), clonées dans la fenêtre « En savoir plus ».
+          Avant / après : métachamps hero.before / hero.after, sinon deux photos dont le texte alternatif
+          contient « avant » / « après » (ou before / after).
+        {%- endcomment -%}
+        {%- for product in shelf.settings.products -%}
+          {%- liquid
+            assign variant = product.selected_or_first_available_variant
+            assign text_before = shelf.settings.text_before | default: 'Avant'
+            assign text_after = shelf.settings.text_after | default: 'Après'
+            assign before_img = nil
+            assign after_img = nil
+            assign before_id = 0
+            assign after_id = 0
+            if product.metafields.hero.before != blank
+              assign before_img = product.metafields.hero.before.value
+            endif
+            if product.metafields.hero.after != blank
+              assign after_img = product.metafields.hero.after.value
+            endif
+            for media in product.media
+              if media.media_type != 'image'
+                continue
+              endif
+              assign alt_down = media.alt | downcase
+              if before_img == nil and alt_down contains 'avant'
+                assign before_img = media
+                assign before_id = media.id
+              elsif before_img == nil and alt_down contains 'before'
+                assign before_img = media
+                assign before_id = media.id
+              elsif after_img == nil and alt_down contains 'apr'
+                assign after_img = media
+                assign after_id = media.id
+              elsif after_img == nil and alt_down contains 'after'
+                assign after_img = media
+                assign after_id = media.id
+              endif
+            endfor
+            assign slide_count = 0
+            if before_img != nil and after_img != nil
+              assign slide_count = 1
+            endif
+            for media in product.media
+              if media.media_type == 'image' and media.id != before_id and media.id != after_id
+                assign slide_count = slide_count | plus: 1
+              endif
+            endfor
+          -%}
+          <template data-hsc-product="{{ product.id }}">
+            <div class="hsc-sheet__gallery{% if slide_count < 2 %} hsc-sheet__gallery--single{% endif %}" data-hsc-gallery>
+              <div class="hsc-sheet__track" data-hsc-track tabindex="0" aria-label="{{ product.title | escape }}">
+                {%- if before_img != nil and after_img != nil -%}
+                  <figure class="hsc-sheet__slide hsc-sheet__slide--compare" data-hsc-compare style="--hsc-cut: 50%;">
+                    <img class="hsc-compare__img hsc-compare__img--after" src="{{ after_img | image_url: width: 1200 }}" alt="{{ text_after | escape }}" width="1200" height="900" loading="lazy">
+                    <img class="hsc-compare__img hsc-compare__img--before" src="{{ before_img | image_url: width: 1200 }}" alt="{{ text_before | escape }}" width="1200" height="900" loading="lazy">
+                    <span class="hsc-compare__label hsc-compare__label--before" aria-hidden="true">{{ text_before | escape }}</span>
+                    <span class="hsc-compare__label hsc-compare__label--after" aria-hidden="true">{{ text_after | escape }}</span>
+                    <span class="hsc-compare__handle" aria-hidden="true"><i></i></span>
+                    <input class="hsc-compare__range" data-hsc-compare-range type="range" min="0" max="100" value="50" aria-label="{{ text_before | escape }} / {{ text_after | escape }}">
+                  </figure>
+                {%- endif -%}
+                {%- for media in product.media -%}
+                  {%- if media.media_type != 'image' or media.id == before_id or media.id == after_id -%}{%- continue -%}{%- endif -%}
+                  <figure class="hsc-sheet__slide">
+                    {{ media | image_url: width: 1200 | image_tag: loading: 'lazy', widths: '600, 900, 1200', sizes: '(min-width: 768px) 46vw, 100vw', alt: media.alt }}
+                  </figure>
+                {%- endfor -%}
+                {%- if slide_count == 0 -%}
+                  <figure class="hsc-sheet__slide hsc-sheet__slide--empty"></figure>
+                {%- endif -%}
+              </div>
+              <button type="button" class="hsc-sheet__arrow hsc-sheet__arrow--prev" data-hsc-gallery-prev aria-label="Image précédente">
+                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <button type="button" class="hsc-sheet__arrow hsc-sheet__arrow--next" data-hsc-gallery-next aria-label="Image suivante">
+                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <ol class="hsc-sheet__dots" role="list">
+                {%- for i in (1..slide_count) -%}
+                  <li><button type="button" class="hsc-sheet__dot" data-hsc-gallery-dot data-index="{{ forloop.index0 }}" aria-label="Image {{ forloop.index }}"><i></i></button></li>
+                {%- endfor -%}
+              </ol>
+            </div>
+            <div class="hsc-sheet__info">
+              {%- if product.vendor != blank -%}
+                <p class="hsc-card__kicker">{{ product.vendor | escape }}</p>
+              {%- endif -%}
+              <h2 class="hsc-sheet__title" data-hsc-sheet-title>{{ product.title | escape }}</h2>
+              <p class="hsc-card__price">
+                <span>{{ variant.price | money }}</span>
+                {%- if variant.compare_at_price > variant.price -%}
+                  <s>{{ variant.compare_at_price | money }}</s>
+                {%- endif -%}
+              </p>
+              {%- if product.description != blank -%}
+                <div class="hsc-sheet__desc">{{ product.description }}</div>
+              {%- endif -%}
+              <div class="hsc-sheet__actions">
                 <button
                   type="button"
                   class="hsc-btn hsc-btn--primary hsc-card__add"
@@ -450,13 +593,12 @@
                 >
                   <span data-hsc-add-label>{% if product.available %}{{ s.text_add | escape }}{% else %}{{ s.text_unavailable | escape }}{% endif %}</span>
                 </button>
-                <p class="hsc-card__msg" role="status" aria-live="polite" data-hsc-msg></p>
-              </li>
-            {%- else -%}
-              <li class="hsc-shelf__item hsc-shelf__item--empty">Choisissez les produits du présentoir dans l’éditeur de thème.</li>
-            {%- endfor -%}
-          </ul>
-        </div>
+                <a class="hsc-btn hsc-btn--ghost" href="{{ product.url }}">{{ shelf.settings.text_view | default: 'Voir la fiche produit' | escape }}</a>
+              </div>
+              <p class="hsc-card__msg" role="status" aria-live="polite" data-hsc-msg></p>
+            </div>
+          </template>
+        {%- endfor -%}
       {%- endif -%}
     </section>
   </div>
@@ -541,26 +683,29 @@
               {%- assign variant = product.selected_or_first_available_variant -%}
               <li class="hsc-card hsc-card--static hsc-card--compact">
                 {%- if product.featured_image -%}
-                  <a class="hsc-card__media" href="{{ product.url }}" tabindex="-1" aria-hidden="true">
+                  <a class="hsc-card__media" href="{{ product.url }}" data-hsc-more="{{ product.id }}" tabindex="-1" aria-hidden="true">
                     {{ product.featured_image | image_url: width: 480 | image_tag: loading: 'lazy', widths: '240, 360, 480', sizes: '160px', alt: '' }}
                   </a>
                 {%- endif -%}
-                <h2 class="hsc-card__title"><a href="{{ product.url }}">{{ product.title | escape }}</a></h2>
+                <h2 class="hsc-card__title"><a href="{{ product.url }}" data-hsc-more="{{ product.id }}">{{ product.title | escape }}</a></h2>
                 <p class="hsc-card__price">
                   <span>{{ variant.price | money }}</span>
                   {%- if variant.compare_at_price > variant.price -%}
                     <s>{{ variant.compare_at_price | money }}</s>
                   {%- endif -%}
                 </p>
-                <button
-                  type="button"
-                  class="hsc-btn hsc-btn--primary hsc-card__add"
-                  data-hsc-add
-                  data-variant-id="{{ variant.id }}"
-                  {% unless product.available %}disabled{% endunless %}
-                >
-                  <span data-hsc-add-label>{% if product.available %}{{ s.text_add | escape }}{% else %}{{ s.text_unavailable | escape }}{% endif %}</span>
-                </button>
+                <div class="hsc-card__actions">
+                  <button
+                    type="button"
+                    class="hsc-btn hsc-btn--primary hsc-card__add"
+                    data-hsc-add
+                    data-variant-id="{{ variant.id }}"
+                    {% unless product.available %}disabled{% endunless %}
+                  >
+                    <span data-hsc-add-label>{% if product.available %}{{ s.text_add | escape }}{% else %}{{ s.text_unavailable | escape }}{% endif %}</span>
+                  </button>
+                  <button type="button" class="hsc-btn hsc-btn--ghost hsc-card__more" data-hsc-more="{{ product.id }}">{{ shelf.settings.text_more | default: 'En savoir plus' | escape }}</button>
+                </div>
                 <p class="hsc-card__msg" role="status" aria-live="polite" data-hsc-msg></p>
               </li>
             {%- endfor -%}
@@ -569,6 +714,17 @@
       </article>
     {%- endif -%}
   </section>
+
+  {%- if shelf -%}
+    {%- comment -%} Fenêtre « En savoir plus » : panneau en verre par-dessus la scène, rempli depuis les fiches ci-dessus {%- endcomment -%}
+    <div class="hsc-sheet" data-hsc-sheet hidden role="dialog" aria-modal="true">
+      <div class="hsc-sheet__backdrop" data-hsc-sheet-close></div>
+      <div class="hsc-sheet__panel" data-hsc-sheet-panel>
+        <button type="button" class="hsc-sheet__close" data-hsc-sheet-close aria-label="{{ s.text_close | default: 'Fermer' | escape }}">&times;</button>
+        <div class="hsc-sheet__content" data-hsc-sheet-content></div>
+      </div>
+    </div>
+  {%- endif -%}
 
   <noscript>
     <style>
@@ -744,11 +900,11 @@
       "info": "Décoché : sur mobile, la vidéo puis les produits empilés avec leur image statique (aucune frame chargée). Les visiteurs ayant activé « réduire les animations » ou l'économiseur de données voient toujours la version empilée."
     },
     {
-      "type": "number",
-      "id": "priority_count",
-      "label": "Frames chargées en priorité",
-      "default": 30,
-      "info": "Chargées avant les autres, dès l'arrivée sur la page."
+      "type": "text",
+      "id": "ambient_file",
+      "label": "Bruit du moteur en boucle (fichier ou lien)",
+      "default": "engine-idle.mp3",
+      "info": "Joué entre les plans et sur le présentoir. Vide = aucun."
     },
     {
       "type": "text",
@@ -1154,6 +1310,52 @@
             { "value": "4", "label": "× 4" }
           ],
           "default": "2"
+        },
+        {
+          "type": "range",
+          "id": "idle_seconds",
+          "label": "Boucle vivante à l'arrivée",
+          "min": 0,
+          "max": 4,
+          "step": 0.2,
+          "unit": "s",
+          "default": 2.4,
+          "info": "Les dernières secondes de la vidéo rejouées en va-et-vient (fumée, lumières). 0 = image fixe."
+        },
+        {
+          "type": "select",
+          "id": "idle_speed",
+          "label": "Vitesse de la boucle",
+          "options": [
+            { "value": "0.5", "label": "Lente" },
+            { "value": "0.7", "label": "Normale" },
+            { "value": "1", "label": "Vitesse réelle" }
+          ],
+          "default": "0.7"
+        },
+        {
+          "type": "text",
+          "id": "text_more",
+          "label": "Bouton de la fiche produit",
+          "default": "En savoir plus"
+        },
+        {
+          "type": "text",
+          "id": "text_view",
+          "label": "Lien vers la page produit",
+          "default": "Voir la fiche produit"
+        },
+        {
+          "type": "text",
+          "id": "text_before",
+          "label": "Comparateur : libellé avant",
+          "default": "Avant"
+        },
+        {
+          "type": "text",
+          "id": "text_after",
+          "label": "Comparateur : libellé après",
+          "default": "Après"
         },
         {
           "type": "text",
