@@ -909,3 +909,208 @@ hero-scroll-car,
   border-color: var(--hsc-card-border);
   color: var(--hsc-product-title-color);
 }
+
+/* --------------------------------------------------------------------------
+   Chapters mode — the plan-séquence plays as a real video from stop to stop
+   (data-sequence="chapters"; the JS sets is-away / is-reversing / is-cutting / is-playing)
+   -------------------------------------------------------------------------- */
+
+.hsc[data-sequence="chapters"] .hsc-scroller {
+  height: auto;
+}
+
+.hsc[data-sequence="chapters"] .hsc-canvas {
+  display: none;
+}
+
+.hsc-chapter-video {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: var(--hsc-focus, 50%) 50%;
+  opacity: 0;
+  pointer-events: none;
+  background: transparent;
+  transition: object-position var(--hsc-pan-dur, 0s) cubic-bezier(0.45, 0, 0.55, 1), opacity 0.18s ease;
+}
+
+/* The reversed copy swaps in and out instantly: it shows the very same frame as the forward video. */
+.hsc-chapter-video--rev {
+  z-index: 3;
+  transition: object-position var(--hsc-pan-dur, 0s) cubic-bezier(0.45, 0, 0.55, 1);
+}
+
+.hsc-stage.is-away .hsc-chapter-video--fwd,
+.hsc-stage.is-reversing .hsc-chapter-video--rev {
+  opacity: 1;
+}
+
+.hsc-stage.is-chapters .hsc-video {
+  transition: opacity 0.18s ease;
+}
+
+.hsc-stage.is-cutting .hsc-video,
+.hsc-stage.is-cutting .hsc-chapter-video {
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+
+.hsc-stage.is-away .hsc-overlay,
+.hsc-stage.is-away .hsc-scroll-hint,
+.hsc-stage.is-away .hsc-hero__shade {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.45s ease, transform 0.6s var(--hsc-ease-out);
+}
+
+.hsc-stage.is-away .hsc-overlay {
+  transform: translateY(-14px);
+}
+
+/* Chapter navigation: arrows + one dot per chapter (shown once the hero is left) */
+.hsc-chapters {
+  position: absolute;
+  z-index: 6;
+  left: 50%;
+  bottom: calc(clamp(16px, 3vw, 36px) + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border: 1px solid var(--hsc-line);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.42);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  color: var(--hsc-ink);
+  transform: translateX(-50%);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.4s ease, visibility 0s linear 0.4s;
+}
+
+.hsc-chapters:empty {
+  display: none;
+}
+
+.hsc-stage.is-away .hsc-chapters {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+.hsc-chapters__dots {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hsc-chapters__dot,
+.hsc-chapters__arrow {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.hsc-chapters__dot i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.45);
+  transition: transform 0.3s var(--hsc-ease-out), background-color 0.3s ease;
+}
+
+.hsc-chapters__dot:hover i {
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.hsc-chapters__dot.is-active i {
+  background: var(--hsc-accent);
+  transform: scale(1.45);
+}
+
+.hsc-chapters__arrow:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.hsc-chapters__arrow[disabled] {
+  opacity: 0.3;
+  cursor: default;
+  background: none;
+}
+
+.hsc-chapters__dot:focus-visible,
+.hsc-chapters__arrow:focus-visible,
+.hsc-chapters__skip:focus-visible {
+  outline: 2px solid var(--hsc-accent);
+  outline-offset: 2px;
+}
+
+/* "Skip the animation": only visible when focused with the keyboard */
+.hsc-chapters__skip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  padding: 8px 14px;
+  border: 1px solid var(--hsc-line);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.7);
+  color: var(--hsc-ink);
+  font: inherit;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  cursor: pointer;
+  transform: translateX(-50%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.hsc-chapters__skip:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.hsc[data-mode="static"] .hsc-chapter-video,
+.hsc[data-mode="static"] .hsc-chapters {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  /* Narrow screens: vertical navigation on the right, clear of the bottom product sheet. */
+  .hsc[data-mode="scroll"] .hsc-chapters {
+    left: auto;
+    right: calc(8px + env(safe-area-inset-right, 0px));
+    top: 50%;
+    bottom: auto;
+    flex-direction: column;
+    transform: translateY(-50%);
+  }
+
+  .hsc[data-mode="scroll"] .hsc-chapters__dots {
+    flex-direction: column;
+  }
+
+  .hsc[data-mode="scroll"] .hsc-chapters__skip {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hsc .hsc-chapter-video,
+  .hsc .hsc-chapters {
+    display: none;
+  }
+}

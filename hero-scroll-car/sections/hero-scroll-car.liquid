@@ -51,6 +51,16 @@
     /assets à la place des anciens (livré : 1920 × 1080, qualité 74, 23 Mo) ; rien d'autre à changer,
     le dessin « cover » s'adapte à la taille des images.
 
+  MODE CHAPITRES (réglage « Mode de défilement »)
+    Au lieu de faire défiler les images, chaque cran de molette, swipe, flèche du clavier ou clic sur la
+    navigation lit la vraie vidéo du plan-séquence jusqu'à l'arrêt suivant (fluidité d'une vidéo). En remontant,
+    une copie inversée de la vidéo est lue : marche arrière tout aussi fluide. La scène reste épinglée en haut
+    de l'écran tant qu'il reste des chapitres ; après le plan final, la page défile normalement.
+    Fichiers : plan-sequence.mp4 (avant, avec le son) et plan-sequence-reverse.mp4 (inversée, sans son), 1080p,
+    une image clé toutes les 15 images. Chaque bloc a un « temps de l'arrêt » en secondes (10 / 19.8 / 25.27 /
+    34.8) ; « Fin du plan final » = 39.9. Le bouton son active la bande-son du plan-séquence.
+    Pensé pour la première section de la page (hero). Réduire les animations : version empilée, comme avant.
+
   REMPLACER LES ASSETS
     Uploader les nouveaux fichiers sous le même nom dans /assets, ou changer les noms dans le groupe
     « Fichiers (dans /assets) ». Les URL CDN des frames sont reconstruites à partir de l'URL de la
@@ -92,6 +102,33 @@
     endfor
   endif
   assign audio_url = s.audio_file | asset_url
+  comment
+    Mode chapitres : plan-séquence lu en vidéo (avant) + copie inversée (marche arrière fluide).
+  endcomment
+  assign sequence_mode = s.sequence_mode | default: 'scrub'
+  assign chapter_url = s.chapter_video_file | default: 'plan-sequence.mp4' | asset_url
+  if s.chapter_video != blank
+    assign best_height = 0
+    for source in s.chapter_video.sources
+      if source.mime_type == 'video/mp4' and source.height <= 1080 and source.height > best_height
+        assign best_height = source.height
+        assign chapter_url = source.url
+      endif
+    endfor
+  endif
+  assign chapter_rev_url = ''
+  if s.chapter_video_reverse_file != blank
+    assign chapter_rev_url = s.chapter_video_reverse_file | asset_url
+  endif
+  if s.chapter_video_reverse != blank
+    assign best_height = 0
+    for source in s.chapter_video_reverse.sources
+      if source.mime_type == 'video/mp4' and source.height <= 1080 and source.height > best_height
+        assign best_height = source.height
+        assign chapter_rev_url = source.url
+      endif
+    endfor
+  endif
   assign heading_tag = s.heading_tag | default: 'h1'
   assign cart_add_url = routes.cart_add_url | append: '.js'
   assign cart_url = routes.cart_url | append: '.js'
@@ -110,6 +147,7 @@
   id="hsc-{{ section.id }}"
   data-section-id="{{ section.id }}"
   data-mode="auto"
+  data-sequence="{{ sequence_mode }}"
   style="--hsc-accent: {{ s.accent_color | default: '#FF7A1A' }}; --hsc-n: {{ s.scroll_multiplier | default: 5 }}; --hsc-title-color: {{ s.color_title | default: '#FFFFFF' }}; --hsc-subtitle-color: {{ s.color_subtitle | default: '#C8C8CC' }}; --hsc-kicker-color: {{ s.color_kicker | default: s.accent_color | default: '#FF7A1A' }}; --hsc-product-title-color: {{ s.color_product_title | default: '#FFFFFF' }}; --hsc-card-text-color: {{ s.color_card_text | default: '#C8C8CC' }}; --hsc-price-color: {{ s.color_price | default: '#FFFFFF' }}; --hsc-btn-text-color: {{ s.color_button_text | default: '#111111' }}; --hsc-ink: {{ s.color_other | default: '#FFFFFF' }}; --hsc-card-bg: {{ card_bg }}; --hsc-card-border: {{ card_border }}; --hsc-product-title-size: {{ s.product_title_size | default: 25 }}px;"
 >
   <script type="application/json" data-hsc-config>
@@ -121,6 +159,10 @@
       "priorityCount": {{ s.priority_count | default: 30 }},
       "snapToStops": {% if s.snap_to_stops %}true{% else %}false{% endif %},
       "mobileSequence": {% if s.mobile_sequence %}true{% else %}false{% endif %},
+      "sequenceMode": {{ sequence_mode | json }},
+      "chapterRate": {{ s.chapter_rate | default: '1.5' | json }},
+      "chapterEnd": {{ s.chapter_end | default: '39.9' | json }},
+      "fps": {{ s.chapter_fps | default: 30 }},
       "cartAddUrl": {{ cart_add_url | json }},
       "cartUrl": {{ cart_url | json }},
       "rootUrl": {{ routes.root_url | json }},
@@ -133,7 +175,9 @@
             "display": {{ block.settings.display | default: 'card' | json }},
             "x": {{ block.settings.hotspot_x | default: 50 }},
             "y": {{ block.settings.hotspot_y | default: 50 }},
-            "focus": {{ block.settings.focus_x | default: 50 }}
+            "focus": {{ block.settings.focus_x | default: 50 }},
+            "time": {{ block.settings.time | default: '' | json }},
+            "label": {{ block.settings.title | json }}
           }{%- unless forloop.last -%},{%- endunless -%}
         {%- endfor -%}
       ],
@@ -142,7 +186,12 @@
         "added": {{ s.text_added | json }},
         "error": {{ s.text_error | json }},
         "soundOn": {{ s.text_sound_on | json }},
-        "soundOff": {{ s.text_sound_off | json }}
+        "soundOff": {{ s.text_sound_off | json }},
+        "next": {{ s.text_next | default: 'Plan suivant' | json }},
+        "prev": {{ s.text_prev | default: 'Plan précédent' | json }},
+        "skip": {{ s.text_skip | default: "Passer l'animation" | json }},
+        "start": {{ s.text_start | default: 'Début' | json }},
+        "end": {{ s.text_end | default: 'Plan final' | json }}
       }
     }
   </script>
@@ -177,6 +226,37 @@
       {%- endif -%}
 
       <canvas class="hsc-canvas" data-hsc-canvas role="img" aria-label="{{ s.sequence_label | escape }}"></canvas>
+      {%- if sequence_mode == 'chapters' -%}
+        {%- comment -%} Mode chapitres : la vidéo avant, puis sa copie inversée (chargée après) {%- endcomment -%}
+        <video
+          class="hsc-chapter-video hsc-chapter-video--fwd"
+          data-hsc-chapter-video
+          src="{{ chapter_url }}"
+          poster="{{ first_frame_url }}"
+          muted
+          playsinline
+          preload="none"
+          disablepictureinpicture
+          disableremoteplayback
+          aria-hidden="true"
+          tabindex="-1"
+        ></video>
+        {%- if chapter_rev_url != blank -%}
+          <video
+            class="hsc-chapter-video hsc-chapter-video--rev"
+            data-hsc-chapter-reverse
+            src="{{ chapter_rev_url }}"
+            muted
+            playsinline
+            preload="none"
+            disablepictureinpicture
+            disableremoteplayback
+            aria-hidden="true"
+            tabindex="-1"
+          ></video>
+        {%- endif -%}
+        <nav class="hsc-chapters" data-hsc-chapters aria-label="{{ s.sequence_label | escape }}"></nav>
+      {%- endif -%}
       <div class="hsc-hero__shade" aria-hidden="true"></div>
 
       <div class="hsc-overlay" data-hsc-overlay>
@@ -436,6 +516,17 @@
       "content": "Séquence au scroll"
     },
     {
+      "type": "select",
+      "id": "sequence_mode",
+      "label": "Mode de défilement",
+      "options": [
+        { "value": "scrub", "label": "Image par image (le scroll fait défiler les images)" },
+        { "value": "chapters", "label": "Chapitres (chaque scroll lit la vidéo jusqu'au plan suivant)" }
+      ],
+      "default": "scrub",
+      "info": "Chapitres : un cran de molette, un swipe, une flèche du clavier ou un bouton lance la vraie vidéo jusqu'à l'arrêt suivant ; en remontant, la vidéo inversée est lue. Réglages dans « Mode chapitres » plus bas."
+    },
+    {
       "type": "range",
       "id": "scroll_multiplier",
       "label": "Hauteur de la séquence (× 100vh)",
@@ -486,6 +577,91 @@
       "id": "sequence_label",
       "label": "Description accessible de la séquence",
       "default": "Dodge Challenger noire dans un garage : carrosserie, habitacle puis jante"
+    },
+    {
+      "type": "header",
+      "content": "Mode chapitres (lecture vidéo)"
+    },
+    {
+      "type": "video",
+      "id": "chapter_video",
+      "label": "Plan-séquence (Fichiers Shopify)",
+      "info": "Optionnel. Par défaut, le fichier ci-dessous dans /assets est utilisé (recommandé : synchronisation image par image garantie)."
+    },
+    {
+      "type": "text",
+      "id": "chapter_video_file",
+      "label": "… ou plan-séquence dans /assets",
+      "default": "plan-sequence.mp4"
+    },
+    {
+      "type": "video",
+      "id": "chapter_video_reverse",
+      "label": "Plan-séquence inversé (Fichiers Shopify)"
+    },
+    {
+      "type": "text",
+      "id": "chapter_video_reverse_file",
+      "label": "… ou plan-séquence inversé dans /assets",
+      "default": "plan-sequence-reverse.mp4",
+      "info": "La même vidéo lue à l'envers : en remontant, la marche arrière est aussi fluide que l'avant. Vide = retour par un court fondu."
+    },
+    {
+      "type": "select",
+      "id": "chapter_rate",
+      "label": "Vitesse de lecture entre deux plans",
+      "options": [
+        { "value": "1", "label": "× 1 (vitesse réelle)" },
+        { "value": "1.25", "label": "× 1,25" },
+        { "value": "1.5", "label": "× 1,5" },
+        { "value": "2", "label": "× 2" },
+        { "value": "2.5", "label": "× 2,5" },
+        { "value": "3", "label": "× 3" }
+      ],
+      "default": "1.5"
+    },
+    {
+      "type": "text",
+      "id": "chapter_end",
+      "label": "Fin du plan final (secondes)",
+      "default": "39.9",
+      "info": "Dernier arrêt, sans produit. Ensuite, la page défile normalement."
+    },
+    {
+      "type": "number",
+      "id": "chapter_fps",
+      "label": "Images par seconde des vidéos",
+      "default": 30
+    },
+    {
+      "type": "text",
+      "id": "text_next",
+      "label": "Libellé « plan suivant »",
+      "default": "Plan suivant"
+    },
+    {
+      "type": "text",
+      "id": "text_prev",
+      "label": "Libellé « plan précédent »",
+      "default": "Plan précédent"
+    },
+    {
+      "type": "text",
+      "id": "text_skip",
+      "label": "Libellé « passer l'animation » (clavier)",
+      "default": "Passer l'animation"
+    },
+    {
+      "type": "text",
+      "id": "text_start",
+      "label": "Nom du premier point (navigation)",
+      "default": "Début"
+    },
+    {
+      "type": "text",
+      "id": "text_end",
+      "label": "Nom du dernier point (navigation)",
+      "default": "Plan final"
     },
     {
       "type": "header",
@@ -671,6 +847,12 @@
           "info": "Numéro de l'image où la caméra s'immobilise."
         },
         {
+          "type": "text",
+          "id": "time",
+          "label": "Mode chapitres : temps de l'arrêt (secondes)",
+          "info": "Moment de la vidéo où elle s'arrête sur ce produit, ex. 10 ou 25.27."
+        },
+        {
           "type": "select",
           "id": "display",
           "label": "Affichage",
@@ -760,6 +942,7 @@
           "type": "stop",
           "settings": {
             "frame": 27,
+            "time": "10",
             "side": "right",
             "title": "Carrosserie",
             "tagline": "Un brillant profond, sans traces.",
@@ -771,6 +954,7 @@
           "type": "stop",
           "settings": {
             "frame": 82,
+            "time": "19.8",
             "side": "right",
             "display": "hotspot",
             "hotspot_x": 15,
@@ -786,6 +970,7 @@
           "type": "stop",
           "settings": {
             "frame": 134,
+            "time": "25.27",
             "side": "left",
             "display": "hotspot",
             "hotspot_x": 55,
@@ -801,6 +986,7 @@
           "type": "stop",
           "settings": {
             "frame": 213,
+            "time": "34.8",
             "side": "left",
             "title": "Jante",
             "tagline": "Jantes nettes, étriers propres, sans frotter.",

@@ -12,6 +12,7 @@ hero-scroll-car/
 ├── assets/                           à copier dans /assets du thème
 │   ├── hero-scroll-car.js / .css     le code de la section
 │   ├── f_0001.webp … f_0248.webp     le plan-séquence (1920 × 1080, 23 Mo)
+│   ├── plan-sequence(-reverse).mp4    mode chapitres : le plan-séquence en vidéo, avant et inversé
 │   ├── hero-ignition.mp4 / .mp3      vidéo d'allumage et son moteur
 │   ├── hero-poster.jpg               dernière image de la vidéo
 │   └── stop-*.jpg                    images fixes de la version empilée
@@ -119,7 +120,28 @@ du `.js` ou du `.css`, pas pour charger 248 images une par une.
   dans `refreshCart()`.
 - Bouton son : il lance le son et la vidéo ensemble.
 
-## 6. Mettre à jour la séquence (nouvel export du plan-séquence)
+## 6. Mode chapitres (lecture vidéo)
+
+Réglage de la section **Mode de défilement › Chapitres**. Au lieu de faire défiler des images, chaque cran de
+molette, swipe, flèche du clavier ou clic sur la navigation lit la **vraie vidéo** jusqu'au plan suivant, avec
+la fluidité d'une vidéo. En remontant, une copie inversée de la vidéo est lue, donc la marche arrière est aussi
+fluide. Après le plan final, la page défile normalement.
+
+- Fichiers : `assets/plan-sequence.mp4` (avant, avec le son) et `assets/plan-sequence-reverse.mp4` (inversée),
+  1080p, une image clé toutes les 15 images, moins de 20 Mo chacun (limite d'un fichier de thème).
+- Chaque bloc « Arrêt caméra » a un **temps de l'arrêt** en secondes : 10 / 19.8 / 25.27 / 34.8, et
+  « Fin du plan final » vaut 39.9.
+- « Vitesse de lecture entre deux plans » : × 1,5 par défaut.
+- Pensé pour la première section de la page d'accueil. Avec « réduire les animations », la version empilée
+  s'affiche comme dans l'autre mode.
+
+Pour réencoder depuis un nouvel export du plan-séquence :
+
+```bash
+tools/encode-chapters.sh plan-sequence-source.mp4 dossier-sortie 18.4
+```
+
+## 7. Mettre à jour la séquence d'images (nouvel export du plan-séquence)
 
 ```bash
 tools/extract-frames.sh plan-sequence.mp4 nouvelles-images 74

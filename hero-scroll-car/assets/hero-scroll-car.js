@@ -31,6 +31,21 @@
   var SNAP_MIN_DISTANCE = 0.6;    // frames: closer than this to a stop, no snap needed
   var HOTSPOT_CARD_GAP = 108;     // px from the hotspot dot to the opened card (dot + line + spacing)
 
+  // Chapters mode (the plan-séquence plays as a real video from stop to stop)
+  var CHAPTER_GESTURE_GAP_MS = 220; // a wheel event after this much silence starts a new gesture
+  var CHAPTER_WHEEL_PX = 24;        // wheel distance, within one gesture, that triggers a chapter change
+  var CHAPTER_SWIPE_PX = 36;        // touch distance that triggers a chapter change
+  var CHAPTER_PINNED_PX = 2;        // the scene is "pinned" when its top is this close to the viewport top
+  var CHAPTER_SEEK_TIMEOUT_MS = 2500;
+  var CHAPTER_CUT_MS = 180;         // fade used for direct jumps (dots, editor) and when no reverse video exists
+
+  function nowMs() { return (window.performance && performance.now) ? performance.now() : Date.now(); }
+
+  function parseSeconds(value) {
+    var number = parseFloat(String(value === undefined || value === null ? '' : value).replace(',', '.'));
+    return isNaN(number) ? NaN : number;
+  }
+
   function clamp(value, min, max) {
     return Math.min(max, Math.max(min, value));
   }
@@ -74,6 +89,7 @@
   HeroScrollCar.prototype.disconnectedCallback = function () {
     removeMediaListener(this.mqMobile, this.onMediaChange);
     removeMediaListener(this.mqReduced, this.onMediaChange);
+    this.teardownChapters();
     this.teardownSequence();
     if (this.onBlockSelect) document.removeEventListener('shopify:block:select', this.onBlockSelect);
     if (this.onKeydown) document.removeEventListener('keydown', this.onKeydown);
@@ -94,9 +110,14 @@
       stop.x = percent(stop.x);
       stop.y = percent(stop.y);
       stop.focus = percent(stop.focus); // abscissa kept on screen when a narrow stage crops the frame
+      stop.time = parseSeconds(stop.time); // chapters mode: where the video stops, in seconds
     }
     config.snapToStops = config.snapToStops !== false;
     config.mobileSequence = config.mobileSequence !== false;
+    config.sequenceMode = config.sequenceMode === 'chapters' ? 'chapters' : 'scrub';
+    config.chapterRate = clamp(parseSeconds(config.chapterRate) || 1.5, 0.5, 4);
+    config.chapterEnd = parseSeconds(config.chapterEnd);
+    config.fps = parseSeconds(config.fps) || 30;
     config.texts = config.texts || {};
     return config;
   };
@@ -115,7 +136,9 @@
     if (compact !== this.compact) {
       this.compact = compact;
       this.setAttribute('data-layout', compact ? 'compact' : 'wide');
-      if (this.sequence) {
+      if (this.chapters) {
+        this.resizeChapters();
+      } else if (this.sequence) {
         this.resizeCanvas();
         if (this.sequence.openCard) this.placeHotspotCard(this.sequence.openCard);
       }
@@ -124,8 +147,14 @@
     if (mode === this.mode) return;
     this.mode = mode;
     this.setAttribute('data-mode', mode);
-    if (mode === 'scroll') this.setupSequence();
-    else this.teardownSequence();
+    this.setAttribute('data-sequence', this.config.sequenceMode);
+    if (mode === 'scroll') {
+      if (this.config.sequenceMode === 'chapters') this.setupChapters();
+      else this.setupSequence();
+    } else {
+      this.teardownChapters();
+      this.teardownSequence();
+    }
   };
 
   /* ------------------------------------------------------------------ part 1: hero */
@@ -212,6 +241,17 @@
     var button = this.soundButton;
     var texts = this.config.texts;
 
+    var ch = this.chapters;
+    if (ch && (ch.index > 0 || ch.busy)) {
+      this.soundOn = !this.soundOn;
+      ch.fwd.muted = !this.soundOn;
+      if (audio) audio.pause();
+      button.setAttribute('aria-pressed', this.soundOn ? 'true' : 'false');
+      button.setAttribute('aria-label', (this.soundOn ? texts.soundOff : texts.soundOn) || '');
+      button.setAttribute('title', (this.soundOn ? texts.soundOff : texts.soundOn) || '');
+      return;
+    }
+
     if (this.soundOn) {
       this.soundOn = false;
       if (audio) audio.pause();
@@ -251,6 +291,11 @@
 
   HeroScrollCar.prototype.scrollToFirstStop = function () {
     var behavior = this.mqReduced.matches ? 'auto' : 'smooth';
+    if (this.chapters) {
+      this.pinChapters();
+      this.goChapter(1);
+      return;
+    }
     if (this.mode === 'scroll' && this.sequence && this.config.stops.length) {
       this.scrollToFrame(this.config.stops[0].frame, behavior);
       return;
@@ -807,6 +852,596 @@
     this.scrollToFrame(best.frame, this.mqReduced.matches ? 'auto' : 'smooth');
   };
 
+
+  /* ------------------------------------------------------------------ part 3: chapters mode */
+  /*
+    Instead of scrubbing images, the plan-séquence plays as a real video from one stop to the next:
+    one wheel gesture, swipe, arrow key or button press plays it forward to the next stop at full video
+    smoothness. Going back plays a pre-rendered reversed copy of the video (same frames, mirrored timeline),
+    so the rewind is just as smooth; without that file the scene cuts back with a short fade.
+    The scene is pinned at the top of the viewport while chapters remain; after the last one the page
+    scrolls on normally. Cards and hotspots reuse the scrub-mode helpers through a "sequence-like" object.
+  */
+
+  HeroScrollCar.prototype.setupChapters = function () {
+    if (this.chapters) return;
+    var self = this;
+    var config = this.config;
+    var stage = this.querySelector('[data-hsc-stage]');
+    var fwd = this.querySelector('[data-hsc-chapter-video]');
+    var rev = this.querySelector('[data-hsc-chapter-reverse]');
+    var nav = this.querySelector('[data-hsc-chapters]');
+    if (!stage || !fwd) return;
+
+    // Chapter points: the hero (0 s), each stop that has a time, then the end of the sequence.
+    var points = [{ time: 0, stop: null, focus: 50, label: config.texts.start || '' }];
+    var stops = config.stops.filter(function (stop) { return stop.time > 0; });
+    stops.sort(function (a, b) { return a.time - b.time; });
+    for (var i = 0; i < stops.length; i++) {
+      points.push({ time: stops[i].time, stop: stops[i], focus: stops[i].focus, label: stops[i].label || '' });
+    }
+    var last = points[points.length - 1].time;
+    if (config.chapterEnd > last + 0.2) points.push({ time: config.chapterEnd, stop: null, focus: 50, label: config.texts.end || '' });
+
+    var ch = {
+      stage: stage,
+      fwd: fwd,
+      rev: rev && rev.getAttribute('src') ? rev : null,
+      nav: nav,
+      points: points,
+      index: 0,
+      pending: 0,
+      busy: false,
+      queued: null,
+      fps: config.fps,
+      lastWheel: 0,
+      wheelAcc: 0,
+      gestureUsed: false,
+      touchY: null,
+      touchDecided: null,
+      destroyed: false
+    };
+    this.chapters = ch;
+
+    // The card / hotspot helpers expect the scrub sequence's shape.
+    var seq = {
+      chapters: true,
+      stage: stage,
+      cards: {},
+      hotspots: {},
+      stopsById: {},
+      cover: null,
+      width: 0,
+      height: 0,
+      openCard: null,
+      target: 0,
+      activeStop: null,
+      destroyed: false
+    };
+    var cards = stage.querySelectorAll('[data-hsc-card]');
+    for (var c = 0; c < cards.length; c++) seq.cards[cards[c].getAttribute('data-stop-id')] = cards[c];
+    var markers = stage.querySelectorAll('[data-hsc-hotspot]');
+    for (var m = 0; m < markers.length; m++) seq.hotspots[markers[m].getAttribute('data-stop-id')] = markers[m];
+    for (var k = 0; k < config.stops.length; k++) seq.stopsById[config.stops[k].id] = config.stops[k];
+    this.sequence = seq;
+
+    stage.classList.add('is-chapters');
+    fwd.muted = !this.soundOn;
+    fwd.playbackRate = config.chapterRate;
+    fwd.preload = 'auto';
+    fwd.load();
+    // The reversed copy loads once the forward video can play through (keeps the first load lean).
+    ch.loadReverse = function () {
+      if (!ch.rev || ch.reverseRequested || ch.destroyed) return;
+      ch.reverseRequested = true;
+      ch.rev.muted = true;
+      ch.rev.preload = 'auto';
+      ch.rev.load();
+    };
+    fwd.addEventListener('canplaythrough', ch.loadReverse, { once: true });
+    ch.reverseTimer = setTimeout(ch.loadReverse, 5000);
+
+    this.buildChapterNav();
+
+    ch.onResize = function () { self.resizeChapters(); };
+    window.addEventListener('resize', ch.onResize);
+    fwd.addEventListener('loadedmetadata', ch.onResize);
+    if ('ResizeObserver' in window) {
+      ch.resizeObserver = new ResizeObserver(ch.onResize);
+      ch.resizeObserver.observe(stage);
+    }
+
+    ch.onWheel = function (event) { self.onChapterWheel(event); };
+    window.addEventListener('wheel', ch.onWheel, { passive: false });
+    ch.onTouchStart = function (event) { self.onChapterTouchStart(event); };
+    ch.onTouchMove = function (event) { self.onChapterTouchMove(event); };
+    ch.onTouchEnd = function (event) { self.onChapterTouchEnd(event); };
+    window.addEventListener('touchstart', ch.onTouchStart, { passive: true });
+    window.addEventListener('touchmove', ch.onTouchMove, { passive: false });
+    window.addEventListener('touchend', ch.onTouchEnd, { passive: true });
+    ch.onKey = function (event) { self.onChapterKey(event); };
+    document.addEventListener('keydown', ch.onKey);
+    ch.onClick = function (event) {
+      var button = event.target.closest('[data-hsc-next], [data-hsc-prev], [data-hsc-dot], [data-hsc-skip]');
+      if (!button || !self.contains(button)) return;
+      event.preventDefault();
+      if (button.hasAttribute('data-hsc-skip')) { self.skipChapters(); return; }
+      self.pinChapters();
+      if (button.hasAttribute('data-hsc-next')) self.stepChapter(1);
+      else if (button.hasAttribute('data-hsc-prev')) self.stepChapter(-1);
+      else self.goChapter(parseInt(button.getAttribute('data-index'), 10) || 0, { direct: true });
+    };
+    this.addEventListener('click', ch.onClick);
+
+    this.resizeChapters();
+    this.updateChapterUI();
+  };
+
+  HeroScrollCar.prototype.teardownChapters = function () {
+    var ch = this.chapters;
+    if (!ch) return;
+    ch.destroyed = true;
+    if (this.sequence) this.sequence.destroyed = true;
+    clearTimeout(ch.reverseTimer);
+    window.removeEventListener('resize', ch.onResize);
+    ch.fwd.removeEventListener('loadedmetadata', ch.onResize);
+    if (ch.resizeObserver) ch.resizeObserver.disconnect();
+    window.removeEventListener('wheel', ch.onWheel);
+    window.removeEventListener('touchstart', ch.onTouchStart);
+    window.removeEventListener('touchmove', ch.onTouchMove);
+    window.removeEventListener('touchend', ch.onTouchEnd);
+    document.removeEventListener('keydown', ch.onKey);
+    this.removeEventListener('click', ch.onClick);
+    ch.fwd.pause();
+    if (ch.rev) ch.rev.pause();
+    this.closeHotspotCard();
+    this.showChapterStop(null);
+    ch.stage.classList.remove('is-chapters', 'is-away', 'is-reversing', 'is-cutting', 'is-playing');
+    if (ch.nav) ch.nav.innerHTML = '';
+    this.chapters = null;
+    this.sequence = null;
+  };
+
+  HeroScrollCar.prototype.isChaptersPinned = function () {
+    var ch = this.chapters;
+    return !!ch && Math.abs(ch.stage.getBoundingClientRect().top) <= CHAPTER_PINNED_PX;
+  };
+
+  HeroScrollCar.prototype.pinChapters = function () {
+    var ch = this.chapters;
+    if (!ch || this.isChaptersPinned()) return;
+    var top = ch.stage.getBoundingClientRect().top + window.pageYOffset;
+    window.scrollTo({ top: Math.round(top), behavior: this.mqReduced.matches ? 'auto' : 'smooth' });
+  };
+
+  // Scroll just past the section (the "skip" button, for keyboard and screen-reader users).
+  HeroScrollCar.prototype.skipChapters = function () {
+    var rect = this.getBoundingClientRect();
+    window.scrollTo({ top: Math.round(rect.bottom + window.pageYOffset), behavior: 'smooth' });
+  };
+
+  // Next chapter index a gesture in direction `dir` would lead to, or -1 when it falls outside (release).
+  HeroScrollCar.prototype.chapterTargetFor = function (dir) {
+    var ch = this.chapters;
+    var base = ch.queued !== null ? ch.queued : (ch.busy ? ch.pending : ch.index);
+    var target = base + dir;
+    return target >= 0 && target < ch.points.length ? target : -1;
+  };
+
+  HeroScrollCar.prototype.stepChapter = function (dir) {
+    var target = this.chapterTargetFor(dir);
+    if (target !== -1) this.goChapter(target);
+  };
+
+  HeroScrollCar.prototype.onChapterWheel = function (event) {
+    var ch = this.chapters;
+    if (!ch || event.ctrlKey) return; // ctrl + wheel = page zoom
+    var dy = event.deltaY;
+    if (event.deltaMode === 1) dy *= 16;
+    else if (event.deltaMode === 2) dy *= window.innerHeight;
+    if (!dy) return;
+    var now = nowMs();
+    var fresh = now - ch.lastWheel > CHAPTER_GESTURE_GAP_MS;
+    ch.lastWheel = now;
+    if (fresh) { ch.wheelAcc = 0; ch.gestureUsed = false; }
+    var dir = dy > 0 ? 1 : -1;
+
+    if (!this.isChaptersPinned()) {
+      // Pin the scene when the gesture is about to cross it; anywhere else the page scrolls normally.
+      var rect = ch.stage.getBoundingClientRect();
+      var height = window.innerHeight;
+      var entering = dir > 0 ? rect.top > 0 && rect.top < height * 0.5 : rect.top < 0 && rect.bottom > height * 0.5;
+      if (!entering) return;
+      event.preventDefault();
+      this.pinChapters();
+      if (dir > 0 && ch.index === 0 && !ch.busy && !ch.gestureUsed) {
+        ch.gestureUsed = true;
+        this.goChapter(1);
+      }
+      return;
+    }
+
+    // The rest of a gesture that already moved (trackpad inertia, fast notches) is swallowed.
+    if (ch.gestureUsed && !fresh) { event.preventDefault(); return; }
+    var target = this.chapterTargetFor(dir);
+    if (target === -1) {
+      if (ch.busy) event.preventDefault();
+      return; // first or last chapter: the page scrolls on
+    }
+    event.preventDefault();
+    ch.wheelAcc += Math.abs(dy);
+    if (ch.wheelAcc < CHAPTER_WHEEL_PX) return;
+    ch.gestureUsed = true;
+    this.goChapter(target);
+  };
+
+  HeroScrollCar.prototype.onChapterTouchStart = function (event) {
+    var ch = this.chapters;
+    if (!ch) return;
+    if (event.touches.length !== 1 || (!this.contains(event.target) && !this.isChaptersPinned())) { ch.touchY = null; return; }
+    ch.touchY = event.touches[0].clientY;
+    ch.touchX = event.touches[0].clientX;
+    ch.touchDecided = null;
+  };
+
+  HeroScrollCar.prototype.onChapterTouchMove = function (event) {
+    var ch = this.chapters;
+    if (!ch || ch.touchY === null || ch.touchDecided === 'release') return;
+    var touch = event.touches[0];
+    var dy = ch.touchY - touch.clientY;
+    var dx = ch.touchX - touch.clientX;
+    if (ch.touchDecided === null) {
+      if (Math.abs(dy) < 6 && Math.abs(dx) < 6) return;
+      if (Math.abs(dx) > Math.abs(dy)) { ch.touchDecided = 'release'; return; }
+      var dir = dy > 0 ? 1 : -1;
+      if (!this.isChaptersPinned()) {
+        var rect = ch.stage.getBoundingClientRect();
+        var height = window.innerHeight;
+        var entering = dir > 0 ? rect.top > 0 && rect.top < height * 0.5 : rect.top < 0 && rect.bottom > height * 0.5;
+        ch.touchDecided = entering ? 'pin' : 'release';
+        if (!entering) return;
+      } else if (this.chapterTargetFor(dir) === -1 && !ch.busy) {
+        ch.touchDecided = 'release';
+        return;
+      } else {
+        ch.touchDecided = dir;
+      }
+    }
+    if (event.cancelable) event.preventDefault();
+  };
+
+  HeroScrollCar.prototype.onChapterTouchEnd = function (event) {
+    var ch = this.chapters;
+    if (!ch || ch.touchY === null) return;
+    var decided = ch.touchDecided;
+    var dy = ch.touchY - (event.changedTouches[0] ? event.changedTouches[0].clientY : ch.touchY);
+    ch.touchY = null;
+    ch.touchDecided = null;
+    if (decided === 'pin') {
+      this.pinChapters();
+      if (dy > 0 && ch.index === 0 && !ch.busy) this.goChapter(1);
+      return;
+    }
+    if (decided !== 1 && decided !== -1) return;
+    if (Math.abs(dy) >= CHAPTER_SWIPE_PX && (dy > 0 ? 1 : -1) === decided) this.stepChapter(decided);
+  };
+
+  HeroScrollCar.prototype.onChapterKey = function (event) {
+    var ch = this.chapters;
+    if (!ch || event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
+    var target = event.target || {};
+    if (/^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName || '') || target.isContentEditable) return;
+    var key = event.key;
+    if (key === ' ' && target.closest && target.closest('button, a, [role="button"]')) return;
+    var dir = 0;
+    if (key === 'ArrowDown' || key === 'PageDown' || (key === ' ' && !event.shiftKey)) dir = 1;
+    else if (key === 'ArrowUp' || key === 'PageUp' || (key === ' ' && event.shiftKey)) dir = -1;
+    if (!dir || !this.isChaptersPinned() || this.chapterTargetFor(dir) === -1) return;
+    event.preventDefault();
+    this.stepChapter(dir);
+  };
+
+  HeroScrollCar.prototype.goChapter = function (target, options) {
+    var self = this;
+    var ch = this.chapters;
+    if (!ch) return;
+    target = clamp(Math.round(target), 0, ch.points.length - 1);
+    if (ch.busy) { ch.queued = target === ch.pending ? null : target; return; } // played after the current one
+    if (target === ch.index) return;
+    var from = ch.index;
+    var direct = (options && options.direct) || Math.abs(target - from) > 1;
+    ch.busy = true;
+    ch.pending = target;
+    ch.stage.classList.add('is-playing');
+    this.leaveChapter(from);
+    this.updateChapterUI();
+
+    var fromTime = ch.points[from].time;
+    var toTime = ch.points[target].time;
+    var job;
+    if (direct) job = this.cutChapterTo(toTime, target);
+    else if (target > from) job = this.playChapterForward(fromTime, toTime, target);
+    else job = this.playChapterBackward(fromTime, toTime, target);
+
+    job.then(function () {
+      if (ch.destroyed) return;
+      ch.index = target;
+      ch.busy = false;
+      ch.stage.classList.remove('is-playing');
+      self.enterChapter(target);
+      // Requests made during the transition are played one chapter at a time.
+      var queued = ch.queued;
+      ch.queued = null;
+      if (queued !== null && queued !== target) {
+        var step = queued > target ? 1 : -1;
+        if (target + step !== queued) ch.queued = queued;
+        self.goChapter(target + step);
+      }
+    });
+  };
+
+  HeroScrollCar.prototype.leaveChapter = function (index) {
+    var ch = this.chapters;
+    this.closeHotspotCard();
+    this.showChapterStop(null);
+    if (index === 0) {
+      if (this.revealHero) this.revealHero();
+      if (this.video && !this.video.paused) this.video.pause();
+      if (this.audio && !this.audio.paused) this.audio.pause();
+      ch.stage.classList.add('is-away');
+    }
+  };
+
+  HeroScrollCar.prototype.enterChapter = function (index) {
+    var ch = this.chapters;
+    var point = ch.points[index];
+    if (index === 0) ch.stage.classList.remove('is-away');
+    this.sequence.target = index;
+    this.resizeChapters();
+    this.showChapterStop(point.stop ? point.stop.id : null);
+    this.updateChapterUI();
+  };
+
+  // Shows the card (side card) or the hotspot (dot + line) of the stop `id`; null hides everything.
+  HeroScrollCar.prototype.showChapterStop = function (id) {
+    var seq = this.sequence;
+    if (!seq) return;
+    seq.activeStop = id;
+    var stops = this.config.stops;
+    for (var i = 0; i < stops.length; i++) {
+      var stop = stops[i];
+      var active = stop.id === id;
+      if (stop.display === 'hotspot') {
+        if (seq.hotspots[stop.id]) this.setHotspotVisible(seq.hotspots[stop.id], active);
+        if (!active && seq.cards[stop.id]) this.setCardVisible(seq.cards[stop.id], false);
+      } else if (seq.cards[stop.id]) {
+        this.setCardVisible(seq.cards[stop.id], active);
+      }
+    }
+  };
+
+  // Frame-exact time for a stop: the middle of its frame, so every browser shows that frame.
+  HeroScrollCar.prototype.chapterFrameTime = function (time) {
+    var fps = this.chapters.fps;
+    return (Math.round(time * fps) + 0.5) / fps;
+  };
+
+  // Time in the reversed video that shows the same frame as `time` in the forward one.
+  HeroScrollCar.prototype.reverseTime = function (time) {
+    var ch = this.chapters;
+    var fps = ch.fps;
+    var frames = Math.round((ch.rev.duration || ch.fwd.duration || 0) * fps);
+    var index = Math.round(time * fps);
+    return (Math.max(0, frames - 1 - index) + 0.5) / fps;
+  };
+
+  HeroScrollCar.prototype.seekVideo = function (video, time) {
+    var ch = this.chapters;
+    return new Promise(function (resolve) {
+      var go = function () {
+        if (Math.abs(video.currentTime - time) < 0.25 / ch.fps) { resolve(); return; }
+        var done = false;
+        var finish = function () {
+          if (done) return;
+          done = true;
+          clearTimeout(timer);
+          video.removeEventListener('seeked', finish);
+          resolve();
+        };
+        var timer = setTimeout(finish, CHAPTER_SEEK_TIMEOUT_MS);
+        video.addEventListener('seeked', finish);
+        video.currentTime = time;
+      };
+      if (video.readyState >= 1) go();
+      else video.addEventListener('loadedmetadata', go, { once: true });
+    });
+  };
+
+  // Plays `video` until the frame at `end` is on screen, then pauses.
+  HeroScrollCar.prototype.playVideoUntil = function (video, end) {
+    var self = this;
+    var ch = this.chapters;
+    return new Promise(function (resolve) {
+      var done = false;
+      var timer = null;
+      var finish = function () {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        video.removeEventListener('ended', finish);
+        video.pause();
+        resolve();
+      };
+      // requestVideoFrameCallback stops firing once the last frame is shown: "ended" closes that gap.
+      video.addEventListener('ended', finish);
+      var threshold = end - 0.75 / ch.fps;
+      var check = function (now, meta) {
+        if (done) return;
+        if (ch.destroyed) { finish(); return; }
+        var t = meta && typeof meta.mediaTime === 'number' ? meta.mediaTime : video.currentTime;
+        if (t >= threshold || video.ended) { finish(); return; }
+        schedule();
+      };
+      var schedule = typeof video.requestVideoFrameCallback === 'function'
+        ? function () { video.requestVideoFrameCallback(check); }
+        : function () { requestAnimationFrame(function () { check(); }); };
+      var start = function () {
+        // Safety net: never leave the scene locked if the video stalls.
+        timer = setTimeout(finish, Math.max(0, end - video.currentTime) / (video.playbackRate || 1) * 1000 + 8000);
+        var promise = video.play();
+        if (promise && typeof promise.catch === 'function') {
+          promise.catch(function () {
+            if (video.muted) { finish(); return; }
+            // Sound refused by the browser: continue muted.
+            video.muted = true;
+            self.soundOn = false;
+            if (self.soundButton) self.soundButton.setAttribute('aria-pressed', 'false');
+            video.play().catch(finish);
+          });
+        }
+        schedule();
+      };
+      if (video.currentTime >= threshold) { finish(); return; }
+      start();
+    });
+  };
+
+  // Mobile: the crop of the 16:9 video glides toward the next stop's focus while the video plays.
+  HeroScrollCar.prototype.panChapterFocus = function (target, seconds) {
+    var ch = this.chapters;
+    var focus = this.compact ? ch.points[target].focus : 50;
+    ch.stage.style.setProperty('--hsc-pan-dur', Math.max(0, seconds).toFixed(2) + 's');
+    ch.stage.style.setProperty('--hsc-focus', focus + '%');
+  };
+
+  HeroScrollCar.prototype.playChapterForward = function (fromTime, toTime, target) {
+    var self = this;
+    var ch = this.chapters;
+    var video = ch.fwd;
+    return this.seekVideo(video, this.chapterFrameTime(fromTime)).then(function () {
+      if (ch.destroyed) return;
+      ch.stage.classList.remove('is-reversing');
+      video.playbackRate = self.config.chapterRate;
+      video.muted = !self.soundOn;
+      self.panChapterFocus(target, (toTime - fromTime) / self.config.chapterRate);
+      return self.playVideoUntil(video, Math.round(toTime * ch.fps) / ch.fps);
+    }).then(function () {
+      if (ch.destroyed) return;
+      return self.seekVideo(video, self.chapterFrameTime(toTime));
+    });
+  };
+
+  HeroScrollCar.prototype.playChapterBackward = function (fromTime, toTime, target) {
+    var self = this;
+    var ch = this.chapters;
+    var rev = ch.rev;
+    if (!rev || rev.readyState < 1 || !rev.duration) {
+      if (rev) ch.loadReverse();
+      return this.cutChapterTo(toTime, target);
+    }
+    var startTime = this.reverseTime(fromTime);
+    var endTime = this.reverseTime(toTime);
+    return this.seekVideo(rev, startTime).then(function () {
+      if (ch.destroyed) return;
+      rev.playbackRate = self.config.chapterRate;
+      ch.stage.classList.add('is-reversing'); // same frame as the forward video: the swap is invisible
+      self.panChapterFocus(target, (fromTime - toTime) / self.config.chapterRate);
+      return self.playVideoUntil(rev, endTime - 0.5 / ch.fps);
+    }).then(function () {
+      if (ch.destroyed) return;
+      return self.seekVideo(ch.fwd, self.chapterFrameTime(toTime));
+    }).then(function () {
+      if (ch.destroyed) return;
+      ch.stage.classList.remove('is-reversing');
+    });
+  };
+
+  // Direct jump (dots, theme editor, or no reverse video): short fade, seek, fade back.
+  HeroScrollCar.prototype.cutChapterTo = function (toTime, target) {
+    var self = this;
+    var ch = this.chapters;
+    ch.stage.classList.add('is-cutting');
+    return new Promise(function (resolve) { setTimeout(resolve, CHAPTER_CUT_MS); }).then(function () {
+      if (ch.destroyed) return;
+      ch.stage.classList.remove('is-reversing');
+      ch.fwd.pause();
+      self.panChapterFocus(target, 0);
+      return self.seekVideo(ch.fwd, self.chapterFrameTime(toTime));
+    }).then(function () {
+      if (ch.destroyed) return;
+      ch.stage.classList.remove('is-cutting');
+    });
+  };
+
+  HeroScrollCar.prototype.resizeChapters = function () {
+    var ch = this.chapters;
+    var seq = this.sequence;
+    if (!ch || !seq) return;
+    var rect = ch.stage.getBoundingClientRect();
+    var width = Math.round(rect.width);
+    var height = Math.round(rect.height);
+    if (!width || !height) return;
+    var videoWidth = ch.fwd.videoWidth || 1920;
+    var videoHeight = ch.fwd.videoHeight || 1080;
+    var scale = Math.max(width / videoWidth, height / videoHeight);
+    var drawWidth = videoWidth * scale;
+    var drawHeight = videoHeight * scale;
+    var focus = this.compact ? ch.points[ch.busy ? ch.pending : ch.index].focus : 50;
+    if (!ch.busy) {
+      ch.stage.style.setProperty('--hsc-pan-dur', '0s');
+      ch.stage.style.setProperty('--hsc-focus', focus + '%');
+    }
+    seq.width = width;
+    seq.height = height;
+    seq.cover = { ox: (width - drawWidth) * focus / 100, oy: (height - drawHeight) / 2, dw: drawWidth, dh: drawHeight };
+    this.positionHotspots();
+    if (seq.openCard) this.placeHotspotCard(seq.openCard);
+  };
+
+  HeroScrollCar.prototype.buildChapterNav = function () {
+    var ch = this.chapters;
+    var nav = ch.nav;
+    if (!nav) return;
+    var texts = this.config.texts;
+    var html = '<button type="button" class="hsc-chapters__arrow" data-hsc-prev aria-label="' + escapeAttr(texts.prev || '') + '">' +
+      '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false"><path d="M6 15l6-6 6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>' +
+      '<ol class="hsc-chapters__dots">';
+    for (var i = 0; i < ch.points.length; i++) {
+      var label = ch.points[i].label || String(i + 1);
+      html += '<li><button type="button" class="hsc-chapters__dot" data-hsc-dot data-index="' + i + '" aria-label="' + escapeAttr(label) + '" title="' + escapeAttr(label) + '"><i></i></button></li>';
+    }
+    html += '</ol><button type="button" class="hsc-chapters__arrow" data-hsc-next aria-label="' + escapeAttr(texts.next || '') + '">' +
+      '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>' +
+      '<button type="button" class="hsc-chapters__skip" data-hsc-skip>' + escapeHtml(texts.skip || '') + '</button>';
+    nav.innerHTML = html;
+  };
+
+  HeroScrollCar.prototype.updateChapterUI = function () {
+    var ch = this.chapters;
+    if (!ch || !ch.nav) return;
+    var current = ch.busy ? ch.pending : ch.index;
+    var dots = ch.nav.querySelectorAll('[data-hsc-dot]');
+    for (var i = 0; i < dots.length; i++) {
+      var active = i === current;
+      dots[i].classList.toggle('is-active', active);
+      if (active) dots[i].setAttribute('aria-current', 'step');
+      else dots[i].removeAttribute('aria-current');
+    }
+    var prev = ch.nav.querySelector('[data-hsc-prev]');
+    var next = ch.nav.querySelector('[data-hsc-next]');
+    if (prev) prev.disabled = current === 0;
+    if (next) next.disabled = current === ch.points.length - 1;
+    this.setAttribute('data-chapter', String(current));
+  };
+
+  function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, function (ch) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch];
+    });
+  }
+
+  function escapeAttr(value) { return escapeHtml(value); }
+
   /* ------------------------------------------------------------------ cart */
 
   HeroScrollCar.prototype.setupCart = function () {
@@ -909,6 +1544,17 @@
       var card = event.target.closest('[data-stop-id]');
       if (!card) return;
       var id = card.getAttribute('data-stop-id');
+      if (self.chapters) {
+        var points = self.chapters.points;
+        for (var c = 0; c < points.length; c++) {
+          if (points[c].stop && points[c].stop.id === id) {
+            self.pinChapters();
+            self.goChapter(c, { direct: true });
+            if (points[c].stop.display === 'hotspot') setTimeout(function () { self.openHotspotCard(id); }, 900);
+          }
+        }
+        return;
+      }
       for (var i = 0; i < self.config.stops.length; i++) {
         if (self.config.stops[i].id === id) {
           self.scrollToFrame(self.config.stops[i].frame, 'smooth');
