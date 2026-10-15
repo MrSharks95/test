@@ -21,6 +21,10 @@ hero-scroll-car,
   --hsc-price-color: var(--hsc-ink);
   --hsc-kicker-color: var(--hsc-accent);
   --hsc-btn-text-color: #111;
+  /* Product cards (section settings) */
+  --hsc-card-bg: var(--hsc-glass);
+  --hsc-card-border: var(--hsc-line);
+  --hsc-product-title-size: 25px;
   --hsc-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --hsc-pad: clamp(16px, 4vw, 64px);
   display: block;
@@ -304,9 +308,9 @@ hero-scroll-car,
   padding: 24px;
   display: grid;
   gap: 12px;
-  border: 1px solid var(--hsc-line);
+  border: 1px solid var(--hsc-card-border);
   border-radius: 14px;
-  background: var(--hsc-glass);
+  background: var(--hsc-card-bg);
   -webkit-backdrop-filter: blur(16px) saturate(1.2);
   backdrop-filter: blur(16px) saturate(1.2);
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
@@ -365,7 +369,7 @@ hero-scroll-car,
 .hsc-card__title {
   margin: 0;
   font-family: var(--font-heading-family, inherit);
-  font-size: clamp(1.25rem, 1.6vw, 1.6rem);
+  font-size: max(16px, min(var(--hsc-product-title-size), 2.6vw));
   font-weight: 700;
   line-height: 1.15;
   text-wrap: balance;
@@ -726,7 +730,7 @@ hero-scroll-car,
 
   .hsc[data-mode="scroll"] .hsc-stage .hsc-card__title {
     grid-area: title;
-    font-size: 1rem;
+    font-size: max(15px, calc(var(--hsc-product-title-size) * 0.66));
     padding-right: 32px;
   }
 
@@ -897,7 +901,11 @@ hero-scroll-car,
 }
 
 .hsc .hsc-hotspot,
-.hsc .hsc-scroll-hint,
-.hsc .hsc-card__close {
+.hsc .hsc-scroll-hint {
   color: var(--hsc-ink);
+}
+
+.hsc .hsc-card__close {
+  border-color: var(--hsc-card-border);
+  color: var(--hsc-product-title-color);
 }

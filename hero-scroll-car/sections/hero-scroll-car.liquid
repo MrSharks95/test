@@ -95,6 +95,14 @@
   assign heading_tag = s.heading_tag | default: 'h1'
   assign cart_add_url = routes.cart_add_url | append: '.js'
   assign cart_url = routes.cart_url | append: '.js'
+  comment
+    Cartes produit : fond = couleur + opacité réglables ; la bordure suit la couleur des titres produit.
+  endcomment
+  assign card_alpha = s.card_bg_opacity | default: 65 | times: 0.01
+  assign card_bg_base = s.color_card_bg | default: '#0C0C0E'
+  assign card_bg = card_bg_base | color_modify: 'alpha', card_alpha
+  assign card_title_base = s.color_product_title | default: '#FFFFFF'
+  assign card_border = card_title_base | color_modify: 'alpha', 0.16
 -%}
 
 <hero-scroll-car
@@ -102,7 +110,7 @@
   id="hsc-{{ section.id }}"
   data-section-id="{{ section.id }}"
   data-mode="auto"
-  style="--hsc-accent: {{ s.accent_color | default: '#FF7A1A' }}; --hsc-n: {{ s.scroll_multiplier | default: 5 }}; --hsc-title-color: {{ s.color_title | default: '#FFFFFF' }}; --hsc-subtitle-color: {{ s.color_subtitle | default: '#C8C8CC' }}; --hsc-kicker-color: {{ s.color_kicker | default: s.accent_color | default: '#FF7A1A' }}; --hsc-product-title-color: {{ s.color_product_title | default: '#FFFFFF' }}; --hsc-card-text-color: {{ s.color_card_text | default: '#C8C8CC' }}; --hsc-price-color: {{ s.color_price | default: '#FFFFFF' }}; --hsc-btn-text-color: {{ s.color_button_text | default: '#111111' }}; --hsc-ink: {{ s.color_other | default: '#FFFFFF' }};"
+  style="--hsc-accent: {{ s.accent_color | default: '#FF7A1A' }}; --hsc-n: {{ s.scroll_multiplier | default: 5 }}; --hsc-title-color: {{ s.color_title | default: '#FFFFFF' }}; --hsc-subtitle-color: {{ s.color_subtitle | default: '#C8C8CC' }}; --hsc-kicker-color: {{ s.color_kicker | default: s.accent_color | default: '#FF7A1A' }}; --hsc-product-title-color: {{ s.color_product_title | default: '#FFFFFF' }}; --hsc-card-text-color: {{ s.color_card_text | default: '#C8C8CC' }}; --hsc-price-color: {{ s.color_price | default: '#FFFFFF' }}; --hsc-btn-text-color: {{ s.color_button_text | default: '#111111' }}; --hsc-ink: {{ s.color_other | default: '#FFFFFF' }}; --hsc-card-bg: {{ card_bg }}; --hsc-card-border: {{ card_border }}; --hsc-product-title-size: {{ s.product_title_size | default: 25 }}px;"
 >
   <script type="application/json" data-hsc-config>
     {
@@ -558,6 +566,38 @@
       "label": "Couleur d'accent",
       "default": "#FF7A1A",
       "info": "Boutons, points d'intérêt, petits titres des cartes."
+    },
+    {
+      "type": "header",
+      "content": "Cartes produit — apparence"
+    },
+    {
+      "type": "color",
+      "id": "color_card_bg",
+      "label": "Fond des cartes",
+      "default": "#0C0C0E"
+    },
+    {
+      "type": "range",
+      "id": "card_bg_opacity",
+      "label": "Opacité du fond des cartes",
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "unit": "%",
+      "default": 65,
+      "info": "100 % = fond plein. Plus bas, la vidéo transparaît à travers la carte (effet verre dépoli). Avec un fond clair, passez les textes des cartes en foncé ci-dessous."
+    },
+    {
+      "type": "range",
+      "id": "product_title_size",
+      "label": "Taille des titres produit",
+      "min": 16,
+      "max": 44,
+      "step": 1,
+      "unit": "px",
+      "default": 25,
+      "info": "Sur ordinateur. Sur mobile, la taille est réduite automatiquement (environ 2/3)."
     },
     {
       "type": "header",
