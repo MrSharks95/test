@@ -131,7 +131,7 @@
   data-section-id="{{ section.id }}"
   data-mode="auto"
   data-sequence="{{ sequence_mode }}"
-  style="--hsc-accent: {{ s.accent_color | default: '#FF7A1A' }}; --hsc-n: {{ s.scroll_multiplier | default: 5 }}; --hsc-title-color: {{ s.color_title | default: '#FFFFFF' }}; --hsc-subtitle-color: {{ s.color_subtitle | default: '#C8C8CC' }}; --hsc-kicker-color: {{ s.accent_color | default: '#FF7A1A' }}; --hsc-product-title-color: {{ s.color_product_title | default: '#FFFFFF' }}; --hsc-card-text-color: {{ s.color_card_text | default: '#C8C8CC' }}; --hsc-price-color: {{ s.color_product_title | default: '#FFFFFF' }}; --hsc-btn-text-color: {{ s.color_button_text | default: '#111111' }}; --hsc-ink: #FFFFFF; --hsc-card-bg: {{ card_bg }}; --hsc-card-border: {{ card_border }}; --hsc-product-title-size: {{ s.product_title_size | default: 25 }}px;"
+  style="--hsc-accent: {{ s.accent_color | default: '#FF7A1A' }}; --hsc-n: {{ s.scroll_multiplier | default: 5 }}; --hsc-title-color: {{ s.color_title | default: '#FFFFFF' }}; --hsc-subtitle-color: {{ s.color_subtitle | default: '#C8C8CC' }}; --hsc-kicker-color: {{ s.accent_color | default: '#FF7A1A' }}; --hsc-product-title-color: {{ s.color_product_title | default: '#FFFFFF' }}; --hsc-card-text-color: {{ s.color_subtitle | default: '#C8C8CC' }}; --hsc-price-color: {{ s.color_product_title | default: '#FFFFFF' }}; --hsc-btn-text-color: {{ s.color_button_text | default: '#111111' }}; --hsc-ink: #FFFFFF; --hsc-card-bg: {{ card_bg }}; --hsc-card-border: {{ card_border }}; --hsc-product-title-size: {{ s.product_title_size | default: 25 }}px;"
 >
   <script type="application/json" data-hsc-config>
     {
@@ -141,6 +141,7 @@
       "stopRange": {{ s.stop_range | default: 40 }},
       "priorityCount": {{ s.priority_count | default: 30 }},
       "snapToStops": {% if s.snap_to_stops %}true{% else %}false{% endif %},
+      "soundAutostart": {% if s.sound_autostart %}true{% else %}false{% endif %},
       "mobileSequence": {% if s.mobile_sequence %}true{% else %}false{% endif %},
       "sequenceMode": {{ sequence_mode | json }},
       "chapterRate": {{ s.chapter_rate | default: '1.5' | json }},
@@ -487,6 +488,13 @@
       "default": true
     },
     {
+      "type": "checkbox",
+      "id": "sound_autostart",
+      "label": "Son activé dès l'arrivée",
+      "default": true,
+      "info": "Les navigateurs bloquent le son avant le premier clic du visiteur : la vidéo démarre alors muette et le son s'active au premier clic ou toucher (le bouton son clignote en attendant)."
+    },
+    {
       "type": "text",
       "id": "text_sound_on",
       "label": "Libellé « activer le son »",
@@ -758,7 +766,7 @@
     {
       "type": "color",
       "id": "color_subtitle",
-      "label": "Sous-titre",
+      "label": "Sous-titre, accroches et prix barrés",
       "default": "#C8C8CC"
     },
     {
@@ -766,12 +774,6 @@
       "id": "color_product_title",
       "label": "Titres et prix des produits",
       "default": "#FFFFFF"
-    },
-    {
-      "type": "color",
-      "id": "color_card_text",
-      "label": "Accroches et prix barrés",
-      "default": "#C8C8CC"
     },
     {
       "type": "color",

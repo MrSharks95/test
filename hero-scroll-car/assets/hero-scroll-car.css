@@ -1114,3 +1114,20 @@ hero-scroll-car,
     display: none;
   }
 }
+
+/* Sound wanted but blocked by the browser until the first click / tap: the button pulses. */
+.hsc-sound.is-sound-blocked {
+  border-color: var(--hsc-accent);
+  animation: hsc-sound-call 1.6s ease-out infinite;
+}
+
+@keyframes hsc-sound-call {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--hsc-accent) 55%, transparent); }
+  100% { box-shadow: 0 0 0 16px color-mix(in srgb, var(--hsc-accent) 0%, transparent); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hsc-sound.is-sound-blocked {
+    animation: none;
+  }
+}

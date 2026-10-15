@@ -40,6 +40,10 @@
   var CHAPTER_CUT_MS = 180;         // fade used for direct jumps (dots, editor) and when no reverse video exists
   var CHAPTER_BOOST = 1.6;          // each extra gesture during a transition speeds it up by this factor…
   var CHAPTER_MAX_RATE = 6;         // …up to this playback rate (a stop is never skipped)
+  var CHAPTER_DWELL_MS = 650;       // after arriving on a stop, wheel / swipe / keys wait this long (no accidental skip)
+  var CHAPTER_FAST_SECONDS = 1.8;   // dots: the video fast-forwards (or rewinds) to the chosen stop in about this time…
+  var CHAPTER_FAST_MIN = 2.5;       // …at a playback rate between these bounds
+  var CHAPTER_FAST_MAX = 8;
 
   function nowMs() { return (window.performance && performance.now) ? performance.now() : Date.now(); }
 
@@ -116,6 +120,7 @@
       stop.rate = parseSeconds(stop.rate); // chapters mode: playback speed of the segment that leads to this stop
     }
     config.snapToStops = config.snapToStops !== false;
+    config.soundAutostart = config.soundAutostart === true;
     config.mobileSequence = config.mobileSequence !== false;
     config.sequenceMode = config.sequenceMode === 'chapters' ? 'chapters' : 'scrub';
     config.chapterRate = clamp(parseSeconds(config.chapterRate) || 1.5, 0.5, 4);
@@ -176,6 +181,7 @@
     this.audio = audio;
     this.soundButton = sound;
     this.soundOn = false;
+    this.soundBlocked = false;
     hero.classList.add('has-js');
 
     var revealed = false;
@@ -194,9 +200,26 @@
       video.pause();
       reveal();
     } else {
+      if (this.config.soundAutostart) {
+        // Sound on from the start when the browser allows it (e.g. a visitor who already clicked on the
+        // store); otherwise the video starts muted and the sound switches on at the first click / tap.
+        this.soundOn = true;
+        if (!audio) video.muted = false;
+      }
       var playPromise = video.play();
-      if (playPromise && typeof playPromise.catch === 'function') {
-        playPromise.catch(reveal); // autoplay refused (data saver, low power mode…)
+      if (playPromise && typeof playPromise.then === 'function') {
+        playPromise.then(function () {
+          if (self.config.soundAutostart && !video.muted && !self.soundBlocked) self.setSoundButton(true);
+        }, function () {
+          if (!video.muted) {
+            video.muted = true;
+            self.markSoundBlocked();
+            var retry = video.play();
+            if (retry && typeof retry.catch === 'function') retry.catch(reveal);
+            return;
+          }
+          reveal(); // autoplay refused (data saver, low power mode…)
+        });
       }
       // Safety nets: never leave the hero without its texts.
       // A failing <source> reports its error on the <source> element, not on the <video>.
@@ -220,7 +243,7 @@
       video.addEventListener('play', function () {
         if (!self.soundOn) return;
         audio.currentTime = video.currentTime;
-        audio.play().catch(function () {});
+        audio.play().then(function () { self.setSoundButton(true); }, function () { self.markSoundBlocked(); });
       });
     }
 
@@ -238,11 +261,72 @@
     }
   };
 
+  // The browser refused sound before any user gesture: keep the "sound on" intent, play muted, and
+  // switch the sound on at the first click / tap / key press anywhere on the page.
+  HeroScrollCar.prototype.markSoundBlocked = function () {
+    var self = this;
+    if (this.soundBlocked) return;
+    this.soundBlocked = true;
+    if (this.soundButton) {
+      this.soundButton.classList.add('is-sound-blocked');
+      this.soundButton.setAttribute('aria-pressed', 'false');
+    }
+    var unlock = function (event) {
+      if (self.soundButton && self.soundButton.contains(event.target)) return; // the button handles itself
+      self.unlockSound();
+    };
+    this.onSoundUnlock = unlock;
+    ['pointerdown', 'keydown', 'touchend'].forEach(function (type) {
+      document.addEventListener(type, unlock, { capture: true, passive: true });
+    });
+  };
+
+  HeroScrollCar.prototype.setSoundButton = function (on) {
+    var button = this.soundButton;
+    if (!button) return;
+    var texts = this.config.texts;
+    button.setAttribute('aria-pressed', on ? 'true' : 'false');
+    button.setAttribute('aria-label', (on ? texts.soundOff : texts.soundOn) || '');
+    button.setAttribute('title', (on ? texts.soundOff : texts.soundOn) || '');
+  };
+
+  HeroScrollCar.prototype.unlockSound = function () {
+    if (!this.soundBlocked) return;
+    var self = this;
+    this.soundBlocked = false;
+    ['pointerdown', 'keydown', 'touchend'].forEach(function (type) {
+      document.removeEventListener(type, self.onSoundUnlock, { capture: true, passive: true });
+    });
+    var texts = this.config.texts;
+    var button = this.soundButton;
+    if (button) {
+      button.classList.remove('is-sound-blocked');
+      button.setAttribute('aria-pressed', 'true');
+      button.setAttribute('aria-label', texts.soundOff || '');
+      button.setAttribute('title', texts.soundOff || '');
+    }
+    this.soundOn = true;
+    var video = this.video;
+    var heroPlaying = video && !video.paused && !video.ended;
+    if (heroPlaying) {
+      if (this.audio) {
+        this.audio.currentTime = video.currentTime;
+        this.audio.play().catch(function () {});
+      } else {
+        video.muted = false;
+      }
+    }
+    var ch = this.chapters;
+    if (ch && ch.activeVideo === ch.fwd) ch.fwd.muted = false;
+  };
+
   HeroScrollCar.prototype.toggleSound = function () {
     var video = this.video;
     var audio = this.audio;
     var button = this.soundButton;
     var texts = this.config.texts;
+
+    if (this.soundBlocked) { this.unlockSound(); return; }
 
     var ch = this.chapters;
     if (ch && (ch.index > 0 || ch.busy)) {
@@ -972,7 +1056,7 @@
       self.pinChapters();
       if (button.hasAttribute('data-hsc-next')) self.stepChapter(1);
       else if (button.hasAttribute('data-hsc-prev')) self.stepChapter(-1);
-      else self.goChapter(parseInt(button.getAttribute('data-index'), 10) || 0, { direct: true });
+      else self.goChapter(parseInt(button.getAttribute('data-index'), 10) || 0, { fast: true });
     };
     this.addEventListener('click', ch.onClick);
 
@@ -1066,6 +1150,12 @@
 
     // The rest of a gesture that already moved (trackpad inertia, fast notches) is swallowed.
     if (ch.gestureUsed && !fresh) { event.preventDefault(); return; }
+    // Just arrived on a stop: a gesture that overlaps the arrival does not move on (no accidental skip).
+    if (!ch.busy && now - (ch.arrivedAt || 0) < CHAPTER_DWELL_MS && this.chapterTargetFor(dir) !== -1) {
+      event.preventDefault();
+      ch.gestureUsed = true;
+      return;
+    }
     var target = this.chapterTargetFor(dir);
     if (target === -1) {
       if (ch.busy) event.preventDefault();
@@ -1126,6 +1216,7 @@
       return;
     }
     if (decided !== 1 && decided !== -1) return;
+    if (!ch.busy && nowMs() - (ch.arrivedAt || 0) < CHAPTER_DWELL_MS) return;
     if (Math.abs(dy) >= CHAPTER_SWIPE_PX && (dy > 0 ? 1 : -1) === decided) this.stepChapter(decided);
   };
 
@@ -1141,6 +1232,7 @@
     else if (key === 'ArrowUp' || key === 'PageUp' || (key === ' ' && event.shiftKey)) dir = -1;
     if (!dir || !this.isChaptersPinned() || this.chapterTargetFor(dir) === -1) return;
     event.preventDefault();
+    if (!ch.busy && nowMs() - (ch.arrivedAt || 0) < CHAPTER_DWELL_MS) return;
     this.stepChapter(dir);
   };
 
@@ -1150,7 +1242,7 @@
     if (!ch) return;
     target = clamp(Math.round(target), 0, ch.points.length - 1);
     if (ch.busy) {
-      if (options && options.direct) { ch.queued = target === ch.pending ? null : target; return; } // dot: after this one
+      if (options && options.fast) { ch.queued = target === ch.pending ? null : target; return; } // dot: after this one
       // Another gesture while the video plays: speed the current segment up instead of skipping the next stop.
       var playing = ch.pending > ch.index ? 1 : -1;
       if ((target > ch.pending ? 1 : -1) === playing || target === ch.pending) this.boostChapter();
@@ -1160,7 +1252,7 @@
     var from = ch.index;
     ch.boosts = 0;
     ch.activeVideo = null;
-    var direct = (options && options.direct) || Math.abs(target - from) > 1;
+    var fast = (options && options.fast) || Math.abs(target - from) > 1;
     ch.busy = true;
     ch.pending = target;
     ch.stage.classList.add('is-playing');
@@ -1169,22 +1261,24 @@
 
     var fromTime = ch.points[from].time;
     var toTime = ch.points[target].time;
+    // Dots / far jumps: the video runs at high speed straight to the chosen stop (no stop on the way).
+    var rate = fast ? clamp(Math.abs(toTime - fromTime) / CHAPTER_FAST_SECONDS, CHAPTER_FAST_MIN, CHAPTER_FAST_MAX) : null;
     var job;
-    if (direct) job = this.cutChapterTo(toTime, target);
-    else if (target > from) job = this.playChapterForward(fromTime, toTime, target);
-    else job = this.playChapterBackward(fromTime, toTime, target);
+    if (target > from) job = this.playChapterForward(fromTime, toTime, target, rate);
+    else job = this.playChapterBackward(fromTime, toTime, target, rate);
 
     job.then(function () {
       if (ch.destroyed) return;
       ch.index = target;
       ch.busy = false;
+      ch.arrivedAt = nowMs();
       ch.stage.classList.remove('is-playing');
       self.enterChapter(target);
       ch.activeVideo = null;
       // A dot clicked during the transition: jump there now.
       var queued = ch.queued;
       ch.queued = null;
-      if (queued !== null && queued !== target) self.goChapter(queued, { direct: true });
+      if (queued !== null && queued !== target) self.goChapter(queued, { fast: true });
     });
   };
 
@@ -1300,10 +1394,9 @@
         if (promise && typeof promise.catch === 'function') {
           promise.catch(function () {
             if (video.muted) { finish(); return; }
-            // Sound refused by the browser: continue muted.
+            // Sound refused by the browser (no click yet): continue muted, sound comes at the first click.
             video.muted = true;
-            self.soundOn = false;
-            if (self.soundButton) self.soundButton.setAttribute('aria-pressed', 'false');
+            self.markSoundBlocked();
             video.play().catch(finish);
           });
         }
@@ -1337,16 +1430,16 @@
     ch.stage.style.setProperty('--hsc-focus', focus + '%');
   };
 
-  HeroScrollCar.prototype.playChapterForward = function (fromTime, toTime, target) {
+  HeroScrollCar.prototype.playChapterForward = function (fromTime, toTime, target, rateOverride) {
     var self = this;
     var ch = this.chapters;
     var video = ch.fwd;
-    var rate = this.segmentRate(target - 1, target);
+    var rate = rateOverride || this.segmentRate(target - 1, target);
     return this.seekVideo(video, this.chapterFrameTime(fromTime)).then(function () {
       if (ch.destroyed) return;
       ch.stage.classList.remove('is-reversing');
       video.playbackRate = rate;
-      video.muted = !self.soundOn;
+      video.muted = !self.soundOn || !!rateOverride; // no chipmunk soundtrack while fast-forwarding
       ch.activeVideo = video;
       ch.activeRate = rate;
       self.panChapterFocus(target, (toTime - fromTime) / rate);
@@ -1357,7 +1450,7 @@
     });
   };
 
-  HeroScrollCar.prototype.playChapterBackward = function (fromTime, toTime, target) {
+  HeroScrollCar.prototype.playChapterBackward = function (fromTime, toTime, target, rateOverride) {
     var self = this;
     var ch = this.chapters;
     var rev = ch.rev;
@@ -1367,7 +1460,7 @@
     }
     var startTime = this.reverseTime(fromTime);
     var endTime = this.reverseTime(toTime);
-    var rate = this.segmentRate(target, target + 1);
+    var rate = rateOverride || this.segmentRate(target, target + 1);
     return this.seekVideo(rev, startTime).then(function () {
       if (ch.destroyed) return;
       rev.playbackRate = rate;
@@ -1578,7 +1671,7 @@
         for (var c = 0; c < points.length; c++) {
           if (points[c].stop && points[c].stop.id === id) {
             self.pinChapters();
-            self.goChapter(c, { direct: true });
+            self.goChapter(c, { fast: true });
             if (points[c].stop.display === 'hotspot') setTimeout(function () { self.openHotspotCard(id); }, 900);
           }
         }
