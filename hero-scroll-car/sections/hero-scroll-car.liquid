@@ -130,7 +130,7 @@
   data-section-id="{{ section.id }}"
   data-mode="auto"
   data-sequence="{{ sequence_mode }}"
-  style="--hsc-accent: {{ s.accent_color | default: '#FF7A1A' }}; --hsc-n: {{ s.scroll_multiplier | default: 5 }}; --hsc-title-color: {{ s.color_title | default: '#FFFFFF' }}; --hsc-subtitle-color: {{ s.color_subtitle | default: '#C8C8CC' }}; --hsc-kicker-color: {{ s.accent_color | default: '#FF7A1A' }}; --hsc-product-title-color: {{ s.color_product_title | default: '#FFFFFF' }}; --hsc-card-text-color: {{ s.color_card_text | default: '#C8C8CC' }}; --hsc-price-color: {{ s.color_product_title | default: '#FFFFFF' }}; --hsc-btn-text-color: {{ s.color_button_text | default: '#111111' }}; --hsc-ink: {{ s.color_other | default: '#FFFFFF' }}; --hsc-card-bg: {{ card_bg }}; --hsc-card-border: {{ card_border }}; --hsc-product-title-size: {{ s.product_title_size | default: 25 }}px;"
+  style="--hsc-accent: {{ s.accent_color | default: '#FF7A1A' }}; --hsc-n: {{ s.scroll_multiplier | default: 5 }}; --hsc-title-color: {{ s.color_title | default: '#FFFFFF' }}; --hsc-subtitle-color: {{ s.color_subtitle | default: '#C8C8CC' }}; --hsc-kicker-color: {{ s.accent_color | default: '#FF7A1A' }}; --hsc-product-title-color: {{ s.color_product_title | default: '#FFFFFF' }}; --hsc-card-text-color: {{ s.color_card_text | default: '#C8C8CC' }}; --hsc-price-color: {{ s.color_product_title | default: '#FFFFFF' }}; --hsc-btn-text-color: {{ s.color_button_text | default: '#111111' }}; --hsc-ink: #FFFFFF; --hsc-card-bg: {{ card_bg }}; --hsc-card-border: {{ card_border }}; --hsc-product-title-size: {{ s.product_title_size | default: 25 }}px;"
 >
   <script type="application/json" data-hsc-config>
     {
@@ -138,7 +138,7 @@
       "firstFrameUrl": {{ first_frame_url | json }},
       "posterUrl": {{ poster_url | json }},
       "stopRange": {{ s.stop_range | default: 40 }},
-      "priorityCount": 30,
+      "priorityCount": {{ s.priority_count | default: 30 }},
       "snapToStops": {% if s.snap_to_stops %}true{% else %}false{% endif %},
       "mobileSequence": {% if s.mobile_sequence %}true{% else %}false{% endif %},
       "sequenceMode": {{ sequence_mode | json }},
@@ -563,6 +563,13 @@
       "info": "Décoché : sur mobile, la vidéo puis les produits empilés avec leur image statique (aucune frame chargée). Les visiteurs ayant activé « réduire les animations » ou l'économiseur de données voient toujours la version empilée."
     },
     {
+      "type": "number",
+      "id": "priority_count",
+      "label": "Frames chargées en priorité",
+      "default": 30,
+      "info": "Chargées avant les autres, dès l'arrivée sur la page."
+    },
+    {
       "type": "text",
       "id": "sequence_label",
       "label": "Description accessible de la séquence",
@@ -769,12 +776,6 @@
       "id": "color_button_text",
       "label": "Texte des boutons",
       "default": "#111111"
-    },
-    {
-      "type": "color",
-      "id": "color_other",
-      "label": "Autres textes (libellés des points, « Faire défiler », icône son)",
-      "default": "#FFFFFF"
     }
   ],
   "blocks": [
