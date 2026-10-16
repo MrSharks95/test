@@ -94,6 +94,7 @@
     this.setupHotspots();
     this.setupSheet();
     this.setupEditor();
+    this.setupEffects();
 
     this.onMediaChange = this.applyMode.bind(this);
     addMediaListener(this.mqMobile, this.onMediaChange);
@@ -107,6 +108,7 @@
     this.teardownChapters();
     this.teardownSequence();
     this.teardownAmbient();
+    this.teardownEffects();
     if (this.onBlockSelect) document.removeEventListener('shopify:block:select', this.onBlockSelect);
     if (this.onKeydown) document.removeEventListener('keydown', this.onKeydown);
     this.hscReady = false;
@@ -147,6 +149,7 @@
     }
     config.showcase = showcase;
     config.ambient = typeof config.ambient === 'string' ? config.ambient : '';
+    config.effects = config.effects && typeof config.effects === 'object' ? config.effects : null; // "Effets visuels" block
     config.texts = config.texts || {};
     return config;
   };
@@ -2405,12 +2408,77 @@
     if (next) next.disabled = index >= track.children.length - 1;
   };
 
+  /* ------------------------------------------------------------------ effects (optional block) */
+
+  // "Effets visuels" block: a glow that follows the pointer, and a cinema mode that fades the chrome
+  // (chapter dots, sound button, hint) when the pointer rests. Removing the block removes everything.
+  HeroScrollCar.prototype.setupEffects = function () {
+    var fx = this.config.effects;
+    var stage = this.querySelector('[data-hsc-stage]');
+    if (!fx || !stage || this.mqReduced.matches) return;
+    var self = this;
+
+    var glow = this.querySelector('[data-hsc-glow]');
+    if (fx.glow && glow && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+      glow.style.setProperty('--hsc-glow-a', (clamp(parseSeconds(fx.glowStrength) || 40, 10, 80) / 100).toFixed(2));
+      var gx = 0, gy = 0, tx = 0, ty = 0, raf = 0, shown = false;
+      var step = function () {
+        gx += (tx - gx) * 0.14;
+        gy += (ty - gy) * 0.14;
+        glow.style.transform = 'translate(' + gx.toFixed(1) + 'px, ' + gy.toFixed(1) + 'px)';
+        raf = Math.abs(tx - gx) > 0.5 || Math.abs(ty - gy) > 0.5 ? requestAnimationFrame(step) : 0;
+      };
+      this.onGlowMove = function (event) {
+        var rect = stage.getBoundingClientRect();
+        tx = event.clientX - rect.left;
+        ty = event.clientY - rect.top;
+        if (!shown) { shown = true; gx = tx; gy = ty; glow.classList.add('is-on'); }
+        if (!raf) raf = requestAnimationFrame(step);
+      };
+      this.onGlowLeave = function () { shown = false; glow.classList.remove('is-on'); };
+      this.glowStage = stage;
+      stage.addEventListener('pointermove', this.onGlowMove);
+      stage.addEventListener('pointerleave', this.onGlowLeave);
+    }
+
+    if (fx.cinema) {
+      var delay = clamp(parseSeconds(fx.cinemaDelay) || 4, 2, 10) * 1000;
+      var timer = 0;
+      var arm = function () {
+        clearTimeout(timer);
+        self.classList.remove('is-cinema');
+        timer = setTimeout(function () {
+          var pinned = self.chapters ? self.isChaptersPinned() : (self.sequence && self.sequence.scrubbing);
+          if (self.mode === 'scroll' && pinned && !(self.sheet && self.sheet.open) && !self.otherDialogOpen(document.activeElement)) self.classList.add('is-cinema');
+        }, delay);
+      };
+      this.onCinemaWake = function () { arm(); };
+      this.cinemaEvents = ['pointermove', 'pointerdown', 'keydown', 'touchstart', 'wheel'];
+      for (var i = 0; i < this.cinemaEvents.length; i++) window.addEventListener(this.cinemaEvents[i], this.onCinemaWake, { passive: true });
+      this.stopCinema = function () { clearTimeout(timer); self.classList.remove('is-cinema'); };
+      arm();
+    }
+  };
+
+  HeroScrollCar.prototype.teardownEffects = function () {
+    if (this.glowStage) {
+      this.glowStage.removeEventListener('pointermove', this.onGlowMove);
+      this.glowStage.removeEventListener('pointerleave', this.onGlowLeave);
+      this.glowStage = null;
+    }
+    if (this.cinemaEvents) {
+      for (var i = 0; i < this.cinemaEvents.length; i++) window.removeEventListener(this.cinemaEvents[i], this.onCinemaWake);
+      this.cinemaEvents = null;
+    }
+    if (this.stopCinema) { this.stopCinema(); this.stopCinema = null; }
+  };
+
   /* ------------------------------------------------------------------ cart */
 
   HeroScrollCar.prototype.setupCart = function () {
     var self = this;
     this.addEventListener('click', function (event) {
-      var button = event.target.closest('[data-hsc-add]');
+      var button = event.target.closest('[data-hsc-add], [data-hsc-kit]');
       if (!button || button.disabled || button.getAttribute('aria-busy') === 'true') return;
       event.preventDefault();
       self.addToCart(button);
@@ -2421,9 +2489,11 @@
     var self = this;
     var config = this.config;
     var texts = config.texts;
-    var variantId = parseInt(button.getAttribute('data-variant-id'), 10);
+    // One variant (data-variant-id) or, for the "kit" button, every variant of the présentoir (data-variant-ids)
+    var kitIds = (button.getAttribute('data-variant-ids') || '').split(',').map(function (value) { return parseInt(value, 10); }).filter(Boolean);
+    var variantId = parseInt(button.getAttribute('data-variant-id'), 10) || kitIds[0];
     var label = button.querySelector('[data-hsc-add-label]');
-    var card = button.closest('.hsc-card, [data-hsc-item], [data-hsc-product-form]');
+    var card = button.closest('.hsc-card, [data-hsc-item], [data-hsc-product-form], .hsc-shelf__kit');
     var message = card ? card.querySelector('[data-hsc-msg]') : null;
     var quantityInput = card ? card.querySelector('[data-hsc-qty]') : null;
     var quantity = quantityInput ? clamp(parseInt(quantityInput.value, 10) || 1, 1, 99) : 1;
@@ -2437,7 +2507,7 @@
     fetch(config.cartAddUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({ items: [{ id: variantId, quantity: quantity }] })
+      body: JSON.stringify({ items: kitIds.length ? kitIds.map(function (id) { return { id: id, quantity: 1 }; }) : [{ id: variantId, quantity: quantity }] })
     })
       .then(function (response) {
         return response.json().catch(function () { return {}; }).then(function (data) {

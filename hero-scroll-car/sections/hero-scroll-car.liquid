@@ -171,9 +171,12 @@
     Bloc « Présentoir (fin) » : les cartes de tous les produits choisis, sur le dernier plan (mode chapitres).
   endcomment
   assign shelf = nil
+  assign effects = nil
   for block in section.blocks
     if block.type == 'showcase'
       assign shelf = block
+    elsif block.type == 'effects'
+      assign effects = block
     endif
   endfor
 -%}
@@ -233,6 +236,14 @@
           "idleRate": {{ shelf.settings.idle_speed | default: '0.7' | json }}
         }
       {%- else -%} null{%- endif -%},
+      "effects": {%- if effects -%}
+        {
+          "glow": {{ effects.settings.cursor_glow | json }},
+          "glowStrength": {{ effects.settings.glow_strength | default: 40 }},
+          "cinema": {{ effects.settings.cinema_mode | json }},
+          "cinemaDelay": {{ effects.settings.cinema_delay | default: 4 }}
+        }
+      {%- else -%} null{%- endif -%},
       "texts": {
         "add": {{ s.text_add | json }},
         "added": {{ s.text_added | json }},
@@ -259,6 +270,10 @@
   {%- endcomment -%}
   <div class="hsc-scroller" data-hsc-scroller>
     <section class="hsc-stage" data-hsc-stage data-hsc-hero aria-label="{{ s.heading | escape }}">
+      {%- if effects and effects.settings.cursor_glow -%}
+        {%- comment -%} Nouveauté « halo » : lueur qui suit le curseur (bloc Effets visuels, désactivable) {%- endcomment -%}
+        <div class="hsc-glow" data-hsc-glow aria-hidden="true"></div>
+      {%- endif -%}
       <video
         class="hsc-video"
         data-hsc-video
@@ -493,6 +508,27 @@
               <li class="hsc-shelf__item hsc-shelf__item--empty">Choisissez les produits du présentoir dans l’éditeur de thème.</li>
             {%- endfor -%}
           </ul>
+          {%- if shelf.settings.kit_enabled -%}
+            {%- comment -%} Nouveauté « kit complet » : tous les produits du présentoir en un clic (désactivable) {%- endcomment -%}
+            {%- assign kit_ids = '' -%}
+            {%- for product in shelf.settings.products -%}
+              {%- if product.available -%}
+                {%- assign kit_variant = product.selected_or_first_available_variant -%}
+                {%- assign kit_ids = kit_ids | append: kit_variant.id | append: ',' -%}
+              {%- endif -%}
+            {%- endfor -%}
+            {%- if kit_ids != blank -%}
+              <div class="hsc-shelf__kit">
+                <button type="button" class="hsc-btn hsc-btn--primary hsc-shelf__kit-btn" data-hsc-kit data-variant-ids="{{ kit_ids }}">
+                  <span data-hsc-add-label>{{ shelf.settings.kit_label | default: 'Prendre tout le kit' | escape }}</span>
+                </button>
+                {%- if shelf.settings.kit_note != blank -%}
+                  <span class="hsc-shelf__kit-note">{{ shelf.settings.kit_note | escape }}</span>
+                {%- endif -%}
+                <p class="hsc-card__msg" role="status" aria-live="polite" data-hsc-msg></p>
+              </div>
+            {%- endif -%}
+          {%- endif -%}
         </div>
 
         {%- comment -%} Fiches produit (une par produit du présentoir), clonées dans la fenêtre « En savoir plus » : snippet hero-scroll-car-sheet {%- endcomment -%}
@@ -670,7 +706,7 @@
   "name": "Hero voiture + scroll",
   "tag": "section",
   "class": "section-hero-scroll-car",
-  "max_blocks": 5,
+  "max_blocks": 6,
   "disabled_on": {
     "groups": [
       "header",
@@ -1299,11 +1335,78 @@
           "default": "Après"
         },
         {
+          "type": "header",
+          "content": "Nouveauté : kit complet (désactivable)"
+        },
+        {
+          "type": "checkbox",
+          "id": "kit_enabled",
+          "label": "Bouton « tout le kit » sous les cartes",
+          "info": "Ajoute tous les produits du présentoir en un clic. Créez une réduction automatique si vous promettez une remise.",
+          "default": false
+        },
+        {
+          "type": "text",
+          "id": "kit_label",
+          "label": "Texte du bouton",
+          "default": "Prendre tout le kit"
+        },
+        {
+          "type": "text",
+          "id": "kit_note",
+          "label": "Mention sous le bouton",
+          "default": "Remise appliquée automatiquement au panier"
+        },
+        {
           "type": "text",
           "id": "mobile_image_file",
           "label": "Image fixe (version sans animation)",
           "default": "stop-presentoir.jpg",
           "info": "Fichier dans /assets, affiché au-dessus des cartes quand l'animation est désactivée."
+        }
+      ]
+    }
+    ,
+    {
+      "type": "effects",
+      "name": "Effets visuels (nouveauté)",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "paragraph",
+          "content": "Désactivables un par un ; supprimer le bloc revient à l'état d'origine."
+        },
+        {
+          "type": "checkbox",
+          "id": "cursor_glow",
+          "label": "Halo orange qui suit le curseur (ordinateur)",
+          "default": true
+        },
+        {
+          "type": "range",
+          "id": "glow_strength",
+          "label": "Intensité du halo",
+          "min": 10,
+          "max": 80,
+          "step": 5,
+          "unit": "%",
+          "default": 40
+        },
+        {
+          "type": "checkbox",
+          "id": "cinema_mode",
+          "label": "Mode cinéma : l'interface s'efface quand la souris ne bouge plus",
+          "default": true
+        },
+        {
+          "type": "range",
+          "id": "cinema_delay",
+          "label": "Délai avant effacement",
+          "min": 2,
+          "max": 10,
+          "step": 1,
+          "unit": "s",
+          "default": 4
         }
       ]
     }
