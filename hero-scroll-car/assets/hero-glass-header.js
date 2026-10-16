@@ -76,6 +76,23 @@
     // Theme editor: keep the bar visible while it is being edited.
     this.onEditorSelect = function (event) { if (event.target && event.target.contains(self)) self.classList.remove('is-hidden'); };
     document.addEventListener('shopify:section:select', this.onEditorSelect);
+
+    // Add-to-cart animation: the product picture flies to the cart icon and the badge bumps (setting).
+    this.unsubscribe = null;
+    this.onAdded = function (event) { self.flyToCart(event.detail || {}); };
+    if (this.getAttribute('data-fly') !== 'false') {
+      document.addEventListener('cart:added', this.onAdded);
+      if (typeof window.subscribe === 'function' && window.PUB_SUB_EVENTS && window.PUB_SUB_EVENTS.cartUpdate) {
+        this.unsubscribe = window.subscribe(window.PUB_SUB_EVENTS.cartUpdate, function (published) {
+          if (!published || published.source !== 'product-form') return; // theme product pages / quick add
+          var active = document.activeElement;
+          var rect = active && active.getBoundingClientRect ? active.getBoundingClientRect() : null;
+          self.flyToCart({ item: published.cartData || {}, origin: rect && rect.width ? { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 } : null });
+        });
+      }
+    }
+
+    this.startCountdown();
   };
 
   GlassHeader.prototype.disconnectedCallback = function () {
@@ -84,7 +101,67 @@
     document.removeEventListener('keydown', this.onKey);
     document.removeEventListener('click', this.onDocClick);
     document.removeEventListener('shopify:section:select', this.onEditorSelect);
+    document.removeEventListener('cart:added', this.onAdded);
+    if (typeof this.unsubscribe === 'function') this.unsubscribe();
+    if (this.countdownTimer) clearInterval(this.countdownTimer);
     this.toggleMenu(false);
+  };
+
+  // The picture of the added product (from the /cart/add.js answer) flies from the button to the cart icon.
+  GlassHeader.prototype.flyToCart = function (detail) {
+    var cart = this.querySelector('.ghd__cart');
+    if (!cart) return;
+    var self = this;
+    this.classList.remove('is-hidden');
+    var target = cart.getBoundingClientRect();
+    var item = detail.item || {};
+    if (item.items && item.items.length) item = item.items[0];
+    var src = item.image || (item.featured_image && item.featured_image.url) || '';
+    var origin = detail.origin || { x: window.innerWidth / 2, y: window.innerHeight * 0.7 };
+    if (reduceMotion.matches || !target.width || typeof Element.prototype.animate !== 'function') { this.bump(cart); return; }
+    var fly = document.createElement(src ? 'img' : 'span');
+    fly.className = 'ghd__fly';
+    if (src) { fly.src = src + (src.indexOf('?') === -1 ? '?' : '&') + 'width=160'; fly.alt = ''; }
+    fly.style.left = (origin.x - 32) + 'px';
+    fly.style.top = (origin.y - 32) + 'px';
+    document.body.appendChild(fly);
+    var dx = target.left + target.width / 2 - origin.x;
+    var dy = target.top + target.height / 2 - origin.y;
+    var animation = fly.animate([
+      { transform: 'translate(0, 0) scale(1)', opacity: 1, offset: 0 },
+      { transform: 'translate(' + (dx * 0.5) + 'px, ' + (dy * 0.5 - 120) + 'px) scale(0.8)', opacity: 1, offset: 0.55 },
+      { transform: 'translate(' + dx + 'px, ' + dy + 'px) scale(0.15)', opacity: 0.25, offset: 1 }
+    ], { duration: 720, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'forwards' });
+    animation.onfinish = function () { if (fly.parentNode) fly.remove(); self.bump(cart); };
+    setTimeout(function () { if (fly.parentNode) fly.remove(); }, 1400);
+  };
+
+  GlassHeader.prototype.bump = function (cart) {
+    cart.classList.remove('is-bump');
+    void cart.offsetWidth; // restart the animation
+    cart.classList.add('is-bump');
+    setTimeout(function () { cart.classList.remove('is-bump'); }, 700);
+  };
+
+  // Announcement pill: live countdown to the date given in the settings (local time).
+  GlassHeader.prototype.startCountdown = function () {
+    var box = this.querySelector('[data-ghd-countdown]');
+    var until = Date.parse(this.getAttribute('data-countdown') || '');
+    if (!box || isNaN(until)) return;
+    var self = this;
+    var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+    var tick = function () {
+      var left = until - Date.now();
+      if (left <= 0) { box.textContent = ''; box.hidden = true; clearInterval(self.countdownTimer); return; }
+      var d = Math.floor(left / 864e5);
+      var h = Math.floor(left / 36e5) % 24;
+      var m = Math.floor(left / 6e4) % 60;
+      var s = Math.floor(left / 1e3) % 60;
+      box.textContent = (d > 0 ? d + ' j ' : '') + pad(h) + ':' + pad(m) + ':' + pad(s);
+      box.hidden = false;
+    };
+    tick();
+    this.countdownTimer = setInterval(tick, 1000);
   };
 
   // Tab stays inside the open mobile drawer.

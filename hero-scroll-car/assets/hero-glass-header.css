@@ -148,6 +148,53 @@
   box-shadow: 0 0 10px var(--ghd-accent);
 }
 
+.ghd__countdown {
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255, 122, 26, 0.22);
+  background: color-mix(in srgb, var(--ghd-accent) 22%, transparent);
+  color: var(--ghd-ink);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.08em;
+}
+
+.ghd__countdown[hidden] {
+  display: none;
+}
+
+/* Add-to-cart animation ------------------------------------------------------- */
+
+@keyframes ghd-bump {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.28); }
+  70% { transform: scale(0.94); }
+  100% { transform: scale(1); }
+}
+
+.ghd__cart.is-bump {
+  animation: ghd-bump 0.6s var(--ghd-ease);
+  border-color: var(--ghd-accent);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--ghd-accent) 55%, transparent);
+}
+
+.ghd__cart.is-bump .cart-count-bubble {
+  animation: ghd-bump 0.6s var(--ghd-ease) 0.05s;
+}
+
+.ghd__fly {
+  position: fixed;
+  z-index: 1200;
+  width: 64px;
+  height: 64px;
+  border-radius: 14px;
+  object-fit: cover;
+  background: var(--ghd-accent);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2), 0 16px 40px rgba(0, 0, 0, 0.5), 0 0 30px color-mix(in srgb, var(--ghd-accent) 60%, transparent);
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
 /* Logo --------------------------------------------------------------------- */
 
 .ghd__logo {

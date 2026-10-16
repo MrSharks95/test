@@ -33,20 +33,31 @@
     {%- endif -%}
     z-index: 90;
   }
+  {%- if s.page_transitions -%}
+    /* Nouveauté « transitions de page » : fondu entre les pages, la barre reste en place (désactivable) */
+    @view-transition { navigation: auto; }
+    ::view-transition-old(root) { animation: 0.25s ease-out both ghd-vt-out; }
+    ::view-transition-new(root) { animation: 0.35s ease-out both ghd-vt-in; }
+    @keyframes ghd-vt-out { to { opacity: 0; } }
+    @keyframes ghd-vt-in { from { opacity: 0; transform: translateY(8px); } }
+    .ghd__bar { view-transition-name: ghd-bar; }
+  {%- endif -%}
 </style>
 
 <hero-glass-header
   class="ghd ghd--{{ s.bar_style | default: 'floating' }}{% if overlay %} ghd--overlay{% endif %}"
   data-sticky="{{ s.sticky_mode | default: 'on-scroll-up' }}"
+  data-fly="{% if s.fly_to_cart %}true{% else %}false{% endif %}"
+  data-countdown="{{ s.announce_until | strip | escape }}"
   style="--ghd-accent: {{ s.accent | default: '#FF7A1A' }}; --ghd-ink: {{ s.color_text | default: '#FFFFFF' }}; --ghd-glass: rgba(10, 10, 12, {{ tint }}); --ghd-blur: {{ s.blur | default: 18 }}px; --ghd-logo-w: {{ s.logo_width | default: 150 }}px; --ghd-max: {{ settings.page_width | default: 1400 }}px;"
 >
   <div class="ghd__inner">
     {%- if s.announce_text != blank -%}
       <div class="ghd__announce">
         {%- if s.announce_link != blank -%}
-          <a href="{{ s.announce_link }}"><i aria-hidden="true"></i>{{ s.announce_text | escape }}</a>
+          <a href="{{ s.announce_link }}"><i aria-hidden="true"></i>{{ s.announce_text | escape }}<span class="ghd__countdown" data-ghd-countdown hidden></span></a>
         {%- else -%}
-          <span><i aria-hidden="true"></i>{{ s.announce_text | escape }}</span>
+          <span><i aria-hidden="true"></i>{{ s.announce_text | escape }}<span class="ghd__countdown" data-ghd-countdown hidden></span></span>
         {%- endif -%}
       </div>
     {%- endif -%}
@@ -248,6 +259,11 @@
     { "type": "header", "content": "Annonce (facultatif)" },
     { "type": "text", "id": "announce_text", "label": "Texte", "info": "Petite pilule au-dessus de la barre (masquée sur mobile)." },
     { "type": "url", "id": "announce_link", "label": "Lien" },
+    { "type": "text", "id": "announce_until", "label": "Compte à rebours jusqu'au", "info": "Format AAAA-MM-JJTHH:MM (ex. 2026-12-31T23:59). Vide = pas de compte à rebours." },
+
+    { "type": "header", "content": "Nouveautés (désactivables)" },
+    { "type": "checkbox", "id": "fly_to_cart", "label": "Animation d'ajout au panier (l'image vole vers le panier)", "default": true },
+    { "type": "checkbox", "id": "page_transitions", "label": "Transitions de page en fondu", "default": true },
 
     { "type": "header", "content": "Menu mobile" },
     { "type": "text", "id": "drawer_cta_label", "label": "Bouton principal", "default": "Voir la gamme" },
