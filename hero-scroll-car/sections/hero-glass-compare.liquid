@@ -1,0 +1,92 @@
+{%- comment -%}
+  Hero glass compare — section avant / après plein écran (curseur à glisser), même direction artistique que le hero.
+  Nouveauté : à retirer de la page pour revenir en arrière.
+{%- endcomment -%}
+
+{{ 'hero-glass-sections.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'hero-glass-sections.js' | asset_url }}" defer="defer"></script>
+
+{%- liquid
+  assign s = section.settings
+  case s.ratio
+    when 'wide'
+      assign ratio = '21 / 9'
+    when 'classic'
+      assign ratio = '4 / 3'
+    else
+      assign ratio = '16 / 9'
+  endcase
+-%}
+
+<section
+  class="hgs hgs-compare"
+  style="--hgs-accent: {{ s.accent | default: '#FF7A1A' }}; --hgs-bg: {{ s.color_bg | default: '#0B0B0D' }}; --hgs-ink: {{ s.color_text | default: '#FFFFFF' }}; --hgs-pt: {{ s.padding_top | default: 72 }}px; --hgs-pb: {{ s.padding_bottom | default: 72 }}px; --hgs-max: {{ settings.page_width | default: 1400 }}px;"
+>
+  <div class="hgs__glow" aria-hidden="true"></div>
+  <div class="hgs__inner">
+    {%- if s.kicker != blank or s.heading != blank or s.text != blank -%}
+      <header class="hgs__head">
+        {%- if s.kicker != blank -%}<p class="hgs__kicker">{{ s.kicker | escape }}</p>{%- endif -%}
+        {%- if s.heading != blank -%}<h2 class="hgs__title">{{ s.heading | escape }}</h2>{%- endif -%}
+        {%- if s.text != blank -%}<div class="hgs__text">{{ s.text }}</div>{%- endif -%}
+      </header>
+    {%- endif -%}
+
+    <div class="hgs-compare__frame" data-hgs-compare style="--hgs-cut: {{ s.start | default: 50 }}%; --hgs-ratio: {{ ratio }};">
+      {%- if s.image_after != blank -%}
+        {{ s.image_after | image_url: width: 2400 | image_tag: class: 'hgs-compare__img hgs-compare__img--after', loading: 'lazy', widths: '800, 1200, 1600, 2400', sizes: '(min-width: 1400px) 1400px, 100vw', alt: s.label_after }}
+      {%- endif -%}
+      {%- if s.image_before != blank -%}
+        {{ s.image_before | image_url: width: 2400 | image_tag: class: 'hgs-compare__img hgs-compare__img--before', loading: 'lazy', widths: '800, 1200, 1600, 2400', sizes: '(min-width: 1400px) 1400px, 100vw', alt: s.label_before }}
+      {%- endif -%}
+      {%- if s.image_before == blank or s.image_after == blank -%}
+        <p class="hgs-compare__empty">{% if request.design_mode %}Choisissez une image « avant » et une image « après » dans les réglages de la section.{% endif %}</p>
+      {%- endif -%}
+      <span class="hgs-compare__label hgs-compare__label--before">{{ s.label_before | default: 'Avant' | escape }}</span>
+      <span class="hgs-compare__label hgs-compare__label--after">{{ s.label_after | default: 'Après' | escape }}</span>
+      <span class="hgs-compare__line" aria-hidden="true"></span>
+      <input class="hgs-compare__range" type="range" min="0" max="100" value="{{ s.start | default: 50 }}" aria-label="{{ s.range_label | default: 'Comparer avant et après' | escape }}" data-hgs-range>
+      <span class="hgs-compare__handle" aria-hidden="true">
+        <svg viewBox="0 0 24 24" focusable="false"><path d="M9 7l-5 5 5 5M15 7l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Avant / après (verre)",
+  "tag": "div",
+  "class": "hero-glass-compare-section",
+  "disabled_on": { "groups": ["header", "footer"] },
+  "settings": [
+    { "type": "text", "id": "kicker", "label": "Sur-titre", "default": "Avant / après" },
+    { "type": "text", "id": "heading", "label": "Titre", "default": "Le résultat, sans filtre" },
+    { "type": "richtext", "id": "text", "label": "Texte", "default": "<p>Glissez le curseur : même voiture, même lumière, un seul lavage.</p>" },
+    { "type": "image_picker", "id": "image_before", "label": "Image avant" },
+    { "type": "image_picker", "id": "image_after", "label": "Image après" },
+    { "type": "text", "id": "label_before", "label": "Libellé avant", "default": "Avant" },
+    { "type": "text", "id": "label_after", "label": "Libellé après", "default": "Après" },
+    { "type": "range", "id": "start", "label": "Position de départ du curseur", "min": 10, "max": 90, "step": 5, "unit": "%", "default": 50 },
+    {
+      "type": "select", "id": "ratio", "label": "Format",
+      "options": [
+        { "value": "wide", "label": "Cinéma (21:9)" },
+        { "value": "video", "label": "Large (16:9)" },
+        { "value": "classic", "label": "Classique (4:3)" }
+      ],
+      "default": "video"
+    },
+    { "type": "text", "id": "range_label", "label": "Libellé d'accessibilité du curseur", "default": "Comparer avant et après" },
+    { "type": "header", "content": "Couleurs et espacements" },
+    { "type": "color", "id": "accent", "label": "Couleur d'accent", "default": "#FF7A1A" },
+    { "type": "color", "id": "color_bg", "label": "Fond", "default": "#0B0B0D" },
+    { "type": "color", "id": "color_text", "label": "Texte", "default": "#FFFFFF" },
+    { "type": "range", "id": "padding_top", "label": "Marge haute", "min": 0, "max": 160, "step": 8, "unit": "px", "default": 72 },
+    { "type": "range", "id": "padding_bottom", "label": "Marge basse", "min": 0, "max": 160, "step": 8, "unit": "px", "default": 72 }
+  ],
+  "presets": [
+    { "name": "Avant / après (verre)" }
+  ]
+}
+{% endschema %}

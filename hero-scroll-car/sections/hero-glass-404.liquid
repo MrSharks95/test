@@ -1,0 +1,59 @@
+{%- comment -%}
+  Hero glass 404 — page introuvable dans la direction artistique du hero.
+  Nouveauté : le gabarit templates/404.json d'origine est conservé dans le dépôt (backup/) pour revenir en arrière.
+{%- endcomment -%}
+
+{{ 'hero-glass-sections.css' | asset_url | stylesheet_tag }}
+
+{%- liquid
+  assign s = section.settings
+-%}
+
+<section
+  class="hgs hgs-404"
+  style="--hgs-accent: {{ s.accent | default: '#FF7A1A' }}; --hgs-bg: {{ s.color_bg | default: '#0B0B0D' }}; --hgs-ink: {{ s.color_text | default: '#FFFFFF' }}; --hgs-max: {{ settings.page_width | default: 1400 }}px;"
+>
+  <div class="hgs__glow" aria-hidden="true"></div>
+  <div class="hgs__inner">
+    <div class="hgs-404__panel">
+      <p class="hgs-404__code" aria-hidden="true">{{ s.code | default: '404' | escape }}</p>
+      <h1 class="hgs__title">{{ s.heading | default: 'Mauvaise route.' | escape }}</h1>
+      {%- if s.text != blank -%}<div class="hgs__text">{{ s.text }}</div>{%- endif -%}
+      <div class="hgs-404__actions">
+        <a class="hgs__btn" href="{{ s.button_link | default: routes.root_url }}">{{ s.button_label | default: 'Retour au garage' | escape }}</a>
+        {%- if s.button2_label != blank -%}
+          <a class="hgs__btn hgs__btn--ghost" href="{{ s.button2_link | default: routes.all_products_collection_url }}">{{ s.button2_label | escape }}</a>
+        {%- endif -%}
+      </div>
+    </div>
+  </div>
+  {%- if s.show_wordmark -%}
+    <div class="hgs-404__wordmark" aria-hidden="true">{{ shop.name | escape }}</div>
+  {%- endif -%}
+</section>
+
+{% schema %}
+{
+  "name": "Page 404 (verre)",
+  "tag": "div",
+  "class": "hero-glass-404-section",
+  "enabled_on": { "templates": ["404"] },
+  "settings": [
+    { "type": "text", "id": "code", "label": "Code", "default": "404" },
+    { "type": "text", "id": "heading", "label": "Titre", "default": "Mauvaise route." },
+    { "type": "richtext", "id": "text", "label": "Texte", "default": "<p>Cette page n'existe pas ou a été déplacée. Le garage, lui, est toujours ouvert.</p>" },
+    { "type": "text", "id": "button_label", "label": "Bouton principal", "default": "Retour au garage" },
+    { "type": "url", "id": "button_link", "label": "Lien du bouton principal" },
+    { "type": "text", "id": "button2_label", "label": "Second bouton", "default": "Voir la gamme" },
+    { "type": "url", "id": "button2_link", "label": "Lien du second bouton" },
+    { "type": "checkbox", "id": "show_wordmark", "label": "Nom de la boutique en filigrane", "default": true },
+    { "type": "header", "content": "Couleurs" },
+    { "type": "color", "id": "accent", "label": "Couleur d'accent", "default": "#FF7A1A" },
+    { "type": "color", "id": "color_bg", "label": "Fond", "default": "#0B0B0D" },
+    { "type": "color", "id": "color_text", "label": "Texte", "default": "#FFFFFF" }
+  ],
+  "presets": [
+    { "name": "Page 404 (verre)" }
+  ]
+}
+{% endschema %}

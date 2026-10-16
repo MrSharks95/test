@@ -1,0 +1,118 @@
+{%- comment -%}
+  Hero glass reviews — avis clients en cartes de verre (carrousel), même direction artistique que le hero.
+  Nouveauté : à retirer de la page pour revenir en arrière.
+{%- endcomment -%}
+
+{{ 'hero-glass-sections.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'hero-glass-sections.js' | asset_url }}" defer="defer"></script>
+
+{%- liquid
+  assign s = section.settings
+-%}
+
+<section
+  class="hgs hgs-reviews"
+  data-hgs-reviews
+  style="--hgs-accent: {{ s.accent | default: '#FF7A1A' }}; --hgs-bg: {{ s.color_bg | default: '#0B0B0D' }}; --hgs-ink: {{ s.color_text | default: '#FFFFFF' }}; --hgs-pt: {{ s.padding_top | default: 72 }}px; --hgs-pb: {{ s.padding_bottom | default: 72 }}px; --hgs-max: {{ settings.page_width | default: 1400 }}px;"
+>
+  <div class="hgs__glow" aria-hidden="true"></div>
+  <div class="hgs__inner">
+    <div class="hgs-reviews__top">
+      <header class="hgs__head hgs__head--left" style="margin-bottom: 0;">
+        {%- if s.kicker != blank -%}<p class="hgs__kicker">{{ s.kicker | escape }}</p>{%- endif -%}
+        {%- if s.heading != blank -%}<h2 class="hgs__title">{{ s.heading | escape }}</h2>{%- endif -%}
+        {%- if s.summary != blank -%}
+          <p class="hgs-reviews__summary">
+            <span class="hgs-stars" aria-hidden="true">
+              {%- for i in (1..5) -%}
+                <svg viewBox="0 0 24 24" focusable="false"><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1.1 5.9L12 16.9l-5.3 2.8 1.1-5.9-4.3-4.1 5.9-.8z" fill="currentColor"/></svg>
+              {%- endfor -%}
+            </span>
+            {{ s.summary | escape }}
+          </p>
+        {%- endif -%}
+      </header>
+      {%- if section.blocks.size > 1 -%}
+        <div class="hgs-reviews__nav">
+          <button type="button" class="hgs-reviews__arrow" data-hgs-prev aria-label="Avis précédents">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <button type="button" class="hgs-reviews__arrow" data-hgs-next aria-label="Avis suivants">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+      {%- endif -%}
+    </div>
+
+    <ul class="hgs-reviews__track" role="list" data-hgs-track>
+      {%- for block in section.blocks -%}
+        {%- assign rating = block.settings.rating | default: 5 -%}
+        <li class="hgs-review" {{ block.shopify_attributes }}>
+          <span class="hgs-review__quote" aria-hidden="true">“</span>
+          <span class="hgs-stars" role="img" aria-label="{{ rating }} sur 5">
+            {%- for i in (1..5) -%}
+              <svg viewBox="0 0 24 24" focusable="false"{% if i > rating %} class="is-off"{% endif %}><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1.1 5.9L12 16.9l-5.3 2.8 1.1-5.9-4.3-4.1 5.9-.8z" fill="currentColor"/></svg>
+            {%- endfor -%}
+          </span>
+          {%- if block.settings.text != blank -%}<p class="hgs-review__text">{{ block.settings.text | escape }}</p>{%- endif -%}
+          <div class="hgs-review__author">
+            <span class="hgs-review__avatar" aria-hidden="true">{{ block.settings.name | default: 'A' | slice: 0 | upcase }}</span>
+            <span>
+              <span class="hgs-review__name">{{ block.settings.name | default: 'Client' | escape }}</span>
+              {%- if block.settings.meta != blank -%}<span class="hgs-review__meta">{{ block.settings.meta | escape }}</span>{%- endif -%}
+            </span>
+          </div>
+          {%- if block.settings.product != blank -%}
+            <a class="hgs-review__product" href="{{ block.settings.product.url }}">{{ block.settings.product.title | escape }}</a>
+          {%- endif -%}
+        </li>
+      {%- else -%}
+        <li class="hgs-review"><p class="hgs-review__text">{% if request.design_mode %}Ajoutez des blocs « Avis » à cette section.{% endif %}</p></li>
+      {%- endfor -%}
+    </ul>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Avis clients (verre)",
+  "tag": "div",
+  "class": "hero-glass-reviews-section",
+  "disabled_on": { "groups": ["header", "footer"] },
+  "settings": [
+    { "type": "text", "id": "kicker", "label": "Sur-titre", "default": "Avis clients" },
+    { "type": "text", "id": "heading", "label": "Titre", "default": "Testé dans leur garage" },
+    { "type": "text", "id": "summary", "label": "Résumé (ex. 4,9/5 · 128 avis)", "default": "4,9/5 · 128 avis" },
+    { "type": "header", "content": "Couleurs et espacements" },
+    { "type": "color", "id": "accent", "label": "Couleur d'accent", "default": "#FF7A1A" },
+    { "type": "color", "id": "color_bg", "label": "Fond", "default": "#0B0B0D" },
+    { "type": "color", "id": "color_text", "label": "Texte", "default": "#FFFFFF" },
+    { "type": "range", "id": "padding_top", "label": "Marge haute", "min": 0, "max": 160, "step": 8, "unit": "px", "default": 72 },
+    { "type": "range", "id": "padding_bottom", "label": "Marge basse", "min": 0, "max": 160, "step": 8, "unit": "px", "default": 72 }
+  ],
+  "blocks": [
+    {
+      "type": "review",
+      "name": "Avis",
+      "settings": [
+        { "type": "text", "id": "name", "label": "Prénom", "default": "Julien" },
+        { "type": "text", "id": "meta", "label": "Ville, voiture…", "default": "Lyon · Golf GTI" },
+        { "type": "range", "id": "rating", "label": "Note", "min": 1, "max": 5, "step": 1, "default": 5 },
+        { "type": "textarea", "id": "text", "label": "Texte", "default": "Un lavage, zéro trace, et le brillant tient deux semaines même avec la pluie. Je ne reviens pas en arrière." },
+        { "type": "product", "id": "product", "label": "Produit concerné" }
+      ]
+    }
+  ],
+  "max_blocks": 12,
+  "presets": [
+    {
+      "name": "Avis clients (verre)",
+      "blocks": [
+        { "type": "review", "settings": { "name": "Julien", "meta": "Lyon · Golf GTI", "rating": 5, "text": "Un lavage, zéro trace, et le brillant tient deux semaines même avec la pluie. Je ne reviens pas en arrière." } },
+        { "type": "review", "settings": { "name": "Sarah", "meta": "Bordeaux · Mini Cooper", "rating": 5, "text": "Le nettoyant intérieur ne laisse aucun film gras sur le tableau de bord, et l'odeur est discrète. Enfin." } },
+        { "type": "review", "settings": { "name": "Karim", "meta": "Lille · BMW Série 3", "rating": 4, "text": "Les jantes passent du noir de poussière de frein au propre en deux minutes, sans brosser. Bluffant." } }
+      ]
+    }
+  ]
+}
+{% endschema %}
