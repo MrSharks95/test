@@ -1177,6 +1177,7 @@
     });
     this.onKeydown = function (event) {
       if (self.sheet && self.sheet.open) {
+        if (event.defaultPrevented || self.otherDialogOpen(document.activeElement)) return; // the cart drawer is on top
         if (event.key === 'Escape') { event.preventDefault(); self.closeSheet(); }
         else if (event.key === 'Tab') self.trapSheetFocus(event);
         else if ((event.key === 'ArrowLeft' || event.key === 'ArrowRight') && !event.altKey && !event.ctrlKey && !event.metaKey) {
@@ -1418,9 +1419,18 @@
     if (target !== -1) this.goChapter(target);
   };
 
+  // Another dialog (the cart drawer, the mobile menu, a theme modal) owns the gestures while it is open.
+  HeroScrollCar.prototype.otherDialogOpen = function (target) {
+    var html = document.documentElement;
+    if (html.classList.contains('gct-lock') || html.classList.contains('ghd-lock')) return true;
+    var modal = target && target.closest ? target.closest('[aria-modal="true"], dialog[open]') : null;
+    return !!(modal && !this.contains(modal));
+  };
+
   HeroScrollCar.prototype.onChapterWheel = function (event) {
     var ch = this.chapters;
     if (!ch || event.ctrlKey) return; // ctrl + wheel = page zoom
+    if (this.otherDialogOpen(event.target)) return;
     var dy = event.deltaY;
     if (event.deltaMode === 1) dy *= 16;
     else if (event.deltaMode === 2) dy *= window.innerHeight;
@@ -1482,7 +1492,7 @@
   HeroScrollCar.prototype.onChapterTouchStart = function (event) {
     var ch = this.chapters;
     if (!ch) return;
-    if (this.sheet && this.sheet.open) { ch.touchY = null; return; }
+    if ((this.sheet && this.sheet.open) || this.otherDialogOpen(event.target)) { ch.touchY = null; return; }
     if (event.touches.length !== 1 || (!this.contains(event.target) && !this.isChaptersPinned())) { ch.touchY = null; return; }
     ch.touchY = event.touches[0].clientY;
     ch.touchX = event.touches[0].clientX;
@@ -1539,7 +1549,7 @@
   HeroScrollCar.prototype.onChapterKey = function (event) {
     var ch = this.chapters;
     if (!ch || event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
-    if (this.sheet && this.sheet.open) return;
+    if ((this.sheet && this.sheet.open) || this.otherDialogOpen(event.target)) return;
     var target = event.target || {};
     if (/^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName || '') || target.isContentEditable) return;
     var key = event.key;
@@ -2341,13 +2351,17 @@
   // Tab stays inside the open sheet.
   HeroScrollCar.prototype.trapSheetFocus = function (event) {
     var panel = this.sheet.panel;
-    var items = panel.querySelectorAll('a[href], button:not([disabled]), input, [tabindex]:not([tabindex="-1"])');
+    var active = document.activeElement;
+    if (this.otherDialogOpen(active)) return; // another dialog (cart drawer) is on top and traps its own focus
+    var nodes = panel.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), summary, [tabindex]:not([tabindex="-1"])');
+    var items = [];
+    for (var i = 0; i < nodes.length; i++) if (nodes[i].offsetParent !== null) items.push(nodes[i]); // visible only
     if (!items.length) return;
     var first = items[0];
     var last = items[items.length - 1];
-    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
-    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
-    else if (!panel.contains(document.activeElement)) { event.preventDefault(); first.focus(); }
+    if (event.shiftKey && active === first) { event.preventDefault(); last.focus(); }
+    else if (!event.shiftKey && active === last) { event.preventDefault(); first.focus(); }
+    else if (!panel.contains(active)) { event.preventDefault(); first.focus(); }
   };
 
   HeroScrollCar.prototype.galleryTrack = function () {
@@ -2434,8 +2448,11 @@
       .then(function (data) {
         button.classList.add('is-added');
         if (label) label.textContent = texts.added || originalLabel;
+        // With the glass cart drawer on the page, the sheet gives way to it (one dialog at a time).
+        if (self.sheet && self.sheet.open && document.querySelector('hero-glass-cart')) self.closeSheet();
         // Lets a cart drawer (e.g. hero-glass-cart) refresh and open itself.
-        document.dispatchEvent(new CustomEvent('cart:added', { detail: { source: 'hero-scroll-car', variantId: variantId, quantity: quantity, item: data } }));
+        var rect = button.getBoundingClientRect();
+        document.dispatchEvent(new CustomEvent('cart:added', { detail: { source: 'hero-scroll-car', variantId: variantId, quantity: quantity, item: data, origin: { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 } } }));
         setTimeout(function () {
           button.classList.remove('is-added');
           if (label) label.textContent = originalLabel;
@@ -2470,12 +2487,15 @@
           for (var i = 0; i < counters.length; i++) counters[i].textContent = cart.item_count;
         }
         var bubble = document.getElementById('cart-icon-bubble');
-        if (!bubble) return null;
+        if (!bubble || document.querySelector('hero-glass-cart')) return null; // the glass cart drawer re-renders the bubble itself
         var root = config.rootUrl || '/';
         return fetch(root + (root.indexOf('?') === -1 ? '?' : '&') + 'sections=cart-icon-bubble', { headers: { 'Accept': 'application/json' } })
           .then(function (response) { return response.ok ? response.json() : null; })
           .then(function (sections) {
-            if (sections && sections['cart-icon-bubble']) bubble.innerHTML = sections['cart-icon-bubble'];
+            if (!sections || !sections['cart-icon-bubble']) return;
+            var parsed = new DOMParser().parseFromString(sections['cart-icon-bubble'], 'text/html');
+            var section = parsed.querySelector('.shopify-section');
+            bubble.innerHTML = section ? section.innerHTML : sections['cart-icon-bubble'];
           })
           .catch(function () {});
       })

@@ -151,7 +151,7 @@
 
   <div class="ghd__backdrop" data-ghd-close></div>
 
-  <aside class="ghd__drawer" id="ghd-drawer-{{ uid }}" data-ghd-drawer aria-label="Menu" aria-hidden="true">
+  <aside class="ghd__drawer" id="ghd-drawer-{{ uid }}" data-ghd-drawer role="dialog" aria-modal="true" aria-label="Menu" aria-hidden="true">
     <div class="ghd__drawer-head">
       <span class="ghd__logo"><i aria-hidden="true"></i><span>{{ s.logo_text | default: shop.name | escape }}</span></span>
       <button type="button" class="ghd__icon" data-ghd-close aria-label="Fermer le menu">

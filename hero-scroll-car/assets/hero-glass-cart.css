@@ -1,7 +1,8 @@
 /* Hero glass cart — glass cart drawer matching the hero-scroll-car header. */
 
 /* The theme's own drawer stays in the page for its scripts, but never shows: this one replaces it. */
-cart-drawer {
+cart-drawer,
+cart-notification {
   display: none !important;
 }
 
@@ -37,6 +38,7 @@ cart-drawer {
   position: fixed;
   inset: 0;
   z-index: 1100;
+  touch-action: none;
   background: rgba(0, 0, 0, 0.55);
   -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);

@@ -25,19 +25,23 @@
     if media.media_type != 'image'
       continue
     endif
-    assign alt_down = media.alt | downcase
-    if before_img == nil and alt_down contains 'avant'
-      assign before_img = media
-      assign before_id = media.id
-    elsif before_img == nil and alt_down contains 'before'
-      assign before_img = media
-      assign before_id = media.id
-    elsif after_img == nil and alt_down contains 'apr'
-      assign after_img = media
-      assign after_id = media.id
-    elsif after_img == nil and alt_down contains 'after'
-      assign after_img = media
-      assign after_id = media.id
+    comment
+      The first word of the alt text decides: "avant", "before", "après" / "apres", "after" (e.g. "Avant : capot").
+    endcomment
+    assign alt_down = media.alt | downcase | strip
+    assign alt_head = alt_down | split: ' ' | first | split: ':' | first | split: '-' | first
+    if before_img == nil
+      if alt_head == 'avant' or alt_head == 'before'
+        assign before_img = media
+        assign before_id = media.id
+        continue
+      endif
+    endif
+    if after_img == nil
+      if alt_head == 'après' or alt_head == 'apres' or alt_head == 'after'
+        assign after_img = media
+        assign after_id = media.id
+      endif
     endif
   endfor
   assign slide_count = 0

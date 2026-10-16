@@ -32,6 +32,7 @@
       requestAnimationFrame(function () { self.ticking = false; self.updateScroll(); });
     };
     this.onKey = function (event) {
+      if (event.key === 'Tab' && self.menuOpen) { self.trapTab(event); return; }
       if (event.key !== 'Escape') return;
       if (self.menuOpen) { self.toggleMenu(false); if (self.burger) self.burger.focus(); }
       else if (self.searchOpen) { self.toggleSearch(false); if (self.searchToggle) self.searchToggle.focus(); }
@@ -73,9 +74,8 @@
     }
 
     // Theme editor: keep the bar visible while it is being edited.
-    document.addEventListener('shopify:section:select', function (event) {
-      if (event.target && event.target.contains(self)) self.classList.remove('is-hidden');
-    });
+    this.onEditorSelect = function (event) { if (event.target && event.target.contains(self)) self.classList.remove('is-hidden'); };
+    document.addEventListener('shopify:section:select', this.onEditorSelect);
   };
 
   GlassHeader.prototype.disconnectedCallback = function () {
@@ -83,7 +83,22 @@
     window.removeEventListener('resize', this.onResize);
     document.removeEventListener('keydown', this.onKey);
     document.removeEventListener('click', this.onDocClick);
+    document.removeEventListener('shopify:section:select', this.onEditorSelect);
     this.toggleMenu(false);
+  };
+
+  // Tab stays inside the open mobile drawer.
+  GlassHeader.prototype.trapTab = function (event) {
+    if (!this.drawer) return;
+    var nodes = this.drawer.querySelectorAll('a[href], button:not([disabled]), summary, input:not([disabled]), [tabindex]:not([tabindex="-1"])');
+    var list = [];
+    for (var i = 0; i < nodes.length; i++) if (nodes[i].offsetParent !== null) list.push(nodes[i]);
+    if (!list.length) return;
+    var first = list[0];
+    var last = list[list.length - 1];
+    var active = document.activeElement;
+    if (event.shiftKey && (active === first || !this.drawer.contains(active))) { event.preventDefault(); last.focus(); }
+    else if (!event.shiftKey && (active === last || !this.drawer.contains(active))) { event.preventDefault(); first.focus(); }
   };
 
   // Publishes the header height for other sections (e.g. to offset content under an overlaid header).

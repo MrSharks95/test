@@ -36,7 +36,9 @@
     this.addEventListener('change', function (event) {
       var input = event.target.closest('[data-gct-input]');
       if (!input) return;
-      self.change(input.closest('[data-gct-item]'), parseInt(input.value, 10) || 0);
+      var value = parseInt(input.value, 10);
+      if (isNaN(value)) { input.value = input.getAttribute('value') || '1'; return; } // an emptied field keeps its quantity
+      self.change(input.closest('[data-gct-item]'), value);
     });
 
     this.onKey = function (event) {
@@ -62,8 +64,11 @@
     this.unsubscribe = null;
     if (typeof window.subscribe === 'function' && window.PUB_SUB_EVENTS && window.PUB_SUB_EVENTS.cartUpdate) {
       this.unsubscribe = window.subscribe(window.PUB_SUB_EVENTS.cartUpdate, function (event) {
-        if (event && event.source === 'hero-glass-cart') return;
-        self.refresh(self.autoOpen());
+        var source = event && event.source;
+        if (source === 'hero-glass-cart' || source === 'hero-scroll-car') return; // ours, or already covered by cart:added
+        // Only an add (product form, quick add) opens the drawer; quantity edits on the cart page just refresh it.
+        var opens = source === 'product-form' || source === 'quick-add' || source === 'quick-add-modal';
+        self.refresh(opens && self.autoOpen());
       });
     }
 
@@ -81,8 +86,10 @@
     document.addEventListener('cart:added', this.onAdded);
 
     // Theme editor: show the drawer while it is being customised.
-    document.addEventListener('shopify:section:select', function (event) { if (event.target && event.target.contains(self)) self.open(); });
-    document.addEventListener('shopify:section:deselect', function (event) { if (event.target && event.target.contains(self)) self.close(); });
+    this.onEditorSelect = function (event) { if (event.target && event.target.contains(self)) self.open(); };
+    this.onEditorDeselect = function (event) { if (event.target && event.target.contains(self)) self.close(); };
+    document.addEventListener('shopify:section:select', this.onEditorSelect);
+    document.addEventListener('shopify:section:deselect', this.onEditorDeselect);
   };
 
   GlassCart.prototype.disconnectedCallback = function () {
@@ -90,6 +97,8 @@
     document.removeEventListener('click', this.onIconClick, true);
     document.removeEventListener('cart:open', this.onThemeOpen);
     document.removeEventListener('cart:added', this.onAdded);
+    document.removeEventListener('shopify:section:select', this.onEditorSelect);
+    document.removeEventListener('shopify:section:deselect', this.onEditorDeselect);
     if (typeof this.unsubscribe === 'function') this.unsubscribe();
     this.close();
   };
@@ -175,6 +184,8 @@
         }
         self.applySections(result.data.sections || {});
         self.announce(result.data);
+        // 200 with `errors`: Shopify capped the quantity to the available stock
+        if (result.data.errors) self.message(typeof result.data.errors === 'string' ? result.data.errors : 'Quantité limitée par le stock disponible.');
       })
       .catch(function () {
         self.message('Impossible de mettre à jour le panier.');

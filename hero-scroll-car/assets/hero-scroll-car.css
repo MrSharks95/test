@@ -1677,6 +1677,7 @@ hero-scroll-car,
   border-radius: inherit;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(10, 10, 12, 0.9);
   background:
     linear-gradient(135deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.015) 45%, rgba(255, 255, 255, 0.05)),
     color-mix(in srgb, var(--hsc-card-bg) 60%, rgba(10, 10, 12, 0.88));
