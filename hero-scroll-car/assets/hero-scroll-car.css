@@ -2706,13 +2706,17 @@ hero-scroll-car,
   transition: opacity 0.9s ease;
 }
 
-/* Bouton « tout le kit » sous le présentoir */
+/* Bouton « tout le kit » : accroché SOUS le présentoir (hors flux) pour que les cartes restent posées sur le comptoir */
 .hsc-shelf__kit {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  margin-top: 6px;
+  margin-top: 16px;
 }
 
 .hsc-shelf__kit-btn {
@@ -2740,8 +2744,43 @@ hero-scroll-car,
   display: none;
 }
 
-.hsc[data-mode="scroll"] .hsc-shelf__kit {
-  padding: 0 16px;
+@media (max-width: 767px) {
+  /* Bande mobile : le bouton « kit » prend place à droite du titre, au-dessus des cartes (pas sous la bande, où est le bouton son). */
+  .hsc[data-mode="scroll"] .hsc-shelf {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "title kit"
+      "list list";
+    align-items: center;
+  }
+
+  .hsc[data-mode="scroll"] .hsc-shelf__title {
+    grid-area: title;
+  }
+
+  .hsc[data-mode="scroll"] .hsc-shelf__list {
+    grid-area: list;
+  }
+
+  .hsc[data-mode="scroll"] .hsc-shelf__kit {
+    position: static;
+    grid-area: kit;
+    align-items: flex-end;
+    gap: 2px;
+    margin: 0;
+    padding: 0 16px 0 0;
+  }
+
+  .hsc[data-mode="scroll"] .hsc-shelf__kit-btn {
+    min-height: 34px;
+    padding: 0 16px;
+    font-size: 11px;
+    box-shadow: 0 8px 22px color-mix(in srgb, var(--hsc-accent) 30%, transparent);
+  }
+
+  .hsc[data-mode="scroll"] .hsc-shelf__kit-note {
+    display: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
