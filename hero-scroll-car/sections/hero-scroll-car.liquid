@@ -5,6 +5,9 @@
   Fichiers : sections/hero-scroll-car.liquid · assets/hero-scroll-car.js · assets/hero-scroll-car.css
   (le JS et le CSS ne sont chargés que par cette section).
 
+  FICHIERS : cette section, snippets/hero-scroll-car-sheet.liquid (la fiche produit de la fenêtre
+  « En savoir plus »), assets/hero-scroll-car.js et assets/hero-scroll-car.css.
+
   ASSETS ATTENDUS DANS /assets
     hero-ignition.mp4   vidéo 16:9, 5 s (dernière frame = voiture allumée de face). De préférence, chargez-la plutôt
                         dans Contenu > Fichiers et choisissez-la dans « Vidéo d'allumage (Fichiers Shopify) » :
@@ -70,8 +73,11 @@
     sur le comptoir (« Hauteur du comptoir », 71 % de la hauteur de la vidéo) ; sur mobile, bande de cartes à
     faire glisser en bas de l'écran. À l'arrivée, le plan reste vivant : les dernières secondes de la vidéo
     sont lues en va-et-vient (fumée, lumières), réglage « Boucle vivante ». « En savoir plus » ouvre la fiche
-    produit complète par-dessus la scène (galerie, variantes, quantité, description, panier ; aucune page produit
-    n'est nécessaire). Avant / après : donner à un produit les images
+    produit complète par-dessus la scène (galerie avec vignettes, points forts, variantes, quantité, panier, icônes
+    de paiement, Description / Mode d'emploi / Ingrédients, réassurance ; aucune page produit n'est nécessaire).
+    Contenu : la description du produit, et ses métachamps « Points forts (hero voiture) » (liste courte),
+    « Mode d'emploi (hero voiture) » et « Ingrédients (hero voiture) » (texte enrichi), créés sur la boutique.
+    Avant / après : donner à un produit les images
     « Image avant (hero voiture) » et « Image après (hero voiture) » (Produits › métachamps), ou deux photos dont
     le texte alternatif contient « avant » et « après » : la fiche commence alors par le comparateur.
     Pensé pour la première section de la page (hero). Réduire les animations : version empilée, comme avant.
@@ -486,153 +492,9 @@
           </ul>
         </div>
 
-        {%- comment -%}
-          Fiches produit (une par produit du présentoir), clonées dans la fenêtre « En savoir plus ».
-          Avant / après : métachamps hero.before / hero.after, sinon deux photos dont le texte alternatif
-          contient « avant » / « après » (ou before / after).
-        {%- endcomment -%}
+        {%- comment -%} Fiches produit (une par produit du présentoir), clonées dans la fenêtre « En savoir plus » : snippet hero-scroll-car-sheet {%- endcomment -%}
         {%- for product in shelf.settings.products -%}
-          {%- liquid
-            assign variant = product.selected_or_first_available_variant
-            assign text_before = shelf.settings.text_before | default: 'Avant'
-            assign text_after = shelf.settings.text_after | default: 'Après'
-            assign before_img = nil
-            assign after_img = nil
-            assign before_id = 0
-            assign after_id = 0
-            if product.metafields.hero.before != blank
-              assign before_img = product.metafields.hero.before.value
-            endif
-            if product.metafields.hero.after != blank
-              assign after_img = product.metafields.hero.after.value
-            endif
-            for media in product.media
-              if media.media_type != 'image'
-                continue
-              endif
-              assign alt_down = media.alt | downcase
-              if before_img == nil and alt_down contains 'avant'
-                assign before_img = media
-                assign before_id = media.id
-              elsif before_img == nil and alt_down contains 'before'
-                assign before_img = media
-                assign before_id = media.id
-              elsif after_img == nil and alt_down contains 'apr'
-                assign after_img = media
-                assign after_id = media.id
-              elsif after_img == nil and alt_down contains 'after'
-                assign after_img = media
-                assign after_id = media.id
-              endif
-            endfor
-            assign slide_count = 0
-            if before_img != nil and after_img != nil
-              assign slide_count = 1
-            endif
-            for media in product.media
-              if media.media_type == 'image' and media.id != before_id and media.id != after_id
-                assign slide_count = slide_count | plus: 1
-              endif
-            endfor
-          -%}
-          <template data-hsc-product="{{ product.id }}">
-            <div class="hsc-sheet__gallery{% if slide_count < 2 %} hsc-sheet__gallery--single{% endif %}" data-hsc-gallery>
-              <div class="hsc-sheet__track" data-hsc-track tabindex="0" aria-label="{{ product.title | escape }}">
-                {%- if before_img != nil and after_img != nil -%}
-                  <figure class="hsc-sheet__slide hsc-sheet__slide--compare" data-hsc-compare style="--hsc-cut: 50%;">
-                    <img class="hsc-compare__img hsc-compare__img--after" src="{{ after_img | image_url: width: 1200 }}" alt="{{ text_after | escape }}" width="1200" height="900" loading="lazy">
-                    <img class="hsc-compare__img hsc-compare__img--before" src="{{ before_img | image_url: width: 1200 }}" alt="{{ text_before | escape }}" width="1200" height="900" loading="lazy">
-                    <span class="hsc-compare__label hsc-compare__label--before" aria-hidden="true">{{ text_before | escape }}</span>
-                    <span class="hsc-compare__label hsc-compare__label--after" aria-hidden="true">{{ text_after | escape }}</span>
-                    <span class="hsc-compare__handle" aria-hidden="true"><i></i></span>
-                    <input class="hsc-compare__range" data-hsc-compare-range type="range" min="0" max="100" value="50" aria-label="{{ text_before | escape }} / {{ text_after | escape }}">
-                  </figure>
-                {%- endif -%}
-                {%- for media in product.media -%}
-                  {%- if media.media_type != 'image' or media.id == before_id or media.id == after_id -%}{%- continue -%}{%- endif -%}
-                  <figure class="hsc-sheet__slide" data-media-id="{{ media.id }}">
-                    {{ media | image_url: width: 1200 | image_tag: loading: 'lazy', widths: '600, 900, 1200', sizes: '(min-width: 768px) 46vw, 100vw', alt: media.alt }}
-                  </figure>
-                {%- endfor -%}
-                {%- if slide_count == 0 -%}
-                  <figure class="hsc-sheet__slide hsc-sheet__slide--empty"></figure>
-                {%- endif -%}
-              </div>
-              <button type="button" class="hsc-sheet__arrow hsc-sheet__arrow--prev" data-hsc-gallery-prev aria-label="Image précédente">
-                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              </button>
-              <button type="button" class="hsc-sheet__arrow hsc-sheet__arrow--next" data-hsc-gallery-next aria-label="Image suivante">
-                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              </button>
-              <ol class="hsc-sheet__dots" role="list">
-                {%- for i in (1..slide_count) -%}
-                  <li><button type="button" class="hsc-sheet__dot" data-hsc-gallery-dot data-index="{{ forloop.index0 }}" aria-label="Image {{ forloop.index }}"><i></i></button></li>
-                {%- endfor -%}
-              </ol>
-            </div>
-            {%- comment -%} La fiche complète, sans page produit : variantes, quantité, panier {%- endcomment -%}
-            <div
-              class="hsc-sheet__info"
-              data-hsc-product-form
-              data-text-add="{{ s.text_add | escape }}"
-              data-text-unavailable="{{ s.text_unavailable | escape }}"
-            >
-              {%- if product.vendor != blank -%}
-                <p class="hsc-card__kicker">{{ product.vendor | escape }}</p>
-              {%- endif -%}
-              <h2 class="hsc-sheet__title" data-hsc-sheet-title>{{ product.title | escape }}</h2>
-              <p class="hsc-card__price" data-hsc-price>
-                <span data-hsc-price-now>{{ variant.price | money }}</span>
-                <s data-hsc-price-was{% unless variant.compare_at_price > variant.price %} hidden{% endunless %}>{% if variant.compare_at_price > variant.price %}{{ variant.compare_at_price | money }}{% endif %}</s>
-              </p>
-              {%- unless product.has_only_default_variant -%}
-                {%- for option in product.options_with_values -%}
-                  <fieldset class="hsc-sheet__option" data-hsc-option-group>
-                    <legend class="hsc-sheet__option-name">{{ option.name | escape }} : <span data-hsc-option-current>{{ option.selected_value | escape }}</span></legend>
-                    <div class="hsc-sheet__pills">
-                      {%- for value in option.values -%}
-                        <button type="button" class="hsc-pill{% if value == option.selected_value %} is-selected{% endif %}" data-hsc-option data-value="{{ value | escape }}" aria-pressed="{% if value == option.selected_value %}true{% else %}false{% endif %}">{{ value | escape }}</button>
-                      {%- endfor -%}
-                    </div>
-                  </fieldset>
-                {%- endfor -%}
-              {%- endunless -%}
-              {%- if product.description != blank -%}
-                <div class="hsc-sheet__desc">{{ product.description }}</div>
-              {%- endif -%}
-              <p class="hsc-card__msg" role="status" aria-live="polite" data-hsc-msg></p>
-              <div class="hsc-sheet__buy">
-                <div class="hsc-qty" data-hsc-qty-wrap>
-                  <button type="button" class="hsc-qty__btn" data-hsc-qty-minus aria-label="Moins">&minus;</button>
-                  <input class="hsc-qty__input" data-hsc-qty type="number" min="1" max="99" value="1" inputmode="numeric" aria-label="Quantité">
-                  <button type="button" class="hsc-qty__btn" data-hsc-qty-plus aria-label="Plus">+</button>
-                </div>
-                <button
-                  type="button"
-                  class="hsc-btn hsc-btn--primary hsc-card__add"
-                  data-hsc-add
-                  data-variant-id="{{ variant.id }}"
-                  {% unless variant.available %}disabled{% endunless %}
-                >
-                  <span data-hsc-add-label>{% if variant.available %}{{ s.text_add | escape }}{% else %}{{ s.text_unavailable | escape }}{% endif %}</span>
-                </button>
-              </div>
-              <script type="application/json" data-hsc-variants>
-                [
-                  {%- for v in product.variants -%}
-                    {
-                      "id": {{ v.id }},
-                      "options": {{ v.options | json }},
-                      "price": {{ v.price | money | strip_html | json }},
-                      "compare": {% if v.compare_at_price > v.price %}{{ v.compare_at_price | money | strip_html | json }}{% else %}null{% endif %},
-                      "available": {{ v.available | json }},
-                      "media": {{ v.featured_media.id | default: 0 }}
-                    }{%- unless forloop.last -%},{%- endunless -%}
-                  {%- endfor -%}
-                ]
-              </script>
-            </div>
-          </template>
+          {%- render 'hero-scroll-car-sheet', product: product, shelf: shelf, s: s -%}
         {%- endfor -%}
       {%- endif -%}
     </section>
@@ -1373,6 +1235,25 @@
           "id": "text_more",
           "label": "Bouton de la fiche produit",
           "default": "En savoir plus"
+        },
+        {
+          "type": "text",
+          "id": "trust_1",
+          "label": "Réassurance 1",
+          "default": "Livraison rapide",
+          "info": "Trois arguments courts sous la fiche produit. Vide = masqué."
+        },
+        {
+          "type": "text",
+          "id": "trust_2",
+          "label": "Réassurance 2",
+          "default": "Paiement sécurisé"
+        },
+        {
+          "type": "text",
+          "id": "trust_3",
+          "label": "Réassurance 3",
+          "default": "Rétractation 14 jours"
         },
         {
           "type": "text",

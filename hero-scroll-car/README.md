@@ -148,9 +148,16 @@ fluide. Après le plan final, la page défile normalement.
   et se tait si le visiteur quitte la section. Réglage « Bruit du moteur en boucle » (vide = aucun). Sur
   iPhone, le volume ne se règle pas : la boucle joue à plein ou se tait.
 - **Fiche produit « En savoir plus »** : chaque carte du présentoir (image, titre ou bouton) ouvre un panneau en
-  verre par-dessus la scène, bord néon animé : galerie, choix des variantes (prix, promo et photo suivent, les
-  combinaisons épuisées sont barrées), quantité, description et « Ajouter au panier ». Tout se passe dans la
-  fenêtre, aucune page produit n'est nécessaire. Échap, la croix ou le fond sombre la ferment.
+  verre qui grandit depuis la carte, bord néon animé : galerie avec vignettes, prix et badge promo, points forts,
+  choix des variantes (prix, promo et photo suivent, les combinaisons épuisées sont barrées), quantité, « Ajouter
+  au panier », icônes des moyens de paiement de la boutique, puis Description / Mode d'emploi / Ingrédients en
+  accordéon et trois arguments de réassurance (réglages du bloc). Tout se passe dans la fenêtre, aucune page
+  produit n'est nécessaire. Échap, la croix ou le fond sombre la ferment.
+- **Contenu de la fiche** : la description du produit, plus trois métachamps produit créés sur la boutique
+  (Produits › fiche produit › Métachamps) : « Points forts (hero voiture) » (liste de phrases courtes, en
+  pastilles sous le prix), « Mode d'emploi (hero voiture) » et « Ingrédients (hero voiture) » (texte enrichi).
+  Les photos du produit (Médias) forment le carrousel. Les tailles de police de la section sont en pixels fixes :
+  elles ne dépendent pas de la taille de base du thème.
 - **Avant / après** : donner au produit une « Image avant (hero voiture) » et une « Image après (hero voiture) »
   (métachamps produit, déjà créés sur la boutique), ou deux photos dont le texte alternatif contient « avant »
   et « après » : la galerie commence alors par un comparateur à curseur.

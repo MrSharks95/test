@@ -1,0 +1,235 @@
+{%- comment -%}
+  hero-scroll-car-sheet — la fiche produit complète de la fenêtre « En savoir plus » du hero voiture.
+  Rendue une fois par produit du présentoir, dans un <template> que le script clone à l'ouverture.
+  Paramètres : product (le produit), shelf (le bloc « Présentoir (fin) »), s (les réglages de la section).
+  Avant / après : métachamps hero.before / hero.after, sinon deux photos dont le texte alternatif
+  contient « avant » / « après » (ou before / after). Contenu : description, métachamps hero.highlights
+  (liste), hero.usage et hero.ingredients (texte enrichi).
+{%- endcomment -%}
+{%- liquid
+  assign variant = product.selected_or_first_available_variant
+  assign text_before = shelf.settings.text_before | default: 'Avant'
+  assign text_after = shelf.settings.text_after | default: 'Après'
+  assign before_img = nil
+  assign after_img = nil
+  assign before_id = 0
+  assign after_id = 0
+  if product.metafields.hero.before != blank
+    assign before_img = product.metafields.hero.before.value
+  endif
+  if product.metafields.hero.after != blank
+    assign after_img = product.metafields.hero.after.value
+  endif
+  for media in product.media
+    if media.media_type != 'image'
+      continue
+    endif
+    assign alt_down = media.alt | downcase
+    if before_img == nil and alt_down contains 'avant'
+      assign before_img = media
+      assign before_id = media.id
+    elsif before_img == nil and alt_down contains 'before'
+      assign before_img = media
+      assign before_id = media.id
+    elsif after_img == nil and alt_down contains 'apr'
+      assign after_img = media
+      assign after_id = media.id
+    elsif after_img == nil and alt_down contains 'after'
+      assign after_img = media
+      assign after_id = media.id
+    endif
+  endfor
+  assign slide_count = 0
+  if before_img != nil and after_img != nil
+    assign slide_count = 1
+  endif
+  for media in product.media
+    if media.media_type == 'image' and media.id != before_id and media.id != after_id
+      assign slide_count = slide_count | plus: 1
+    endif
+  endfor
+-%}
+<template data-hsc-product="{{ product.id }}">
+  <div class="hsc-sheet__gallery{% if slide_count < 2 %} hsc-sheet__gallery--single{% else %} hsc-sheet__gallery--thumbs{% endif %}" data-hsc-gallery>
+    <div class="hsc-sheet__track" data-hsc-track tabindex="0" aria-label="{{ product.title | escape }}">
+      {%- if before_img != nil and after_img != nil -%}
+        <figure class="hsc-sheet__slide hsc-sheet__slide--compare" data-hsc-compare style="--hsc-cut: 50%;">
+          <img class="hsc-compare__img hsc-compare__img--after" src="{{ after_img | image_url: width: 1200 }}" alt="{{ text_after | escape }}" width="1200" height="900" loading="lazy">
+          <img class="hsc-compare__img hsc-compare__img--before" src="{{ before_img | image_url: width: 1200 }}" alt="{{ text_before | escape }}" width="1200" height="900" loading="lazy">
+          <span class="hsc-compare__label hsc-compare__label--before" aria-hidden="true">{{ text_before | escape }}</span>
+          <span class="hsc-compare__label hsc-compare__label--after" aria-hidden="true">{{ text_after | escape }}</span>
+          <span class="hsc-compare__handle" aria-hidden="true"><i></i></span>
+          <input class="hsc-compare__range" data-hsc-compare-range type="range" min="0" max="100" value="50" aria-label="{{ text_before | escape }} / {{ text_after | escape }}">
+        </figure>
+      {%- endif -%}
+      {%- for media in product.media -%}
+        {%- if media.media_type != 'image' or media.id == before_id or media.id == after_id -%}{%- continue -%}{%- endif -%}
+        <figure class="hsc-sheet__slide" data-media-id="{{ media.id }}">
+          {{ media | image_url: width: 1200 | image_tag: loading: 'lazy', widths: '600, 900, 1200', sizes: '(min-width: 768px) 46vw, 100vw', alt: media.alt }}
+        </figure>
+      {%- endfor -%}
+      {%- if slide_count == 0 -%}
+        <figure class="hsc-sheet__slide hsc-sheet__slide--empty"></figure>
+      {%- endif -%}
+    </div>
+    <button type="button" class="hsc-sheet__arrow hsc-sheet__arrow--prev" data-hsc-gallery-prev aria-label="Image précédente">
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button type="button" class="hsc-sheet__arrow hsc-sheet__arrow--next" data-hsc-gallery-next aria-label="Image suivante">
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <ol class="hsc-sheet__dots" role="list">
+      {%- for i in (1..slide_count) -%}
+        <li><button type="button" class="hsc-sheet__dot" data-hsc-gallery-dot data-index="{{ forloop.index0 }}" aria-label="Image {{ forloop.index }}"><i></i></button></li>
+      {%- endfor -%}
+    </ol>
+    {%- comment -%} Vignettes (ordinateur) : le comparateur d'abord, puis chaque photo {%- endcomment -%}
+    <ol class="hsc-sheet__thumbs" role="list">
+      {%- assign slide_i = 0 -%}
+      {%- if before_img != nil and after_img != nil -%}
+        <li><button type="button" class="hsc-sheet__thumb" data-hsc-gallery-dot data-index="0" aria-label="{{ text_before | escape }} / {{ text_after | escape }}"><img src="{{ after_img | image_url: width: 160 }}" alt="" width="58" height="58" loading="lazy"></button></li>
+        {%- assign slide_i = 1 -%}
+      {%- endif -%}
+      {%- for media in product.media -%}
+        {%- if media.media_type != 'image' or media.id == before_id or media.id == after_id -%}{%- continue -%}{%- endif -%}
+        <li><button type="button" class="hsc-sheet__thumb" data-hsc-gallery-dot data-index="{{ slide_i }}" aria-label="Image {{ slide_i | plus: 1 }}"><img src="{{ media | image_url: width: 160 }}" alt="" width="58" height="58" loading="lazy"></button></li>
+        {%- assign slide_i = slide_i | plus: 1 -%}
+      {%- endfor -%}
+    </ol>
+  </div>
+  {%- comment -%}
+    La fiche complète, sans page produit : prix et promo, points forts (métachamp hero.highlights),
+    variantes, quantité, panier, paiement sécurisé, puis Description / Mode d'emploi (hero.usage) /
+    Ingrédients (hero.ingredients) en accordéon, et la réassurance du bloc.
+  {%- endcomment -%}
+  {%- liquid
+    assign highlights = product.metafields.hero.highlights.value
+    assign usage = product.metafields.hero.usage
+    assign ingredients = product.metafields.hero.ingredients
+    assign has_desc = false
+    if product.description != blank
+      assign has_desc = true
+    endif
+    assign save_pct = 0
+    if variant.compare_at_price > variant.price
+      assign save_pct = variant.compare_at_price | minus: variant.price | times: 100 | divided_by: variant.compare_at_price
+    endif
+    assign trust_1 = shelf.settings.trust_1
+    assign trust_2 = shelf.settings.trust_2
+    assign trust_3 = shelf.settings.trust_3
+  -%}
+  <div
+    class="hsc-sheet__info"
+    data-hsc-product-form
+    data-text-add="{{ s.text_add | escape }}"
+    data-text-unavailable="{{ s.text_unavailable | escape }}"
+  >
+    <div class="hsc-sheet__head">
+      {%- if product.vendor != blank -%}
+        <p class="hsc-card__kicker">{{ product.vendor | escape }}</p>
+      {%- endif -%}
+      <h2 class="hsc-sheet__title" data-hsc-sheet-title>{{ product.title | escape }}</h2>
+      <p class="hsc-card__price" data-hsc-price>
+        <span data-hsc-price-now>{{ variant.price | money }}</span>
+        <s data-hsc-price-was{% unless save_pct > 0 %} hidden{% endunless %}>{% if save_pct > 0 %}{{ variant.compare_at_price | money }}{% endif %}</s>
+        <em class="hsc-sheet__save" data-hsc-price-save{% unless save_pct > 0 %} hidden{% endunless %}>{% if save_pct > 0 %}&minus;{{ save_pct }} %{% endif %}</em>
+      </p>
+    </div>
+    {%- if highlights != blank -%}
+      <ul class="hsc-sheet__highlights" role="list">
+        {%- for item in highlights -%}
+          <li class="hsc-chip"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>{{ item | escape }}</li>
+        {%- endfor -%}
+      </ul>
+    {%- endif -%}
+    {%- unless product.has_only_default_variant -%}
+      {%- for option in product.options_with_values -%}
+        <fieldset class="hsc-sheet__option" data-hsc-option-group>
+          <legend class="hsc-sheet__option-name">{{ option.name | escape }} : <span data-hsc-option-current>{{ option.selected_value | escape }}</span></legend>
+          <div class="hsc-sheet__pills">
+            {%- for value in option.values -%}
+              <button type="button" class="hsc-pill{% if value == option.selected_value %} is-selected{% endif %}" data-hsc-option data-value="{{ value | escape }}" aria-pressed="{% if value == option.selected_value %}true{% else %}false{% endif %}">{{ value | escape }}</button>
+            {%- endfor -%}
+          </div>
+        </fieldset>
+      {%- endfor -%}
+    {%- endunless -%}
+    <p class="hsc-card__msg" role="status" aria-live="polite" data-hsc-msg></p>
+    <div class="hsc-sheet__buy">
+      <div class="hsc-qty" data-hsc-qty-wrap>
+        <button type="button" class="hsc-qty__btn" data-hsc-qty-minus aria-label="Moins">&minus;</button>
+        <input class="hsc-qty__input" data-hsc-qty type="number" min="1" max="99" value="1" inputmode="numeric" aria-label="Quantité">
+        <button type="button" class="hsc-qty__btn" data-hsc-qty-plus aria-label="Plus">+</button>
+      </div>
+      <button
+        type="button"
+        class="hsc-btn hsc-btn--primary hsc-card__add"
+        data-hsc-add
+        data-variant-id="{{ variant.id }}"
+        {% unless variant.available %}disabled{% endunless %}
+      >
+        <span data-hsc-add-label>{% if variant.available %}{{ s.text_add | escape }}{% else %}{{ s.text_unavailable | escape }}{% endif %}</span>
+      </button>
+    </div>
+    {%- if shop.enabled_payment_types.size > 0 -%}
+      <div class="hsc-sheet__pay">
+        <span><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><rect x="5" y="10" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 10V7a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>Paiement sécurisé</span>
+        {%- for type in shop.enabled_payment_types -%}
+          {{ type | payment_type_svg_tag: class: 'hsc-pay__icon' }}
+        {%- endfor -%}
+      </div>
+    {%- endif -%}
+    {%- if has_desc or usage != blank or ingredients != blank -%}
+      <div class="hsc-sheet__acc">
+        {%- if has_desc -%}
+          <details open>
+            <summary>Description</summary>
+            <div class="hsc-sheet__acc-body hsc-sheet__desc">{{ product.description }}</div>
+          </details>
+        {%- endif -%}
+        {%- if usage != blank -%}
+          <details{% unless has_desc %} open{% endunless %}>
+            <summary>Mode d'emploi</summary>
+            <div class="hsc-sheet__acc-body hsc-sheet__desc">{{ usage | metafield_tag }}</div>
+          </details>
+        {%- endif -%}
+        {%- if ingredients != blank -%}
+          <details>
+            <summary>Ingrédients</summary>
+            <div class="hsc-sheet__acc-body hsc-sheet__desc">{{ ingredients | metafield_tag }}</div>
+          </details>
+        {%- endif -%}
+      </div>
+    {%- elsif request.design_mode -%}
+      <p class="hsc-sheet__hint">Ce produit n'a pas encore de contenu. Ajoutez-lui une description et remplissez ses métachamps « Mode d'emploi », « Ingrédients » et « Points forts » : ils s'affichent ici.</p>
+    {%- endif -%}
+    {%- if trust_1 != blank or trust_2 != blank or trust_3 != blank -%}
+      <ul class="hsc-sheet__trust" role="list">
+        {%- if trust_1 != blank -%}
+          <li><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="7" cy="18" r="2" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="17" cy="18" r="2" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>{{ trust_1 | escape }}</li>
+        {%- endif -%}
+        {%- if trust_2 != blank -%}
+          <li><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>{{ trust_2 | escape }}</li>
+        {%- endif -%}
+        {%- if trust_3 != blank -%}
+          <li><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"><path d="M4 12a8 8 0 0 1 13.7-5.7L20 8" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M20 4v4h-4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 12a8 8 0 0 1-13.7 5.7L4 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M4 20v-4h4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>{{ trust_3 | escape }}</li>
+        {%- endif -%}
+      </ul>
+    {%- endif -%}
+    <script type="application/json" data-hsc-variants>
+      [
+        {%- for v in product.variants -%}
+          {
+            "id": {{ v.id }},
+            "options": {{ v.options | json }},
+            "price": {{ v.price | money | strip_html | json }},
+            "compare": {% if v.compare_at_price > v.price %}{{ v.compare_at_price | money | strip_html | json }}{% else %}null{% endif %},
+            "save": {% if v.compare_at_price > v.price %}{{ v.compare_at_price | minus: v.price | times: 100 | divided_by: v.compare_at_price }}{% else %}0{% endif %},
+            "available": {{ v.available | json }},
+            "media": {{ v.featured_media.id | default: 0 }}
+          }{%- unless forloop.last -%},{%- endunless -%}
+        {%- endfor -%}
+      ]
+    </script>
+  </div>
+</template>

@@ -2113,6 +2113,13 @@
     }
     this.setAttribute('data-sheet-open', '');
     var root = sheet.root;
+    var panel = sheet.panel;
+    var source = opener && opener.closest ? (opener.closest('[data-hsc-item], .hsc-card') || opener) : null;
+    if (source && panel) {
+      var from = source.getBoundingClientRect();
+      var to = panel.getBoundingClientRect();
+      panel.style.setProperty('--hsc-origin', Math.round(from.left + from.width / 2 - to.left) + 'px ' + Math.round(from.top + from.height / 2 - to.top) + 'px');
+    }
     requestAnimationFrame(function () { root.classList.add('is-open'); });
     var close = sheet.panel.querySelector('[data-hsc-sheet-close]');
     if (close) close.focus({ preventScroll: true });
@@ -2186,12 +2193,14 @@
     }
     var now = form.querySelector('[data-hsc-price-now]');
     var was = form.querySelector('[data-hsc-price-was]');
+    var save = form.querySelector('[data-hsc-price-save]');
     var button = form.querySelector('[data-hsc-add]');
     var label = form.querySelector('[data-hsc-add-label]');
     var available = !!(variant && variant.available);
     if (variant) {
       if (now) now.textContent = variant.price || '';
       if (was) { was.hidden = !variant.compare; was.textContent = variant.compare || ''; }
+      if (save) { save.hidden = !(variant.save > 0); save.textContent = variant.save > 0 ? '\u2212' + variant.save + ' %' : ''; }
       if (button) button.setAttribute('data-variant-id', String(variant.id));
     }
     if (button) button.disabled = !available;
@@ -2284,7 +2293,7 @@
     var content = this.sheet.content;
     var dots = content.querySelectorAll('[data-hsc-gallery-dot]');
     for (var i = 0; i < dots.length; i++) {
-      var active = i === index;
+      var active = parseInt(dots[i].getAttribute('data-index'), 10) === index;
       dots[i].classList.toggle('is-active', active);
       if (active) dots[i].setAttribute('aria-current', 'true');
       else dots[i].removeAttribute('aria-current');

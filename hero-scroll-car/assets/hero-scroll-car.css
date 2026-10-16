@@ -5,6 +5,9 @@
 
 hero-scroll-car,
 .hsc {
+  /* The section's own type scale: fixed pixels, whatever the theme's root font-size. */
+  font-size: 16px;
+  line-height: 1.5;
   --hsc-accent: #ff7a1a;
   --hsc-n: 5;
   --hsc-bg: #0b0b0d;
@@ -143,7 +146,7 @@ hero-scroll-car,
 .hsc-title {
   margin: 0;
   font-family: var(--font-heading-family, inherit);
-  font-size: clamp(2.1rem, 6vw, 5rem);
+  font-size: clamp(34px, 6vw, 80px);
   font-weight: 800;
   line-height: 0.98;
   letter-spacing: 0.01em;
@@ -155,7 +158,7 @@ hero-scroll-car,
 .hsc-subtitle {
   margin: 0;
   max-width: 46ch;
-  font-size: clamp(1rem, 1.35vw, 1.2rem);
+  font-size: clamp(16px, 1.35vw, 19px);
   line-height: 1.5;
   color: var(--hsc-ink-dim);
   text-wrap: pretty;
@@ -173,7 +176,7 @@ hero-scroll-car,
   border: 1px solid transparent;
   border-radius: 6px;
   font: inherit;
-  font-size: 0.82rem;
+  font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -289,7 +292,7 @@ hero-scroll-car,
   justify-items: center;
   gap: 8px;
   transform: translateX(-50%);
-  font-size: 0.66rem;
+  font-size: 11px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--hsc-ink-dim);
@@ -355,7 +358,7 @@ hero-scroll-car,
 
 .hsc-card__kicker {
   margin: 0;
-  font-size: 0.7rem;
+  font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -399,7 +402,7 @@ hero-scroll-car,
 
 .hsc-card__tagline {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: 15px;
   line-height: 1.5;
   color: var(--hsc-ink-dim);
 }
@@ -409,13 +412,13 @@ hero-scroll-car,
   display: flex;
   align-items: baseline;
   gap: 10px;
-  font-size: 1.15rem;
+  font-size: 18px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
 .hsc-card__price s {
-  font-size: 0.9rem;
+  font-size: 14px;
   font-weight: 400;
   color: var(--hsc-ink-dim);
 }
@@ -427,7 +430,7 @@ hero-scroll-car,
 .hsc-card__msg {
   margin: 0;
   min-height: 1.2em;
-  font-size: 0.85rem;
+  font-size: 14px;
   line-height: 1.4;
   color: var(--hsc-ink-dim);
 }
@@ -531,7 +534,7 @@ hero-scroll-car,
   background: var(--hsc-glass);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
-  font-size: 0.68rem;
+  font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -758,7 +761,7 @@ hero-scroll-car,
 
   .hsc[data-mode="scroll"] .hsc-stage .hsc-card__price {
     grid-area: price;
-    font-size: 1.05rem;
+    font-size: 17px;
   }
 
   .hsc[data-mode="scroll"] .hsc-stage .hsc-card__add {
@@ -781,7 +784,7 @@ hero-scroll-car,
 
   .hsc[data-mode="scroll"] .hsc-hotspot__label {
     padding: 7px 10px;
-    font-size: 0.62rem;
+    font-size: 10px;
   }
 }
 
@@ -805,11 +808,11 @@ hero-scroll-car,
   }
 
   .hsc-title {
-    font-size: clamp(2rem, 11vw, 3rem);
+    font-size: clamp(32px, 11vw, 48px);
   }
 
   .hsc-subtitle {
-    font-size: 0.95rem;
+    font-size: 15px;
   }
 
   .hsc-sound {
@@ -1083,7 +1086,7 @@ hero-scroll-car,
   background: rgba(0, 0, 0, 0.7);
   color: var(--hsc-ink);
   font: inherit;
-  font-size: 0.75rem;
+  font-size: 12px;
   white-space: nowrap;
   cursor: pointer;
   transform: translateX(-50%);
@@ -1211,7 +1214,7 @@ hero-scroll-car,
 }
 
 .hsc-start__label {
-  font-size: clamp(0.72rem, 0.95vw, 0.86rem);
+  font-size: clamp(12px, 0.95vw, 14px);
   font-weight: 700;
   line-height: 1.15;
   letter-spacing: 0.16em;
@@ -1226,7 +1229,7 @@ hero-scroll-car,
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.7rem;
+  font-size: 11px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   white-space: nowrap;
@@ -1289,7 +1292,7 @@ hero-scroll-car,
 
 .hsc .hsc-shelf__title {
   margin: 0;
-  font-size: 0.75rem;
+  font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.24em;
   text-transform: uppercase;
@@ -1309,12 +1312,12 @@ hero-scroll-car,
 }
 
 .hsc-shelf__item {
-  flex: 0 1 clamp(150px, 14vw, 200px);
+  flex: 0 1 clamp(172px, 16.5vw, 236px);
   min-width: 0;
   display: grid;
   align-content: end;
-  gap: 8px;
-  padding: 12px;
+  gap: 10px;
+  padding: 14px;
   border: 1px solid var(--hsc-card-border);
   border-radius: 12px;
   background: var(--hsc-card-bg);
@@ -1338,23 +1341,23 @@ hero-scroll-car,
 }
 
 .hsc .hsc-shelf__item .hsc-card__title {
-  font-size: clamp(14px, calc(var(--hsc-product-title-size) * 0.6), 18px);
+  font-size: clamp(17px, calc(var(--hsc-product-title-size) * 0.76), 21px);
 }
 
 .hsc-shelf__item .hsc-card__price {
-  font-size: 1rem;
+  font-size: 19px;
 }
 
 .hsc-shelf__item .hsc-card__add {
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 10px;
-  font-size: 0.72rem;
-  letter-spacing: 0.08em;
+  font-size: 12px;
+  letter-spacing: 0.1em;
 }
 
 .hsc-shelf__item--empty {
   flex-basis: auto;
-  font-size: 0.9rem;
+  font-size: 14px;
   color: var(--hsc-ink-dim);
 }
 
@@ -1371,7 +1374,7 @@ hero-scroll-car,
 
   .hsc[data-mode="scroll"] .hsc-shelf__title {
     padding: 0 16px;
-    font-size: 0.68rem;
+    font-size: 11px;
   }
 
   .hsc[data-mode="scroll"] .hsc-shelf__list {
@@ -1424,7 +1427,7 @@ hero-scroll-car,
   .hsc[data-mode="scroll"] .hsc-stage .hsc-shelf__item .hsc-card__price {
     grid-area: price;
     align-self: start;
-    font-size: 0.95rem;
+    font-size: 15px;
   }
 
   .hsc[data-mode="scroll"] .hsc-stage .hsc-shelf__item .hsc-card__actions {
@@ -1439,7 +1442,7 @@ hero-scroll-car,
     margin-top: 0;
     min-height: 40px;
     padding: 0 8px;
-    font-size: 0.66rem;
+    font-size: 11px;
   }
 
   .hsc[data-mode="scroll"] .hsc-stage .hsc-shelf__item .hsc-card__msg {
@@ -1484,7 +1487,7 @@ hero-scroll-car,
 .hsc .hsc-card--compact .hsc-card__add {
   min-height: 40px;
   padding: 0 10px;
-  font-size: 0.72rem;
+  font-size: 12px;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1504,10 +1507,10 @@ hero-scroll-car,
 
 .hsc-shelf__item .hsc-card__more,
 .hsc-card--compact .hsc-card__more {
-  min-height: 36px;
+  min-height: 40px;
   padding: 0 10px;
-  font-size: 0.66rem;
-  letter-spacing: 0.1em;
+  font-size: 11px;
+  letter-spacing: 0.12em;
 }
 
 .hsc-shelf__item .hsc-card__media,
@@ -1558,13 +1561,14 @@ hero-scroll-car,
 
 .hsc-sheet__panel {
   position: relative;
-  width: min(1060px, 100%);
+  width: min(1180px, 100%);
   max-height: 100%;
   border-radius: 24px;
   display: grid;
   opacity: 0;
-  transform: translateY(26px) scale(0.97);
-  transition: opacity 0.32s ease, transform 0.46s var(--hsc-ease-out);
+  transform: translateY(28px) scale(0.82);
+  transform-origin: var(--hsc-origin, 50% 60%); /* set by the JS: the sheet grows out of the card that opened it */
+  transition: opacity 0.3s ease, transform 0.62s cubic-bezier(0.2, 0.9, 0.22, 1.06);
   --hsc-neon: conic-gradient(
     from var(--hsc-angle),
     transparent 0deg,
@@ -1616,7 +1620,7 @@ hero-scroll-car,
   max-height: min(86vh, 100%);
   max-height: min(86svh, 100%);
   display: grid;
-  grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 0.94fr) minmax(0, 1.06fr);
   border-radius: inherit;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1631,10 +1635,10 @@ hero-scroll-car,
 .hsc-sheet__close {
   position: absolute;
   z-index: 3;
-  top: 12px;
-  right: 12px;
-  width: 42px;
-  height: 42px;
+  top: 14px;
+  right: 14px;
+  width: 44px;
+  height: 44px;
   display: grid;
   place-items: center;
   border: 1px solid rgba(255, 255, 255, 0.14);
@@ -1642,7 +1646,7 @@ hero-scroll-car,
   background: rgba(10, 10, 12, 0.55);
   color: var(--hsc-ink);
   font: inherit;
-  font-size: 1.5rem;
+  font-size: 24px;
   line-height: 1;
   cursor: pointer;
   -webkit-backdrop-filter: blur(10px);
@@ -1699,11 +1703,46 @@ hero-scroll-car,
   background: radial-gradient(70% 60% at 50% 60%, color-mix(in srgb, var(--hsc-accent) 12%, transparent), transparent 70%);
 }
 
+.hsc-sheet__slide:not(.hsc-sheet__slide--compare) {
+  padding: 28px 28px 92px;
+}
+
 .hsc-sheet__slide img {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: contain;
+  filter: drop-shadow(0 30px 40px rgba(0, 0, 0, 0.55));
+}
+
+/* the gallery reveals itself from the left, the info column rises line after line */
+.hsc-sheet.is-open .hsc-sheet__gallery {
+  animation: hsc-reveal 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.hsc-sheet.is-open .hsc-sheet__info > * {
+  animation: hsc-rise 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation-delay: calc(140ms + var(--hsc-k, 0) * 60ms);
+}
+
+.hsc-sheet__info > :nth-child(1) { --hsc-k: 0; }
+.hsc-sheet__info > :nth-child(2) { --hsc-k: 1; }
+.hsc-sheet__info > :nth-child(3) { --hsc-k: 2; }
+.hsc-sheet__info > :nth-child(4) { --hsc-k: 3; }
+.hsc-sheet__info > :nth-child(5) { --hsc-k: 4; }
+.hsc-sheet__info > :nth-child(6) { --hsc-k: 5; }
+.hsc-sheet__info > :nth-child(7) { --hsc-k: 6; }
+.hsc-sheet__info > :nth-child(8) { --hsc-k: 7; }
+.hsc-sheet__info > :nth-child(n + 9) { --hsc-k: 8; }
+
+@keyframes hsc-reveal {
+  from { clip-path: inset(0 100% 0 0); opacity: 0.4; }
+  to { clip-path: inset(0); opacity: 1; }
+}
+
+@keyframes hsc-rise {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: none; }
 }
 
 .hsc-sheet__slide--empty {
@@ -1780,8 +1819,66 @@ hero-scroll-car,
   box-shadow: 0 0 12px var(--hsc-accent);
 }
 
+.hsc-sheet__thumbs {
+  position: absolute;
+  z-index: 2;
+  left: 0;
+  right: 0;
+  bottom: 14px;
+  margin: 0;
+  padding: 0 14px;
+  list-style: none;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.hsc-sheet__thumb {
+  width: 58px;
+  height: 58px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(10, 10, 12, 0.6);
+  cursor: pointer;
+  opacity: 0.65;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  transition: opacity 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+}
+
+.hsc-sheet__thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: none;
+}
+
+.hsc-sheet__thumb:hover {
+  opacity: 1;
+  transform: translateY(-2px);
+}
+
+.hsc-sheet__thumb.is-active {
+  opacity: 1;
+  border-color: var(--hsc-accent);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--hsc-accent) 55%, transparent);
+}
+
+.hsc-sheet__thumb:focus-visible {
+  outline: 2px solid var(--hsc-accent);
+  outline-offset: 2px;
+}
+
+.hsc-sheet__gallery--thumbs .hsc-sheet__dots {
+  display: none;
+}
+
 .hsc-sheet__gallery--single .hsc-sheet__arrow,
-.hsc-sheet__gallery--single .hsc-sheet__dots {
+.hsc-sheet__gallery--single .hsc-sheet__dots,
+.hsc-sheet__gallery--single .hsc-sheet__thumbs {
   display: none;
 }
 
@@ -1810,7 +1907,7 @@ hero-scroll-car,
   padding: 6px 12px;
   border-radius: 999px;
   background: rgba(8, 8, 10, 0.62);
-  font-size: 0.66rem;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -1896,35 +1993,223 @@ hero-scroll-car,
   min-width: 0;
   display: grid;
   align-content: start;
-  gap: 14px;
+  gap: 18px;
   padding: clamp(22px, 3vw, 36px) clamp(22px, 3vw, 36px) clamp(22px, 3vw, 36px);
   padding-right: max(clamp(22px, 3vw, 36px), 64px);
   overflow: auto;
   overscroll-behavior: contain;
 }
 
+.hsc-sheet__head {
+  display: grid;
+  gap: 10px;
+}
+
 .hsc .hsc-sheet__title {
   margin: 0;
   font-family: var(--font-heading-family, inherit);
-  font-size: clamp(1.4rem, 2.4vw, 2rem);
+  font-size: clamp(26px, 2.7vw, 38px);
   font-weight: 700;
-  line-height: 1.12;
+  line-height: 1.08;
   color: var(--hsc-product-title-color);
   text-wrap: balance;
 }
 
-.hsc-sheet__info .hsc-card__price {
-  font-size: 1.35rem;
+.hsc .hsc-sheet__info .hsc-card__price {
+  font-size: 27px;
+  gap: 12px;
+}
+
+.hsc .hsc-sheet__info .hsc-card__price s {
+  font-size: 17px;
+}
+
+.hsc .hsc-sheet__save {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--hsc-accent);
+  color: #111;
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  transform: translateY(-3px);
+}
+
+.hsc-sheet__save[hidden] {
+  display: none;
+}
+
+/* key points */
+.hsc-sheet__highlights {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hsc .hsc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 13px;
+  border: 1px solid color-mix(in srgb, var(--hsc-accent) 45%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--hsc-accent) 10%, transparent);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--hsc-ink);
+}
+
+.hsc-chip svg {
+  flex: none;
+  color: var(--hsc-accent);
+}
+
+/* payment */
+.hsc-sheet__pay {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--hsc-ink-dim);
+}
+
+.hsc-sheet__pay span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 6px;
+}
+
+.hsc-sheet__pay svg {
+  flex: none;
+}
+
+.hsc-sheet__pay .hsc-pay__icon {
+  width: 38px;
+  height: 24px;
+  border-radius: 4px;
+}
+
+/* description · mode d'emploi · ingrédients */
+.hsc-sheet__acc {
+  display: grid;
+  border-top: 1px solid var(--hsc-card-border);
+}
+
+.hsc-sheet__acc details {
+  border-bottom: 1px solid var(--hsc-card-border);
+}
+
+.hsc .hsc-sheet__acc summary {
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 0;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--hsc-ink);
+  cursor: pointer;
+}
+
+.hsc-sheet__acc summary::-webkit-details-marker {
+  display: none;
+}
+
+.hsc-sheet__acc summary::after {
+  content: "";
+  flex: none;
+  width: 12px;
+  height: 12px;
+  background:
+    linear-gradient(var(--hsc-ink) 0 0) center / 12px 2px no-repeat,
+    linear-gradient(var(--hsc-ink) 0 0) center / 2px 12px no-repeat;
+  transition: transform 0.35s var(--hsc-ease-out);
+}
+
+.hsc-sheet__acc details[open] summary::after {
+  transform: rotate(135deg);
+  background:
+    linear-gradient(var(--hsc-accent) 0 0) center / 12px 2px no-repeat,
+    linear-gradient(var(--hsc-accent) 0 0) center / 2px 12px no-repeat;
+}
+
+.hsc-sheet__acc summary:focus-visible {
+  outline: 2px solid var(--hsc-accent);
+  outline-offset: 4px;
+}
+
+.hsc-sheet__acc-body {
+  padding: 0 0 18px;
+}
+
+.hsc-sheet__acc details[open] .hsc-sheet__acc-body {
+  animation: hsc-rise 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
 .hsc-sheet__desc {
-  font-size: 0.95rem;
-  line-height: 1.6;
+  font-size: 15px;
+  line-height: 1.65;
   color: var(--hsc-card-text-color);
-  max-height: 34vh;
-  overflow: auto;
-  overscroll-behavior: contain;
-  padding-right: 6px;
+}
+
+.hsc-sheet__desc ul,
+.hsc-sheet__desc ol {
+  padding-left: 20px;
+}
+
+.hsc-sheet__desc strong {
+  color: var(--hsc-ink);
+}
+
+/* reassurance */
+.hsc-sheet__trust {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.hsc-sheet__trust li {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 12px 8px;
+  border: 1px solid var(--hsc-card-border);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: center;
+  color: var(--hsc-ink-dim);
+}
+
+.hsc-sheet__trust svg {
+  color: var(--hsc-accent);
+}
+
+.hsc-sheet__hint {
+  margin: 0;
+  padding: 14px 16px;
+  border: 1px dashed var(--hsc-card-border);
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--hsc-ink-dim);
 }
 
 .hsc-sheet__desc > :first-child { margin-top: 0; }
@@ -1943,7 +2228,7 @@ hero-scroll-car,
 
 .hsc-sheet__option-name {
   padding: 0;
-  font-size: 0.7rem;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -1961,15 +2246,15 @@ hero-scroll-car,
 }
 
 .hsc .hsc-pill {
-  min-height: 38px;
-  padding: 0 15px;
+  min-height: 42px;
+  padding: 0 16px;
   border: 1px solid var(--hsc-card-border);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.05);
   color: var(--hsc-ink);
   font: inherit;
-  font-size: 0.82rem;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
   transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.25s ease, opacity 0.2s ease;
 }
@@ -2004,7 +2289,7 @@ hero-scroll-car,
 
 .hsc-qty {
   display: inline-grid;
-  grid-template-columns: 40px 48px 40px;
+  grid-template-columns: 44px 52px 44px;
   border: 1px solid var(--hsc-card-border);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.05);
@@ -2012,12 +2297,12 @@ hero-scroll-car,
 }
 
 .hsc .hsc-qty__btn {
-  min-height: 48px;
+  min-height: 52px;
   border: 0;
   background: none;
   color: var(--hsc-ink);
   font: inherit;
-  font-size: 1.25rem;
+  font-size: 20px;
   line-height: 1;
   cursor: pointer;
   transition: background 0.2s ease;
@@ -2036,7 +2321,8 @@ hero-scroll-car,
   background: none;
   color: var(--hsc-ink);
   font: inherit;
-  font-weight: 600;
+  font-size: 17px;
+  font-weight: 700;
   text-align: center;
   -moz-appearance: textfield;
   appearance: textfield;
@@ -2055,8 +2341,10 @@ hero-scroll-car,
 }
 
 .hsc-sheet__buy .hsc-btn {
-  padding: 0 14px;
-  font-size: 0.74rem;
+  min-height: 52px;
+  padding: 0 16px;
+  font-size: 13px;
+  box-shadow: 0 10px 30px color-mix(in srgb, var(--hsc-accent) 35%, transparent);
 }
 
 @keyframes hsc-neon-spin {
@@ -2104,6 +2392,33 @@ hero-scroll-car,
     bottom: 18px;
   }
 
+  .hsc-sheet__thumbs,
+  .hsc-sheet.is-open .hsc-sheet__gallery {
+    animation: none;
+  }
+
+  .hsc-sheet__thumbs {
+    display: none;
+  }
+
+  .hsc-sheet__gallery--thumbs .hsc-sheet__dots {
+    display: flex;
+  }
+
+  .hsc-sheet__slide:not(.hsc-sheet__slide--compare) {
+    padding: 20px 20px 48px;
+  }
+
+  .hsc-sheet__trust li {
+    padding: 10px 6px;
+    font-size: 11px;
+  }
+
+  .hsc-sheet__panel {
+    transform: translateY(60px);
+    transform-origin: 50% 100%;
+  }
+
   .hsc-sheet__info {
     padding: 18px 18px calc(18px + env(safe-area-inset-bottom, 0px));
     padding-right: 18px;
@@ -2131,7 +2446,10 @@ hero-scroll-car,
 
 @media (prefers-reduced-motion: reduce) {
   .hsc-sheet__panel::before,
-  .hsc-sheet__panel::after {
+  .hsc-sheet__panel::after,
+  .hsc-sheet.is-open .hsc-sheet__gallery,
+  .hsc-sheet.is-open .hsc-sheet__info > *,
+  .hsc-sheet__acc details[open] .hsc-sheet__acc-body {
     animation: none;
   }
 
