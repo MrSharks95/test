@@ -1345,17 +1345,18 @@ hero-scroll-car,
   list-style: none;
   display: flex;
   justify-content: center;
-  align-items: flex-end;
+  align-items: stretch; /* every card as tall as the tallest */
   gap: clamp(10px, 1.2vw, 18px);
 }
 
 .hsc-shelf__item {
-  flex: 0 1 clamp(172px, 16.5vw, 236px);
+  flex: 0 1 clamp(200px, 18.5vw, 264px);
   min-width: 0;
   display: grid;
-  align-content: end;
+  grid-template-rows: auto auto auto 1fr auto;
+  align-content: start;
   gap: 10px;
-  padding: 14px;
+  padding: 16px;
   border: 1px solid var(--hsc-card-border);
   border-radius: 12px;
   background: var(--hsc-card-bg);
@@ -1374,16 +1375,28 @@ hero-scroll-car,
 }
 
 .hsc-shelf__item .hsc-card__media {
+  width: 100%;
   aspect-ratio: 1 / 1;
-  max-height: 19vh;
+  max-height: 20vh;
 }
 
+/* two lines reserved for every title so the prices and buttons line up across the cards */
 .hsc .hsc-shelf__item .hsc-card__title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  min-height: 2.3em;
   font-size: clamp(17px, calc(var(--hsc-product-title-size) * 0.76), 21px);
+  line-height: 1.15;
 }
 
 .hsc-shelf__item .hsc-card__price {
   font-size: 19px;
+}
+
+.hsc-shelf__item .hsc-card__actions {
+  align-self: end;
 }
 
 .hsc-shelf__item .hsc-card__add {

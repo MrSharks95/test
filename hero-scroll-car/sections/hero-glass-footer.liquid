@@ -52,7 +52,7 @@
                   <svg viewBox="0 0 24 24" focusable="false"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="7" cy="18" r="2" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="17" cy="18" r="2" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>
               {%- endcase -%}
             </span>
-            <div>
+            <div class="gft__trust-text">
               {%- if block.settings.title != blank -%}<strong>{{ block.settings.title | escape }}</strong>{%- endif -%}
               {%- if block.settings.text != blank -%}<span>{{ block.settings.text | escape }}</span>{%- endif -%}
             </div>
@@ -103,16 +103,22 @@
       {%- for block in section.blocks -%}
         {%- case block.type -%}
           {%- when 'link_list' -%}
-            <div class="gft__panel gft__col" {{ block.shopify_attributes }}>
-              {%- if block.settings.heading != blank -%}<h3 class="gft__h">{{ block.settings.heading | escape }}</h3>{%- endif -%}
-              {%- if block.settings.menu != blank -%}
-                <ul class="gft__links" role="list">
-                  {%- for link in block.settings.menu.links -%}
-                    <li><a href="{{ link.url }}">{{ link.title | escape }}</a></li>
-                  {%- endfor -%}
-                </ul>
-              {%- endif -%}
-            </div>
+            {%- comment -%} Un menu sans élément n'affiche pas de panneau vide (sauf un rappel dans l'éditeur) {%- endcomment -%}
+            {%- assign menu_links = block.settings.menu.links -%}
+            {%- if menu_links.size > 0 or request.design_mode -%}
+              <div class="gft__panel gft__col" {{ block.shopify_attributes }}>
+                {%- if block.settings.heading != blank -%}<h3 class="gft__h">{{ block.settings.heading | escape }}</h3>{%- endif -%}
+                {%- if menu_links.size > 0 -%}
+                  <ul class="gft__links" role="list">
+                    {%- for link in menu_links -%}
+                      <li><a href="{{ link.url }}">{{ link.title | escape }}</a></li>
+                    {%- endfor -%}
+                  </ul>
+                {%- else -%}
+                  <p class="gft__rte">Ce menu est vide : ajoutez des éléments dans Boutique en ligne › Navigation.</p>
+                {%- endif -%}
+              </div>
+            {%- endif -%}
           {%- when 'text' -%}
             <div class="gft__panel gft__text" {{ block.shopify_attributes }}>
               {%- if block.settings.heading != blank -%}<h3 class="gft__h">{{ block.settings.heading | escape }}</h3>{%- endif -%}
