@@ -1160,6 +1160,12 @@
       if (self.sheet && self.sheet.open) {
         if (event.key === 'Escape') { event.preventDefault(); self.closeSheet(); }
         else if (event.key === 'Tab') self.trapSheetFocus(event);
+        else if ((event.key === 'ArrowLeft' || event.key === 'ArrowRight') && !event.altKey && !event.ctrlKey && !event.metaKey) {
+          var active = document.activeElement;
+          if (active && active.closest && active.closest('[data-hsc-track], [data-hsc-compare-range], input, textarea, select')) return;
+          event.preventDefault();
+          self.switchSheet(event.key === 'ArrowRight' ? 1 : -1);
+        }
         return;
       }
       if (event.key === 'Escape' && self.sequence && self.sequence.openCard) self.closeHotspotCard(true);
@@ -2069,6 +2075,8 @@
       var more = event.target.closest('[data-hsc-more]');
       if (more) { event.preventDefault(); self.openSheet(more.getAttribute('data-hsc-more'), more); return; }
       if (event.target.closest('[data-hsc-sheet-close]')) { event.preventDefault(); self.closeSheet(); return; }
+      var jump = event.target.closest('[data-hsc-sheet-prev], [data-hsc-sheet-next]');
+      if (jump) { event.preventDefault(); self.switchSheet(jump.hasAttribute('data-hsc-sheet-next') ? 1 : -1); return; }
       var arrow = event.target.closest('[data-hsc-gallery-prev], [data-hsc-gallery-next]');
       if (arrow) { event.preventDefault(); self.slideGallery(arrow.hasAttribute('data-hsc-gallery-next') ? 1 : -1); return; }
       var dot = event.target.closest('[data-hsc-gallery-dot]');
@@ -2097,20 +2105,11 @@
 
   HeroScrollCar.prototype.openSheet = function (id, opener) {
     var sheet = this.sheet;
-    if (!sheet || !/^[\w-]+$/.test(id || '')) return;
-    var template = this.querySelector('template[data-hsc-product="' + id + '"]');
-    if (!template) return;
+    if (!sheet || !this.sheetTemplate(id)) return;
     clearTimeout(sheet.timer);
-    sheet.content.innerHTML = '';
-    sheet.content.appendChild(template.content.cloneNode(true));
     sheet.opener = opener || null;
     sheet.open = true;
     sheet.root.hidden = false;
-    var title = sheet.content.querySelector('[data-hsc-sheet-title]');
-    if (title) {
-      title.id = 'hsc-sheet-title-' + id;
-      sheet.root.setAttribute('aria-labelledby', title.id);
-    }
     this.setAttribute('data-sheet-open', '');
     var root = sheet.root;
     var panel = sheet.panel;
@@ -2120,14 +2119,82 @@
       var to = panel.getBoundingClientRect();
       panel.style.setProperty('--hsc-origin', Math.round(from.left + from.width / 2 - to.left) + 'px ' + Math.round(from.top + from.height / 2 - to.top) + 'px');
     }
+    this.loadSheet(id, 0);
     requestAnimationFrame(function () { root.classList.add('is-open'); });
-    var close = sheet.panel.querySelector('[data-hsc-sheet-close]');
+    var close = panel.querySelector('[data-hsc-sheet-close]');
     if (close) close.focus({ preventScroll: true });
+  };
+
+  HeroScrollCar.prototype.sheetTemplate = function (id) {
+    if (!/^[\w-]+$/.test(id || '')) return null;
+    return this.querySelector('template[data-hsc-product="' + id + '"]');
+  };
+
+  // The présentoir's products, in order: the arrows of the sheet go from one to the next.
+  HeroScrollCar.prototype.sheetProducts = function () {
+    var templates = this.querySelectorAll('template[data-hsc-product]');
+    var ids = [];
+    for (var i = 0; i < templates.length; i++) ids.push(templates[i].getAttribute('data-hsc-product'));
+    return ids;
+  };
+
+  // Fills the open sheet with a product; `dir` (−1 / 1) slides the new content in from that side.
+  HeroScrollCar.prototype.loadSheet = function (id, dir) {
+    var sheet = this.sheet;
+    var template = this.sheetTemplate(id);
+    if (!sheet || !template) return;
+    var content = sheet.content;
+    content.classList.remove('is-swapping');
+    content.innerHTML = '';
+    content.appendChild(template.content.cloneNode(true));
+    sheet.id = id;
+    var title = content.querySelector('[data-hsc-sheet-title]');
+    if (title) {
+      title.id = 'hsc-sheet-title-' + id;
+      sheet.root.setAttribute('aria-labelledby', title.id);
+    }
+    if (dir) {
+      content.style.setProperty('--hsc-swap', String(dir));
+      void content.offsetWidth; // restart the animation
+      content.classList.add('is-swapping');
+    }
     var track = this.galleryTrack();
     if (track) track.scrollLeft = 0;
     this.updateGalleryDots();
-    var form = sheet.content.querySelector('[data-hsc-product-form]');
+    var form = content.querySelector('[data-hsc-product-form]');
     if (form) this.syncVariant(form, true); // the gallery opens on its first slide (the before / after)
+    this.updateSheetSwitch();
+  };
+
+  HeroScrollCar.prototype.updateSheetSwitch = function () {
+    var sheet = this.sheet;
+    var ids = this.sheetProducts();
+    var prev = sheet.panel.querySelector('[data-hsc-sheet-prev]');
+    var next = sheet.panel.querySelector('[data-hsc-sheet-next]');
+    if (!prev || !next) return;
+    var several = ids.length > 1;
+    prev.hidden = !several;
+    next.hidden = !several;
+    if (!several) return;
+    var index = ids.indexOf(sheet.id);
+    var titleOf = function (productId) {
+      var template = this.sheetTemplate(productId);
+      var node = template && template.content.querySelector('[data-hsc-sheet-title]');
+      return node ? node.textContent.trim() : '';
+    }.bind(this);
+    var prevLabel = prev.querySelector('[data-hsc-sheet-prev-label]');
+    var nextLabel = next.querySelector('[data-hsc-sheet-next-label]');
+    if (prevLabel) prevLabel.textContent = titleOf(ids[(index - 1 + ids.length) % ids.length]);
+    if (nextLabel) nextLabel.textContent = titleOf(ids[(index + 1) % ids.length]);
+  };
+
+  HeroScrollCar.prototype.switchSheet = function (dir) {
+    var sheet = this.sheet;
+    if (!sheet || !sheet.open) return;
+    var ids = this.sheetProducts();
+    if (ids.length < 2) return;
+    var index = ids.indexOf(sheet.id);
+    this.loadSheet(ids[(index + dir + ids.length) % ids.length], dir);
   };
 
   /* ---- the sheet is the whole product page: options, quantity, price and availability follow the variant ---- */

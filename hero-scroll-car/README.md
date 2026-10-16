@@ -160,7 +160,7 @@ fluide. Après le plan final, la page défile normalement.
   elles ne dépendent pas de la taille de base du thème.
 - **Avant / après** : donner au produit une « Image avant (hero voiture) » et une « Image après (hero voiture) »
   (métachamps produit, déjà créés sur la boutique), ou deux photos dont le texte alternatif contient « avant »
-  et « après » : la galerie commence alors par un comparateur à curseur.
+  et « après » : un comparateur à curseur termine alors le carrousel (les photos du produit viennent d'abord).
 - « Vitesse de lecture entre deux plans » : × 1,5 par défaut.
 - Pensé pour la première section de la page d'accueil. Avec « réduire les animations », la version empilée
   s'affiche comme dans l'autre mode.

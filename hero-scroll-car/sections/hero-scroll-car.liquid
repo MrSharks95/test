@@ -618,6 +618,15 @@
       <div class="hsc-sheet__backdrop" data-hsc-sheet-close></div>
       <div class="hsc-sheet__panel" data-hsc-sheet-panel>
         <button type="button" class="hsc-sheet__close" data-hsc-sheet-close aria-label="{{ s.text_close | default: 'Fermer' | escape }}">&times;</button>
+        {%- comment -%} D'un produit à l'autre sans fermer (flèches du clavier aussi) {%- endcomment -%}
+        <button type="button" class="hsc-sheet__switch hsc-sheet__switch--prev" data-hsc-sheet-prev aria-label="Produit précédent" hidden>
+          <i aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" focusable="false"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
+          <span class="hsc-sheet__switch-label" data-hsc-sheet-prev-label></span>
+        </button>
+        <button type="button" class="hsc-sheet__switch hsc-sheet__switch--next" data-hsc-sheet-next aria-label="Produit suivant" hidden>
+          <i aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" focusable="false"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
+          <span class="hsc-sheet__switch-label" data-hsc-sheet-next-label></span>
+        </button>
         <div class="hsc-sheet__content" data-hsc-sheet-content></div>
       </div>
     </div>

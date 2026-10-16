@@ -1,6 +1,7 @@
 {%- comment -%}
   hero-scroll-car-sheet — la fiche produit complète de la fenêtre « En savoir plus » du hero voiture.
   Rendue une fois par produit du présentoir, dans un <template> que le script clone à l'ouverture.
+  Galerie : les photos du produit d'abord, le comparateur avant / après en dernière image.
   Paramètres : product (le produit), shelf (le bloc « Présentoir (fin) »), s (les réglages de la section).
   Avant / après : métachamps hero.before / hero.after, sinon deux photos dont le texte alternatif
   contient « avant » / « après » (ou before / after). Contenu : description, métachamps hero.highlights
@@ -52,6 +53,12 @@
 <template data-hsc-product="{{ product.id }}">
   <div class="hsc-sheet__gallery{% if slide_count < 2 %} hsc-sheet__gallery--single{% else %} hsc-sheet__gallery--thumbs{% endif %}" data-hsc-gallery>
     <div class="hsc-sheet__track" data-hsc-track tabindex="0" aria-label="{{ product.title | escape }}">
+      {%- for media in product.media -%}
+        {%- if media.media_type != 'image' or media.id == before_id or media.id == after_id -%}{%- continue -%}{%- endif -%}
+        <figure class="hsc-sheet__slide" data-media-id="{{ media.id }}">
+          {{ media | image_url: width: 1200 | image_tag: loading: 'lazy', widths: '600, 900, 1200', sizes: '(min-width: 768px) 46vw, 100vw', alt: media.alt }}
+        </figure>
+      {%- endfor -%}
       {%- if before_img != nil and after_img != nil -%}
         <figure class="hsc-sheet__slide hsc-sheet__slide--compare" data-hsc-compare style="--hsc-cut: 50%;">
           <img class="hsc-compare__img hsc-compare__img--after" src="{{ after_img | image_url: width: 1200 }}" alt="{{ text_after | escape }}" width="1200" height="900" loading="lazy">
@@ -62,12 +69,6 @@
           <input class="hsc-compare__range" data-hsc-compare-range type="range" min="0" max="100" value="50" aria-label="{{ text_before | escape }} / {{ text_after | escape }}">
         </figure>
       {%- endif -%}
-      {%- for media in product.media -%}
-        {%- if media.media_type != 'image' or media.id == before_id or media.id == after_id -%}{%- continue -%}{%- endif -%}
-        <figure class="hsc-sheet__slide" data-media-id="{{ media.id }}">
-          {{ media | image_url: width: 1200 | image_tag: loading: 'lazy', widths: '600, 900, 1200', sizes: '(min-width: 768px) 46vw, 100vw', alt: media.alt }}
-        </figure>
-      {%- endfor -%}
       {%- if slide_count == 0 -%}
         <figure class="hsc-sheet__slide hsc-sheet__slide--empty"></figure>
       {%- endif -%}
@@ -86,15 +87,14 @@
     {%- comment -%} Vignettes (ordinateur) : le comparateur d'abord, puis chaque photo {%- endcomment -%}
     <ol class="hsc-sheet__thumbs" role="list">
       {%- assign slide_i = 0 -%}
-      {%- if before_img != nil and after_img != nil -%}
-        <li><button type="button" class="hsc-sheet__thumb" data-hsc-gallery-dot data-index="0" aria-label="{{ text_before | escape }} / {{ text_after | escape }}"><img src="{{ after_img | image_url: width: 160 }}" alt="" width="58" height="58" loading="lazy"></button></li>
-        {%- assign slide_i = 1 -%}
-      {%- endif -%}
       {%- for media in product.media -%}
         {%- if media.media_type != 'image' or media.id == before_id or media.id == after_id -%}{%- continue -%}{%- endif -%}
         <li><button type="button" class="hsc-sheet__thumb" data-hsc-gallery-dot data-index="{{ slide_i }}" aria-label="Image {{ slide_i | plus: 1 }}"><img src="{{ media | image_url: width: 160 }}" alt="" width="58" height="58" loading="lazy"></button></li>
         {%- assign slide_i = slide_i | plus: 1 -%}
       {%- endfor -%}
+      {%- if before_img != nil and after_img != nil -%}
+        <li><button type="button" class="hsc-sheet__thumb hsc-sheet__thumb--compare" data-hsc-gallery-dot data-index="{{ slide_i }}" aria-label="{{ text_before | escape }} / {{ text_after | escape }}"><img src="{{ after_img | image_url: width: 160 }}" alt="" width="58" height="58" loading="lazy"><span aria-hidden="true">{{ text_before | slice: 0, 1 | upcase }}/{{ text_after | slice: 0, 1 | upcase }}</span></button></li>
+      {%- endif -%}
     </ol>
   </div>
   {%- comment -%}
