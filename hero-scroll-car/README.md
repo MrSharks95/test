@@ -211,5 +211,13 @@ Deux sections de groupe accompagnent le hero :
   (marque + réseaux sociaux des paramètres du thème, menus, texte, newsletter avec le contour néon de la fiche
   produit), bas de page avec moyens de paiement, politiques, copyright, retour en haut, et grand nom en filigrane.
 
+- `sections/hero-glass-cart.liquid` (+ `snippets/hero-glass-cart-content.liquid`, `assets/hero-glass-cart.css`,
+  `assets/hero-glass-cart.js`) : tiroir panier en verre. Il s'ouvre depuis l'icône panier du header, après un ajout
+  depuis le hero (événement `cart:added`) et depuis les pages produit du thème (il prend la place du tiroir
+  d'origine, masqué par CSS, en écoutant son événement `cart:open` et le `cartUpdate` du pub/sub du thème).
+  Barre de livraison offerte (seuil réglable), lignes avec quantité et suppression (`/cart/change.js` + API de
+  rendu de sections), sous-total, bouton « Commander », moyens de paiement, état vide.
+
 Dans l'éditeur de thème, elles s'ajoutent dans les groupes « En-tête » et « Pied de page » ; le header et le footer
-d'origine du thème peuvent être désactivés (ils le sont sur le thème de test).
+d'origine du thème peuvent être désactivés (ils le sont sur le thème de test). La recherche du header est
+désactivée par défaut (réglage « Afficher la recherche »).

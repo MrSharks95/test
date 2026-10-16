@@ -1,0 +1,87 @@
+{%- comment -%}
+  Hero glass cart — tiroir panier en verre (même direction artistique que le header et le hero).
+  Remplace visuellement le tiroir du thème : s'ouvre depuis l'icône panier (#cart-icon-bubble), après un ajout
+  depuis le hero (événement « cart:added ») ou depuis une page produit du thème (événement « cart:open » du
+  tiroir d'origine, qui est masqué). Quantités et suppressions via /cart/change.js + API de rendu de sections.
+{%- endcomment -%}
+
+{{ 'hero-glass-cart.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'hero-glass-cart.js' | asset_url }}" defer="defer"></script>
+
+{%- liquid
+  assign s = section.settings
+  assign uid = section.id | handleize
+  assign threshold = s.free_shipping_threshold | default: 0 | times: 100
+  assign tint = s.tint | default: 72 | divided_by: 100.0
+-%}
+
+<style>
+  #shopify-section-{{ section.id }} { position: relative; z-index: 1100; }
+</style>
+
+<hero-glass-cart
+  class="gct"
+  data-section-id="{{ section.id }}"
+  data-root="{{ routes.root_url }}"
+  data-auto-open="{% if s.auto_open %}true{% else %}false{% endif %}"
+  style="--gct-accent: {{ s.accent | default: '#FF7A1A' }}; --gct-ink: {{ s.color_text | default: '#FFFFFF' }}; --gct-glass: rgba(10, 10, 12, {{ tint }}); --gct-blur: {{ s.blur | default: 20 }}px;"
+>
+  <div class="gct__backdrop" data-gct-close></div>
+  <aside class="gct__panel" data-gct-panel role="dialog" aria-modal="true" aria-labelledby="gct-title-{{ uid }}" aria-hidden="true" tabindex="-1">
+    <div class="gct__head">
+      <h2 class="gct__title" id="gct-title-{{ uid }}">
+        {{ s.title | default: 'Panier' | escape }}
+        <span class="gct__count" data-gct-count>{{ cart.item_count }}</span>
+      </h2>
+      <button type="button" class="gct__close" data-gct-close aria-label="Fermer le panier">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="gct__content" data-gct-content aria-live="polite">
+      {%- render 'hero-glass-cart-content', s: s, threshold: threshold -%}
+    </div>
+  </aside>
+</hero-glass-cart>
+
+{% schema %}
+{
+  "name": "Panier verre (hero)",
+  "tag": "div",
+  "class": "hero-glass-cart-section",
+  "enabled_on": { "groups": ["header", "footer"] },
+  "settings": [
+    { "type": "paragraph", "content": "Tiroir panier en verre. Il s'ouvre depuis l'icône panier du header, après un ajout depuis le hero et depuis les pages produit (le tiroir d'origine du thème est masqué)." },
+    { "type": "header", "content": "Textes" },
+    { "type": "text", "id": "title", "label": "Titre", "default": "Panier" },
+    { "type": "text", "id": "subtotal_label", "label": "Libellé du sous-total", "default": "Sous-total" },
+    { "type": "text", "id": "note_text", "label": "Note sous le total", "default": "Taxes et frais de livraison calculés à l’étape suivante." },
+    { "type": "text", "id": "checkout_label", "label": "Bouton commander", "default": "Commander" },
+    { "type": "text", "id": "continue_label", "label": "Bouton continuer", "default": "Continuer mes achats" },
+
+    { "type": "header", "content": "Livraison offerte" },
+    { "type": "number", "id": "free_shipping_threshold", "label": "Seuil (montant, 0 = masqué)", "default": 49 },
+    { "type": "text", "id": "ship_text", "label": "Texte avant le seuil", "info": "[montant] est remplacé par ce qu'il reste.", "default": "Plus que [montant] pour la livraison offerte" },
+    { "type": "text", "id": "ship_reached", "label": "Texte une fois atteint", "default": "Livraison offerte débloquée !" },
+
+    { "type": "header", "content": "Panier vide" },
+    { "type": "text", "id": "empty_title", "label": "Titre", "default": "Votre panier est vide" },
+    { "type": "text", "id": "empty_text", "label": "Texte", "default": "La gamme n’attend que vous." },
+    { "type": "text", "id": "empty_label", "label": "Bouton", "default": "Découvrir la gamme" },
+    { "type": "url", "id": "empty_link", "label": "Lien du bouton" },
+
+    { "type": "header", "content": "Options" },
+    { "type": "checkbox", "id": "auto_open", "label": "Ouvrir après un ajout au panier", "default": true },
+    { "type": "checkbox", "id": "show_vendor", "label": "Afficher la marque des produits", "default": false },
+    { "type": "checkbox", "id": "show_payment", "label": "Icônes des moyens de paiement", "default": true },
+
+    { "type": "header", "content": "Style verre" },
+    { "type": "color", "id": "accent", "label": "Couleur d'accent", "default": "#FF7A1A" },
+    { "type": "color", "id": "color_text", "label": "Couleur du texte", "default": "#FFFFFF" },
+    { "type": "range", "id": "tint", "label": "Opacité du verre", "min": 40, "max": 95, "step": 5, "unit": "%", "default": 72 },
+    { "type": "range", "id": "blur", "label": "Flou du verre", "min": 6, "max": 30, "step": 2, "unit": "px", "default": 20 }
+  ],
+  "presets": [
+    { "name": "Panier verre (hero)" }
+  ]
+}
+{% endschema %}

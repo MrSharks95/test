@@ -1,0 +1,125 @@
+{%- comment -%}
+  Contenu du tiroir panier en verre (hero-glass-cart) : barre de livraison offerte, lignes, total, commande.
+  Rendu au chargement puis re-rendu via l'API de rendu de sections après chaque changement.
+  Paramètres : s (réglages de la section), threshold (seuil de livraison offerte en centimes, 0 = désactivé).
+{%- endcomment -%}
+
+{%- if cart.item_count > 0 -%}
+  {%- if threshold > 0 -%}
+    {%- liquid
+      assign progress = cart.total_price | times: 100 | divided_by: threshold | at_most: 100
+      assign remaining = threshold | minus: cart.total_price
+      assign remaining_money = remaining | money
+      assign ship_text = s.ship_text | default: 'Plus que [montant] pour la livraison offerte'
+      assign ship_text = ship_text | escape | replace: '[montant]', remaining_money
+    -%}
+    <div class="gct__ship{% if cart.total_price >= threshold %} is-reached{% endif %}">
+      <p class="gct__ship-text">
+        {%- if cart.total_price >= threshold -%}
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12l4 4L19 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          {{ s.ship_reached | default: 'Livraison offerte débloquée !' | escape }}
+        {%- else -%}
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="7" cy="18" r="2" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="17" cy="18" r="2" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>
+          {{ ship_text }}
+        {%- endif -%}
+      </p>
+      <div class="gct__bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ progress }}"><i style="width: {{ progress }}%"></i></div>
+    </div>
+  {%- endif -%}
+
+  <ul class="gct__items" role="list">
+    {%- for item in cart.items -%}
+      <li class="gct__item" data-gct-item data-line="{{ forloop.index }}" data-key="{{ item.key }}">
+        <a class="gct__media" href="{{ item.url }}" tabindex="-1" aria-hidden="true">
+          {%- if item.image -%}
+            {{ item.image | image_url: width: 240 | image_tag: loading: 'lazy', widths: '120, 240', sizes: '96px', alt: '' }}
+          {%- else -%}
+            <span class="gct__noimg"></span>
+          {%- endif -%}
+        </a>
+        <div class="gct__info">
+          {%- if s.show_vendor and item.product.vendor != blank -%}
+            <p class="gct__kicker">{{ item.product.vendor | escape }}</p>
+          {%- endif -%}
+          <a class="gct__name" href="{{ item.url }}">{{ item.product.title | escape }}</a>
+          {%- unless item.product.has_only_default_variant -%}
+            <p class="gct__variant">{{ item.variant.title | escape }}</p>
+          {%- endunless -%}
+          {%- if item.selling_plan_allocation -%}
+            <p class="gct__variant">{{ item.selling_plan_allocation.selling_plan.name | escape }}</p>
+          {%- endif -%}
+          {%- for property in item.properties -%}
+            {%- assign property_first_char = property.first | slice: 0 -%}
+            {%- if property.last != blank and property_first_char != '_' -%}
+              <p class="gct__variant">{{ property.first | escape }} : {{ property.last | escape }}</p>
+            {%- endif -%}
+          {%- endfor -%}
+          {%- if item.line_level_discount_allocations.size > 0 -%}
+            <ul class="gct__discounts" role="list">
+              {%- for allocation in item.line_level_discount_allocations -%}
+                <li>{{ allocation.discount_application.title | escape }} (−{{ allocation.amount | money }})</li>
+              {%- endfor -%}
+            </ul>
+          {%- endif -%}
+          <div class="gct__row">
+            <div class="gct__qty">
+              <button type="button" data-gct-minus aria-label="Retirer un exemplaire">−</button>
+              <input type="number" inputmode="numeric" min="0" max="999" value="{{ item.quantity }}" aria-label="Quantité" data-gct-input>
+              <button type="button" data-gct-plus aria-label="Ajouter un exemplaire">+</button>
+            </div>
+            <p class="gct__price">
+              {%- if item.original_line_price != item.final_line_price -%}
+                <s>{{ item.original_line_price | money }}</s>
+              {%- endif -%}
+              <strong>{{ item.final_line_price | money }}</strong>
+            </p>
+          </div>
+        </div>
+        <button type="button" class="gct__remove" data-gct-remove aria-label="Retirer {{ item.product.title | escape }}">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+      </li>
+    {%- endfor -%}
+  </ul>
+
+  <p class="gct__msg" role="alert" data-gct-msg hidden></p>
+
+  <div class="gct__foot">
+    {%- if cart.cart_level_discount_applications.size > 0 -%}
+      <ul class="gct__discounts gct__discounts--cart" role="list">
+        {%- for discount in cart.cart_level_discount_applications -%}
+          <li>{{ discount.title | escape }} (−{{ discount.total_allocated_amount | money }})</li>
+        {%- endfor -%}
+      </ul>
+    {%- endif -%}
+    <div class="gct__total">
+      <span>{{ s.subtotal_label | default: 'Sous-total' | escape }}</span>
+      <strong data-gct-total>{{ cart.total_price | money_with_currency }}</strong>
+    </div>
+    <p class="gct__note">{{ s.note_text | default: 'Taxes et frais de livraison calculés à l’étape suivante.' | escape }}</p>
+    <form action="{{ routes.cart_url }}" method="post" class="gct__checkout-form">
+      <button type="submit" name="checkout" class="gct__checkout">
+        {{ s.checkout_label | default: 'Commander' | escape }}
+        <span class="gct__checkout-sep" aria-hidden="true"></span>
+        {{ cart.total_price | money }}
+      </button>
+    </form>
+    <button type="button" class="gct__continue" data-gct-close>{{ s.continue_label | default: 'Continuer mes achats' | escape }}</button>
+    {%- if s.show_payment and shop.enabled_payment_types.size > 0 -%}
+      <div class="gct__pay" aria-label="Moyens de paiement">
+        {%- for type in shop.enabled_payment_types -%}
+          {{ type | payment_type_svg_tag: class: 'gct__pay-icon' }}
+        {%- endfor -%}
+      </div>
+    {%- endif -%}
+  </div>
+{%- else -%}
+  <div class="gct__empty">
+    <span class="gct__empty-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" focusable="false"><path d="M6 8h12l-1 12H7z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 8a3 3 0 0 1 6 0" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+    </span>
+    <p class="gct__empty-title">{{ s.empty_title | default: 'Votre panier est vide' | escape }}</p>
+    <p class="gct__empty-text">{{ s.empty_text | default: 'La gamme n’attend que vous.' | escape }}</p>
+    <a class="gct__checkout" href="{{ s.empty_link | default: routes.all_products_collection_url }}">{{ s.empty_label | default: 'Découvrir la gamme' | escape }}</a>
+  </div>
+{%- endif -%}

@@ -2431,9 +2431,11 @@
           return data;
         });
       })
-      .then(function () {
+      .then(function (data) {
         button.classList.add('is-added');
         if (label) label.textContent = texts.added || originalLabel;
+        // Lets a cart drawer (e.g. hero-glass-cart) refresh and open itself.
+        document.dispatchEvent(new CustomEvent('cart:added', { detail: { source: 'hero-scroll-car', variantId: variantId, quantity: quantity, item: data } }));
         setTimeout(function () {
           button.classList.remove('is-added');
           if (label) label.textContent = originalLabel;
