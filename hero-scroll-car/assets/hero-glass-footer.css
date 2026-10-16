@@ -142,9 +142,10 @@
 
 /* Panels grid ---------------------------------------------------------------- */
 
+/* Panels fill their row whatever their number (a hidden menu panel leaves no hole) */
 .gft__grid {
-  display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 14px;
 }
 
@@ -164,10 +165,10 @@
   border-color: rgba(255, 255, 255, 0.22);
 }
 
-.gft__brand { grid-column: span 4; }
-.gft__col { grid-column: span 2; }
-.gft__text { grid-column: span 3; }
-.gft__news { grid-column: span 4; }
+.gft__brand { flex: 1.2 1 300px; min-width: 0; }
+.gft__col { flex: 1 1 160px; min-width: 0; }
+.gft__text { flex: 1 1 220px; min-width: 0; }
+.gft__news { flex: 1.4 1 320px; min-width: 0; }
 
 .gft__h {
   margin: 0 0 16px;
@@ -563,13 +564,6 @@
 
 /* Responsive ------------------------------------------------------------------- */
 
-@media screen and (max-width: 1100px) {
-  .gft__brand { grid-column: span 12; }
-  .gft__col { grid-column: span 4; }
-  .gft__text { grid-column: span 6; }
-  .gft__news { grid-column: span 12; }
-}
-
 @media screen and (max-width: 749px) {
   .gft {
     --gft-pt: calc(var(--gft-pt-mobile, 56px));
@@ -578,11 +572,6 @@
   .gft__panel {
     padding: 22px;
     border-radius: 20px;
-  }
-
-  .gft__col,
-  .gft__text {
-    grid-column: span 6;
   }
 
   .gft__bottom {
@@ -596,11 +585,6 @@
 }
 
 @media screen and (max-width: 479px) {
-  .gft__col,
-  .gft__text {
-    grid-column: span 12;
-  }
-
   .gft__field {
     flex-wrap: wrap;
     padding: 6px;
