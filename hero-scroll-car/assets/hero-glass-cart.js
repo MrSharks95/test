@@ -82,8 +82,19 @@
     document.addEventListener('cart:open', this.onThemeOpen);
 
     // The hero section (and anything else) announces its adds.
-    this.onAdded = function () { self.refresh(self.autoOpen()); };
+    this.onAdded = function (event) {
+      if (event.detail && event.detail.source === 'hero-glass-cart') return; // our own quick add
+      self.refresh(self.autoOpen());
+    };
     document.addEventListener('cart:added', this.onAdded);
+
+    // "Complétez le kit": quick add from the recommendations.
+    this.upsellFor = null;
+    this.addEventListener('click', function (event) {
+      var button = event.target.closest('[data-gct-up-add]');
+      if (button) { event.preventDefault(); self.quickAdd(button); }
+    });
+    this.loadUpsell();
 
     // Theme editor: show the drawer while it is being customised.
     this.onEditorSelect = function (event) { if (event.target && event.target.contains(self)) self.open(); };
@@ -219,6 +230,7 @@
       var count = doc.querySelector('[data-gct-count]');
       var mine = this.querySelector('[data-gct-count]');
       if (count && mine) mine.textContent = count.textContent;
+      this.loadUpsell();
     }
     var bubbleHtml = sections['cart-icon-bubble'];
     var bubble = document.getElementById('cart-icon-bubble');
@@ -227,6 +239,73 @@
       var section = parsed.querySelector('.shopify-section');
       bubble.innerHTML = section ? section.innerHTML : bubbleHtml;
     }
+  };
+
+  // Recommendations for the first line of the cart, rendered by Shopify through this very section
+  // (/recommendations/products?section_id=…), minus the products already in the cart.
+  GlassCart.prototype.loadUpsell = function () {
+    var box = this.querySelector('[data-gct-upsell]');
+    if (!box || !this.sectionId) return;
+    var list = box.querySelector('[data-gct-upsell-list]');
+    var first = this.querySelector('[data-gct-item][data-product-id]');
+    var pid = first ? first.getAttribute('data-product-id') : '';
+    if (!pid) { box.hidden = true; this.upsellFor = null; return; }
+    var self = this;
+    var key = pid + ':' + this.querySelectorAll('[data-gct-item]').length;
+    if (this.upsellFor === key) { // same cart shape: re-inject the list we already have (the content was re-rendered)
+      if (typeof this.upsellHtml === 'string') this.fillUpsell(this.upsellHtml);
+      return;
+    }
+    this.upsellFor = key;
+    this.upsellHtml = undefined;
+    var limit = parseInt(box.getAttribute('data-limit'), 10) || 3;
+    var url = this.base + '/recommendations/products?section_id=' + encodeURIComponent(this.sectionId) + '&product_id=' + encodeURIComponent(pid) + '&limit=' + Math.min(10, limit + 4) + '&intent=related';
+    fetch(url, { headers: { 'Accept': 'text/html' } })
+      .then(function (response) { return response.ok ? response.text() : ''; })
+      .catch(function () { return ''; })
+      .then(function (html) {
+        if (self.upsellFor !== key) return; // superseded
+        var source = html ? new DOMParser().parseFromString(html, 'text/html').querySelector('template[data-gct-upsell-source]') : null;
+        var items = source ? source.content.querySelectorAll('[data-gct-up]') : [];
+        var holder = document.createElement('ul');
+        for (var i = 0; i < items.length && i < limit; i++) holder.appendChild(document.importNode(items[i], true));
+        self.upsellHtml = holder.innerHTML;
+        self.fillUpsell(self.upsellHtml);
+      });
+  };
+
+  GlassCart.prototype.fillUpsell = function (html) {
+    var current = this.querySelector('[data-gct-upsell]');
+    var target = current ? current.querySelector('[data-gct-upsell-list]') : null;
+    if (!current || !target) return;
+    target.innerHTML = html;
+    current.hidden = !html;
+  };
+
+  GlassCart.prototype.quickAdd = function (button) {
+    if (this.busy) return;
+    var self = this;
+    var id = parseInt(button.getAttribute('data-variant-id'), 10);
+    if (!id) return;
+    this.busy = true;
+    button.classList.add('is-busy');
+    this.message('');
+    var rect = button.getBoundingClientRect();
+    fetch(this.base + '/cart/add.js', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ items: [{ id: id, quantity: 1 }], sections: [this.sectionId, 'cart-icon-bubble'], sections_url: this.base + '/' })
+    })
+      .then(function (response) { return response.json().catch(function () { return {}; }).then(function (data) { return { ok: response.ok, data: data }; }); })
+      .then(function (result) {
+        if (!result.ok) { self.message(result.data.description || result.data.message || 'Impossible d’ajouter ce produit.'); return; }
+        self.applySections(result.data.sections || {});
+        var item = result.data.items ? result.data.items[0] : result.data;
+        document.dispatchEvent(new CustomEvent('cart:added', { detail: { source: 'hero-glass-cart', variantId: id, quantity: 1, item: item, origin: { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 } } }));
+        return self.refresh(false); // counters and totals from the server
+      })
+      .catch(function () { self.message('Impossible d’ajouter ce produit.'); })
+      .then(function () { self.busy = false; button.classList.remove('is-busy'); });
   };
 
   GlassCart.prototype.announce = function (cart) {

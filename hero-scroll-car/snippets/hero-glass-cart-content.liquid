@@ -5,31 +5,57 @@
 {%- endcomment -%}
 
 {%- if cart.item_count > 0 -%}
-  {%- if threshold > 0 -%}
+  {%- liquid
+    assign gift = s.gift_threshold | default: 0 | times: 100
+    assign goal = threshold
+    if gift > goal
+      assign goal = gift
+    endif
+  -%}
+  {%- if goal > 0 -%}
     {%- liquid
-      assign progress = cart.total_price | times: 100 | divided_by: threshold | at_most: 100
-      assign remaining = threshold | minus: cart.total_price
-      assign remaining_money = remaining | money
-      assign ship_text = s.ship_text | default: 'Plus que [montant] pour la livraison offerte'
-      assign ship_text = ship_text | escape | replace: '[montant]', remaining_money
+      assign progress = cart.total_price | times: 100 | divided_by: goal | at_most: 100
+      assign reached = false
+      if threshold > 0 and cart.total_price < threshold
+        assign remaining_money = threshold | minus: cart.total_price | money
+        assign ship_text = s.ship_text | default: 'Plus que [montant] pour la livraison offerte'
+        assign line = ship_text | escape | replace: '[montant]', remaining_money
+      elsif gift > 0 and cart.total_price < gift
+        assign remaining_money = gift | minus: cart.total_price | money
+        assign gift_text = s.gift_text | default: 'Plus que [montant] pour un cadeau offert'
+        assign line = gift_text | escape | replace: '[montant]', remaining_money
+      elsif gift > 0
+        assign reached = true
+        assign line = s.gift_reached | default: 'Cadeau offert débloqué !' | escape
+      else
+        assign reached = true
+        assign line = s.ship_reached | default: 'Livraison offerte débloquée !' | escape
+      endif
     -%}
-    <div class="gct__ship{% if cart.total_price >= threshold %} is-reached{% endif %}">
+    <div class="gct__ship{% if reached %} is-reached{% endif %}">
       <p class="gct__ship-text">
-        {%- if cart.total_price >= threshold -%}
+        {%- if reached -%}
           <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12l4 4L19 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          {{ s.ship_reached | default: 'Livraison offerte débloquée !' | escape }}
-        {%- else -%}
+        {%- elsif threshold > 0 and cart.total_price < threshold -%}
           <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="7" cy="18" r="2" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="17" cy="18" r="2" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>
-          {{ ship_text }}
+        {%- else -%}
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 10h16v10H4zM3 7h18v3H3zM12 7v13M12 7c-2-3-5-3-5-1s3 1 5 1zm0 0c2-3 5-3 5-1s-3 1-5 1z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
         {%- endif -%}
+        {{ line }}
       </p>
-      <div class="gct__bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ progress }}"><i style="width: {{ progress }}%"></i></div>
+      <div class="gct__bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ progress }}">
+        <i style="width: {{ progress }}%"></i>
+        {%- if gift > threshold and threshold > 0 -%}
+          {%- assign tick = threshold | times: 100 | divided_by: goal -%}
+          <b class="gct__tick" style="left: {{ tick }}%" aria-hidden="true"></b>
+        {%- endif -%}
+      </div>
     </div>
   {%- endif -%}
 
   <ul class="gct__items" role="list">
     {%- for item in cart.items -%}
-      <li class="gct__item" data-gct-item data-line="{{ forloop.index }}" data-key="{{ item.key }}">
+      <li class="gct__item" data-gct-item data-line="{{ forloop.index }}" data-key="{{ item.key }}" data-product-id="{{ item.product_id }}">
         <a class="gct__media" href="{{ item.url }}" tabindex="-1" aria-hidden="true">
           {%- if item.image -%}
             {{ item.image | image_url: width: 240 | image_tag: loading: 'lazy', widths: '120, 240', sizes: '96px', alt: '' }}
@@ -84,6 +110,14 @@
 
   <p class="gct__msg" role="alert" data-gct-msg hidden></p>
 
+  {%- if s.show_upsell -%}
+    {%- comment -%} Nouveauté « Complétez le kit » : rempli par le JS via les recommandations Shopify (désactivable) {%- endcomment -%}
+    <div class="gct__upsell" data-gct-upsell data-limit="{{ s.upsell_limit | default: 3 }}" hidden>
+      <h3 class="gct__h">{{ s.upsell_heading | default: 'Complétez le kit' | escape }}</h3>
+      <ul class="gct__upsell-list" role="list" data-gct-upsell-list></ul>
+    </div>
+  {%- endif -%}
+
   <div class="gct__foot">
     {%- if cart.cart_level_discount_applications.size > 0 -%}
       <ul class="gct__discounts gct__discounts--cart" role="list">
@@ -104,6 +138,9 @@
         {{ cart.total_price | money }}
       </button>
     </form>
+    {%- if s.show_dynamic_checkout and additional_checkout_buttons -%}
+      <div class="gct__dynamic">{{ content_for_additional_checkout_buttons }}</div>
+    {%- endif -%}
     <button type="button" class="gct__continue" data-gct-close>{{ s.continue_label | default: 'Continuer mes achats' | escape }}</button>
     {%- if s.show_payment and shop.enabled_payment_types.size > 0 -%}
       <div class="gct__pay" aria-label="Moyens de paiement">

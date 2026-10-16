@@ -202,10 +202,24 @@ cart-notification {
 }
 
 .gct__bar {
+  position: relative;
   height: 6px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.1);
+}
+
+.gct__bar i {
   overflow: hidden;
+}
+
+.gct__tick {
+  position: absolute;
+  top: -4px;
+  width: 2px;
+  height: 14px;
+  margin-left: -1px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.55);
 }
 
 .gct__bar i {
@@ -420,6 +434,133 @@ cart-notification {
 
 .gct__msg[hidden] {
   display: none;
+}
+
+/* "Complétez le kit" --------------------------------------------------------------- */
+
+.gct__upsell {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--gct-line);
+}
+
+.gct__upsell[hidden] {
+  display: none;
+}
+
+.gct__h {
+  margin: 0 0 12px;
+  color: var(--gct-accent);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.gct__upsell-list {
+  display: flex;
+  gap: 10px;
+  padding-bottom: 4px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+
+.gct__upsell-list::-webkit-scrollbar {
+  display: none;
+}
+
+.gct__up {
+  position: relative;
+  flex: 0 0 148px;
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 16px;
+  border: 1px solid var(--gct-line);
+  background: rgba(255, 255, 255, 0.04);
+  scroll-snap-align: start;
+  transition: border-color 0.3s ease;
+}
+
+.gct__up:hover {
+  border-color: rgba(255, 255, 255, 0.24);
+}
+
+.gct__up-media {
+  display: block;
+  aspect-ratio: 1;
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.gct__up-media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.gct__up-name {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  color: var(--gct-ink);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.25;
+  min-height: 2.5em;
+}
+
+.gct__up-price {
+  margin: 2px 0 0;
+  color: var(--gct-dim);
+  font-size: 13px;
+}
+
+.gct__up-add {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--gct-accent);
+  color: #111;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4), 0 0 14px color-mix(in srgb, var(--gct-accent) 50%, transparent);
+  transition: transform 0.3s var(--gct-ease);
+}
+
+.gct__up-add:hover {
+  transform: scale(1.08);
+}
+
+.gct__up-add.is-busy,
+.gct__up-add:disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.gct__up-add svg {
+  width: 16px;
+  height: 16px;
+}
+
+.gct__dynamic {
+  margin-top: 10px;
+}
+
+.gct__dynamic .shopify-payment-button__button,
+.gct__dynamic .shopify-payment-button__more-options {
+  border-radius: 999px;
 }
 
 /* Footer ------------------------------------------------------------------------ */
