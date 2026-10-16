@@ -1,0 +1,260 @@
+{%- comment -%}
+  Hero glass header — barre flottante en verre (même direction artistique que la section hero-scroll-car).
+  Menu du thème, recherche, compte, panier (branché sur le tiroir panier du thème via #cart-icon-bubble),
+  tiroir mobile. En page d'accueil, la barre flotte par-dessus la vidéo du hero.
+{%- endcomment -%}
+
+{{ 'hero-glass-header.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'hero-glass-header.js' | asset_url }}" defer="defer"></script>
+
+{%- liquid
+  assign s = section.settings
+  assign menu = s.menu
+  assign overlay = false
+  if s.overlay_home and template.name == 'index'
+    assign overlay = true
+  endif
+  assign tint = s.tint | default: 60 | divided_by: 100.0
+  assign uid = section.id | handleize
+
+  assign cart_icon_file = settings.cart_icon | default: 'icon-cart-bag' | append: '.svg'
+-%}
+
+<style>
+  #shopify-section-{{ section.id }} {
+    {%- if overlay -%}
+      position: {% if s.sticky_mode == 'none' %}absolute{% else %}fixed{% endif %};
+      top: 0;
+      left: 0;
+      right: 0;
+    {%- else -%}
+      position: {% if s.sticky_mode == 'none' %}relative{% else %}sticky{% endif %};
+      top: 0;
+    {%- endif -%}
+    z-index: 90;
+  }
+</style>
+
+<hero-glass-header
+  class="ghd ghd--{{ s.bar_style | default: 'floating' }}{% if overlay %} ghd--overlay{% endif %}"
+  data-sticky="{{ s.sticky_mode | default: 'on-scroll-up' }}"
+  style="--ghd-accent: {{ s.accent | default: '#FF7A1A' }}; --ghd-ink: {{ s.color_text | default: '#FFFFFF' }}; --ghd-glass: rgba(10, 10, 12, {{ tint }}); --ghd-blur: {{ s.blur | default: 18 }}px; --ghd-logo-w: {{ s.logo_width | default: 150 }}px; --ghd-max: {{ settings.page_width | default: 1400 }}px;"
+>
+  <div class="ghd__inner">
+    {%- if s.announce_text != blank -%}
+      <div class="ghd__announce">
+        {%- if s.announce_link != blank -%}
+          <a href="{{ s.announce_link }}"><i aria-hidden="true"></i>{{ s.announce_text | escape }}</a>
+        {%- else -%}
+          <span><i aria-hidden="true"></i>{{ s.announce_text | escape }}</span>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+
+    <div class="ghd__bar" data-ghd-bar>
+      <button
+        type="button"
+        class="ghd__burger"
+        data-ghd-burger
+        aria-expanded="false"
+        aria-controls="ghd-drawer-{{ uid }}"
+        aria-label="Menu"
+      ><i></i><i></i><i></i></button>
+
+      <a class="ghd__logo" href="{{ routes.root_url }}" aria-label="{{ shop.name | escape }}">
+        {%- if s.logo != blank -%}
+          {%- assign logo_w2 = s.logo_width | default: 150 | times: 2 -%}
+          {{ s.logo | image_url: width: logo_w2 | image_tag: width: s.logo_width, alt: shop.name, loading: 'eager', fetchpriority: 'high' }}
+        {%- else -%}
+          <i aria-hidden="true"></i><span>{{ s.logo_text | default: shop.name | escape }}</span>
+        {%- endif -%}
+      </a>
+
+      <nav class="ghd__nav-wrap" aria-label="Navigation principale">
+        <ul class="ghd__nav" role="list">
+          {%- for link in menu.links -%}
+            <li class="ghd__item{% if link.links != blank %} ghd__item--has-children{% endif %}">
+              <a class="ghd__link" href="{{ link.url }}"{% if link.current %} aria-current="page"{% endif %}>
+                {{ link.title | escape }}
+                {%- if link.links != blank -%}
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                {%- endif -%}
+              </a>
+              {%- if link.links != blank -%}
+                <div class="ghd__drop">
+                  <ul role="list">
+                    {%- for child in link.links -%}
+                      <li><a href="{{ child.url }}"{% if child.current %} aria-current="page"{% endif %}>{{ child.title | escape }}</a></li>
+                    {%- endfor -%}
+                  </ul>
+                </div>
+              {%- endif -%}
+            </li>
+          {%- endfor -%}
+        </ul>
+      </nav>
+
+      <div class="ghd__actions">
+        {%- if s.show_search -%}
+          <button
+            type="button"
+            class="ghd__icon"
+            data-ghd-search-toggle
+            aria-expanded="false"
+            aria-controls="ghd-search-{{ uid }}"
+            aria-label="Rechercher"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M20 20l-3.8-3.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </button>
+        {%- endif -%}
+        {%- if s.show_account and shop.customer_accounts_enabled -%}
+          <a class="ghd__icon" href="{{ routes.account_url }}" aria-label="Compte">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M4 20c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </a>
+        {%- endif -%}
+        {%- if s.show_cart -%}
+          <a class="ghd__icon ghd__cart" href="{{ routes.cart_url }}" id="cart-icon-bubble">
+            {%- if settings.cart_icon_custom != blank -%}
+              <span class="svg-wrapper">{{ settings.cart_icon_custom | image_url: width: 44 | image_tag: alt: '' }}</span>
+            {%- else -%}
+              <span class="svg-wrapper">{{ cart_icon_file | inline_asset_content }}</span>
+            {%- endif -%}
+            <span class="visually-hidden">Panier</span>
+            {%- if cart != empty -%}
+              <div class="cart-count-bubble">
+                {%- if cart.item_count < 100 -%}
+                  <span aria-hidden="true">{{ cart.item_count }}</span>
+                {%- endif -%}
+                <span class="visually-hidden">{{ cart.item_count }} article(s)</span>
+              </div>
+            {%- endif -%}
+          </a>
+        {%- endif -%}
+      </div>
+    </div>
+
+    {%- if s.show_search -%}
+      <div class="ghd__search" id="ghd-search-{{ uid }}" data-ghd-search hidden>
+        <form action="{{ routes.search_url }}" method="get" role="search" class="ghd__search-form">
+          <input type="hidden" name="options[prefix]" value="last">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M20 20l-3.8-3.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <label class="visually-hidden" for="ghd-q-{{ uid }}">Rechercher</label>
+          <input id="ghd-q-{{ uid }}" class="ghd__search-input" type="search" name="q" placeholder="{{ s.search_placeholder | default: 'Rechercher un produit…' | escape }}" autocomplete="off">
+          <button type="submit" class="ghd__go">OK</button>
+          <button type="button" class="ghd__icon" data-ghd-search-close aria-label="Fermer la recherche">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          </button>
+        </form>
+      </div>
+    {%- endif -%}
+  </div>
+
+  <div class="ghd__backdrop" data-ghd-close></div>
+
+  <aside class="ghd__drawer" id="ghd-drawer-{{ uid }}" data-ghd-drawer aria-label="Menu" aria-hidden="true">
+    <div class="ghd__drawer-head">
+      <span class="ghd__logo"><i aria-hidden="true"></i><span>{{ s.logo_text | default: shop.name | escape }}</span></span>
+      <button type="button" class="ghd__icon" data-ghd-close aria-label="Fermer le menu">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <ul class="ghd__m-list" role="list">
+      {%- for link in menu.links -%}
+        <li>
+          {%- if link.links != blank -%}
+            <details class="ghd__m-group">
+              <summary class="ghd__m-link">
+                {{ link.title | escape }}
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </summary>
+              <ul role="list">
+                <li><a class="ghd__m-sub" href="{{ link.url }}">{{ link.title | escape }}</a></li>
+                {%- for child in link.links -%}
+                  <li><a class="ghd__m-sub" href="{{ child.url }}">{{ child.title | escape }}</a></li>
+                {%- endfor -%}
+              </ul>
+            </details>
+          {%- else -%}
+            <a class="ghd__m-link" href="{{ link.url }}"{% if link.current %} aria-current="page"{% endif %}>{{ link.title | escape }}</a>
+          {%- endif -%}
+        </li>
+      {%- endfor -%}
+    </ul>
+    <div class="ghd__drawer-foot">
+      {%- if s.drawer_cta_label != blank and s.drawer_cta_link != blank -%}
+        <a class="ghd__m-cta" href="{{ s.drawer_cta_link }}">{{ s.drawer_cta_label | escape }}</a>
+      {%- endif -%}
+      {%- if s.show_account and shop.customer_accounts_enabled -%}
+        <a class="ghd__m-ghost" href="{{ routes.account_url }}">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M4 20c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          Mon compte
+        </a>
+      {%- endif -%}
+      {%- if s.show_search -%}
+        <a class="ghd__m-ghost" href="{{ routes.search_url }}">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M20 20l-3.8-3.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          Rechercher
+        </a>
+      {%- endif -%}
+    </div>
+  </aside>
+</hero-glass-header>
+
+{% schema %}
+{
+  "name": "Header verre (hero)",
+  "tag": "header",
+  "class": "hero-glass-header-section",
+  "enabled_on": { "groups": ["header"] },
+  "settings": [
+    { "type": "header", "content": "Logo" },
+    { "type": "image_picker", "id": "logo", "label": "Logo (image)" },
+    { "type": "range", "id": "logo_width", "label": "Largeur du logo", "min": 60, "max": 260, "step": 10, "unit": "px", "default": 150 },
+    { "type": "text", "id": "logo_text", "label": "Nom (si pas d'image)", "info": "Vide = nom de la boutique." },
+
+    { "type": "header", "content": "Navigation" },
+    { "type": "link_list", "id": "menu", "label": "Menu", "default": "main-menu" },
+    { "type": "checkbox", "id": "show_search", "label": "Afficher la recherche", "default": true },
+    { "type": "text", "id": "search_placeholder", "label": "Texte du champ de recherche", "default": "Rechercher un produit…" },
+    { "type": "checkbox", "id": "show_account", "label": "Afficher le compte client", "default": true },
+    { "type": "checkbox", "id": "show_cart", "label": "Afficher le panier", "default": true },
+
+    { "type": "header", "content": "Comportement" },
+    { "type": "checkbox", "id": "overlay_home", "label": "Flotter par-dessus le hero (accueil)", "info": "Sur la page d'accueil, la barre se superpose à la vidéo. Ailleurs, elle reste en haut du contenu.", "default": true },
+    {
+      "type": "select", "id": "sticky_mode", "label": "Barre collante",
+      "options": [
+        { "value": "always", "label": "Toujours visible" },
+        { "value": "on-scroll-up", "label": "Se cache en descendant, revient en remontant" },
+        { "value": "none", "label": "Non collante" }
+      ],
+      "default": "on-scroll-up"
+    },
+
+    { "type": "header", "content": "Style verre" },
+    {
+      "type": "select", "id": "bar_style", "label": "Forme",
+      "options": [
+        { "value": "floating", "label": "Pilule flottante" },
+        { "value": "full", "label": "Pleine largeur" }
+      ],
+      "default": "floating"
+    },
+    { "type": "color", "id": "accent", "label": "Couleur d'accent", "default": "#FF7A1A" },
+    { "type": "color", "id": "color_text", "label": "Couleur du texte", "default": "#FFFFFF" },
+    { "type": "range", "id": "tint", "label": "Opacité du verre", "min": 30, "max": 90, "step": 5, "unit": "%", "default": 60 },
+    { "type": "range", "id": "blur", "label": "Flou du verre", "min": 6, "max": 30, "step": 2, "unit": "px", "default": 18 },
+
+    { "type": "header", "content": "Annonce (facultatif)" },
+    { "type": "text", "id": "announce_text", "label": "Texte", "info": "Petite pilule au-dessus de la barre (masquée sur mobile)." },
+    { "type": "url", "id": "announce_link", "label": "Lien" },
+
+    { "type": "header", "content": "Menu mobile" },
+    { "type": "text", "id": "drawer_cta_label", "label": "Bouton principal", "default": "Voir la gamme" },
+    { "type": "url", "id": "drawer_cta_link", "label": "Lien du bouton" }
+  ],
+  "presets": [
+    { "name": "Header verre (hero)" }
+  ]
+}
+{% endschema %}

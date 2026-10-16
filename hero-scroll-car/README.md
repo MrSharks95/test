@@ -196,3 +196,20 @@ Remplacer ensuite les `f_XXXX.webp` dans `/assets` du thème. Il faut ffmpeg et 
 | La séquence ne défile pas, image figée | Images absentes de `/assets`, ou « Nombre total de frames » ≠ numéro de la dernière image |
 | Écran noir à la place de la vidéo | Choisir la vidéo via « Vidéo d'allumage (Fichiers Shopify) » |
 | Le compteur du panier ne bouge pas | Thème avec un compteur spécifique, voir la section 5 |
+
+## Header et footer en verre (même direction artistique)
+
+Deux sections de groupe accompagnent le hero :
+
+- `sections/hero-glass-header.liquid` (+ `assets/hero-glass-header.css`, `assets/hero-glass-header.js`) : barre
+  flottante en verre (pilule ou pleine largeur), logo image ou nom de la boutique, menu du thème avec sous-menus en
+  carte de verre, recherche dépliante, compte, panier branché sur le tiroir du thème (`#cart-icon-bubble`), tiroir
+  mobile avec accordéons et bouton principal. Sur l'accueil, la barre flotte par-dessus la vidéo du hero ; ailleurs
+  elle reste collée en haut. Elle se cache en descendant et revient en remontant (réglable). Pilule d'annonce
+  facultative au-dessus.
+- `sections/hero-glass-footer.liquid` (+ `assets/hero-glass-footer.css`) : réassurance en pilules, panneaux de verre
+  (marque + réseaux sociaux des paramètres du thème, menus, texte, newsletter avec le contour néon de la fiche
+  produit), bas de page avec moyens de paiement, politiques, copyright, retour en haut, et grand nom en filigrane.
+
+Dans l'éditeur de thème, elles s'ajoutent dans les groupes « En-tête » et « Pied de page » ; le header et le footer
+d'origine du thème peuvent être désactivés (ils le sont sur le thème de test).

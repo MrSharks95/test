@@ -1,0 +1,298 @@
+{%- comment -%}
+  Hero glass footer — panneaux en verre sombre, accent orange, même direction artistique que hero-scroll-car.
+  Blocs : réassurance, menus, texte, newsletter. Bas de page : moyens de paiement, politiques, copyright.
+{%- endcomment -%}
+
+{{ 'hero-glass-footer.css' | asset_url | stylesheet_tag }}
+
+{%- liquid
+  assign s = section.settings
+  assign uid = section.id | handleize
+  assign wordmark = s.wordmark_text | default: shop.name
+  assign has_social = false
+  if settings.social_instagram_link != blank or settings.social_facebook_link != blank or settings.social_tiktok_link != blank or settings.social_youtube_link != blank or settings.social_twitter_link != blank or settings.social_pinterest_link != blank
+    assign has_social = true
+  endif
+-%}
+
+<footer
+  class="gft"
+  style="--gft-accent: {{ s.accent | default: '#FF7A1A' }}; --gft-bg: {{ s.color_bg | default: '#0B0B0D' }}; --gft-ink: {{ s.color_text | default: '#FFFFFF' }}; --gft-pt: {{ s.padding_top | default: 80 }}px; --gft-pb: {{ s.padding_bottom | default: 32 }}px; --gft-logo-w: {{ s.logo_width | default: 150 }}px; --gft-max: {{ settings.page_width | default: 1400 }}px;"
+>
+  <div class="gft__glow" aria-hidden="true"></div>
+
+  <div class="gft__inner">
+    {%- comment -%} Réassurance {%- endcomment -%}
+    {%- assign trust_count = 0 -%}
+    {%- for block in section.blocks -%}
+      {%- if block.type == 'trust' -%}{%- assign trust_count = trust_count | plus: 1 -%}{%- endif -%}
+    {%- endfor -%}
+    {%- if trust_count > 0 -%}
+      <ul class="gft__trust" role="list">
+        {%- for block in section.blocks -%}
+          {%- if block.type != 'trust' -%}{%- continue -%}{%- endif -%}
+          <li {{ block.shopify_attributes }}>
+            <span class="gft__trust-icon" aria-hidden="true">
+              {%- case block.settings.icon -%}
+                {%- when 'shield' -%}
+                  <svg viewBox="0 0 24 24" focusable="false"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                {%- when 'undo' -%}
+                  <svg viewBox="0 0 24 24" focusable="false"><path d="M4 12a8 8 0 0 1 13.7-5.7L20 8" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M20 4v4h-4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 12a8 8 0 0 1-13.7 5.7L4 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M4 20v-4h4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                {%- when 'star' -%}
+                  <svg viewBox="0 0 24 24" focusable="false"><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1.1 5.9L12 16.9l-5.3 2.8 1.1-5.9-4.3-4.1 5.9-.8z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+                {%- when 'leaf' -%}
+                  <svg viewBox="0 0 24 24" focusable="false"><path d="M5 19c0-8 5-13 14-14-1 9-6 14-14 14z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M5 19l8-8" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+                {%- when 'chat' -%}
+                  <svg viewBox="0 0 24 24" focusable="false"><path d="M4 5h16v11H9l-5 4z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8 9h8M8 12h5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+                {%- when 'clock' -%}
+                  <svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 7.5V12l3 2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+                {%- when 'card' -%}
+                  <svg viewBox="0 0 24 24" focusable="false"><rect x="3" y="6" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M3 10h18M7 14h4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+                {%- else -%}
+                  <svg viewBox="0 0 24 24" focusable="false"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="7" cy="18" r="2" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="17" cy="18" r="2" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>
+              {%- endcase -%}
+            </span>
+            <div>
+              {%- if block.settings.title != blank -%}<strong>{{ block.settings.title | escape }}</strong>{%- endif -%}
+              {%- if block.settings.text != blank -%}<span>{{ block.settings.text | escape }}</span>{%- endif -%}
+            </div>
+          </li>
+        {%- endfor -%}
+      </ul>
+    {%- endif -%}
+
+    <div class="gft__grid">
+      {%- comment -%} Marque {%- endcomment -%}
+      <div class="gft__panel gft__brand">
+        <a class="gft__logo" href="{{ routes.root_url }}" aria-label="{{ shop.name | escape }}">
+          {%- if s.logo != blank -%}
+            {%- assign logo_w2 = s.logo_width | default: 150 | times: 2 -%}
+            {{ s.logo | image_url: width: logo_w2 | image_tag: width: s.logo_width, alt: shop.name, loading: 'lazy' }}
+          {%- else -%}
+            <i aria-hidden="true"></i><span>{{ shop.name }}</span>
+          {%- endif -%}
+        </a>
+        {%- if s.tagline != blank -%}
+          <div class="gft__tagline">{{ s.tagline }}</div>
+        {%- endif -%}
+        {%- if s.show_social and has_social -%}
+          <ul class="gft__social" role="list">
+            {%- if settings.social_instagram_link != blank -%}
+              <li><a href="{{ settings.social_instagram_link }}" aria-label="Instagram"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3.5" y="3.5" width="17" height="17" rx="4.5" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="17.2" cy="6.8" r="1.1" fill="currentColor"/></svg></a></li>
+            {%- endif -%}
+            {%- if settings.social_tiktok_link != blank -%}
+              <li><a href="{{ settings.social_tiktok_link }}" aria-label="TikTok"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M14 4v9.5a3.5 3.5 0 1 1-3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M14 4c.4 2.6 2 4.2 4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></a></li>
+            {%- endif -%}
+            {%- if settings.social_facebook_link != blank -%}
+              <li><a href="{{ settings.social_facebook_link }}" aria-label="Facebook"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M14 8h2.5V4.5H14c-2.2 0-3.5 1.5-3.5 3.7V10H8v3.5h2.5V20H14v-6.5h2.5l.5-3.5h-3V8.5c0-.3.2-.5.5-.5z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></a></li>
+            {%- endif -%}
+            {%- if settings.social_youtube_link != blank -%}
+              <li><a href="{{ settings.social_youtube_link }}" aria-label="YouTube"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="6" width="18" height="12" rx="4" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M10 9.5v5l4.5-2.5z" fill="currentColor"/></svg></a></li>
+            {%- endif -%}
+            {%- if settings.social_twitter_link != blank -%}
+              <li><a href="{{ settings.social_twitter_link }}" aria-label="X"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 4l14 16M19 4L5 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></a></li>
+            {%- endif -%}
+            {%- if settings.social_pinterest_link != blank -%}
+              <li><a href="{{ settings.social_pinterest_link }}" aria-label="Pinterest"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M10.5 20l2-8M9.5 9.5c0-2 1.5-3 3-3s2.5 1 2.5 2.5c0 2-1 4-2.5 4-1 0-1.5-.5-1.5-1.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></a></li>
+            {%- endif -%}
+          </ul>
+        {%- endif -%}
+      </div>
+
+      {%- comment -%} Blocs : menus, texte, newsletter {%- endcomment -%}
+      {%- for block in section.blocks -%}
+        {%- case block.type -%}
+          {%- when 'link_list' -%}
+            <div class="gft__panel gft__col" {{ block.shopify_attributes }}>
+              {%- if block.settings.heading != blank -%}<h3 class="gft__h">{{ block.settings.heading | escape }}</h3>{%- endif -%}
+              {%- if block.settings.menu != blank -%}
+                <ul class="gft__links" role="list">
+                  {%- for link in block.settings.menu.links -%}
+                    <li><a href="{{ link.url }}">{{ link.title | escape }}</a></li>
+                  {%- endfor -%}
+                </ul>
+              {%- endif -%}
+            </div>
+          {%- when 'text' -%}
+            <div class="gft__panel gft__text" {{ block.shopify_attributes }}>
+              {%- if block.settings.heading != blank -%}<h3 class="gft__h">{{ block.settings.heading | escape }}</h3>{%- endif -%}
+              {%- if block.settings.text != blank -%}<div class="gft__rte">{{ block.settings.text }}</div>{%- endif -%}
+            </div>
+          {%- when 'newsletter' -%}
+            <div class="gft__panel gft__news" {{ block.shopify_attributes }}>
+              {%- if block.settings.heading != blank -%}<h3 class="gft__h">{{ block.settings.heading | escape }}</h3>{%- endif -%}
+              {%- if block.settings.text != blank -%}<p>{{ block.settings.text | escape }}</p>{%- endif -%}
+              {%- assign form_id = 'gft-form-' | append: uid -%}
+              {%- form 'customer', id: form_id, class: 'gft__form' -%}
+                <input type="hidden" name="contact[tags]" value="newsletter">
+                <label class="visually-hidden" for="gft-email-{{ uid }}">E-mail</label>
+                <div class="gft__field">
+                  <input
+                    id="gft-email-{{ uid }}"
+                    type="email"
+                    name="contact[email]"
+                    value="{{ form.email }}"
+                    placeholder="{{ block.settings.placeholder | default: 'Votre e-mail' | escape }}"
+                    autocomplete="email"
+                    autocorrect="off"
+                    autocapitalize="off"
+                    required
+                    {% if form.errors %}aria-invalid="true" aria-describedby="gft-msg-{{ uid }}"{% endif %}
+                  >
+                  <button type="submit" class="gft__btn">
+                    {{ block.settings.button_label | default: 'Je m’inscris' | escape }}
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </button>
+                </div>
+                {%- if form.posted_successfully? -%}
+                  <p class="gft__msg gft__msg--ok" id="gft-msg-{{ uid }}" role="status">{{ block.settings.success_text | default: 'Merci ! À très vite.' | escape }}</p>
+                {%- elsif form.errors -%}
+                  <p class="gft__msg gft__msg--err" id="gft-msg-{{ uid }}" role="alert">{{ form.errors.translated_fields.email | capitalize }} {{ form.errors.messages.email }}</p>
+                {%- elsif block.settings.hint != blank -%}
+                  <p class="gft__hint">{{ block.settings.hint | escape }}</p>
+                {%- endif -%}
+              {%- endform -%}
+            </div>
+        {%- endcase -%}
+      {%- endfor -%}
+    </div>
+
+    <div class="gft__bottom">
+      <p class="gft__copy">
+        &copy; {{ 'now' | date: '%Y' }} <a href="{{ routes.root_url }}">{{ shop.name }}</a>
+        {%- if s.copyright_text != blank %} · {{ s.copyright_text | escape }}{% endif -%}
+        {%- if s.show_powered %} · {{ powered_by_link }}{% endif -%}
+      </p>
+      {%- if s.show_policies and shop.policies.size > 0 -%}
+        <ul class="gft__policies" role="list">
+          {%- for policy in shop.policies -%}
+            <li><a href="{{ policy.url }}">{{ policy.title | escape }}</a></li>
+          {%- endfor -%}
+        </ul>
+      {%- endif -%}
+      {%- if s.show_payment and shop.enabled_payment_types.size > 0 -%}
+        <div class="gft__pay" aria-label="Moyens de paiement">
+          {%- for type in shop.enabled_payment_types -%}
+            {{ type | payment_type_svg_tag: class: 'gft__pay-icon' }}
+          {%- endfor -%}
+        </div>
+      {%- endif -%}
+      <button type="button" class="gft__top" data-gft-top aria-label="Retour en haut">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 19V5M6 11l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+  </div>
+
+  {%- if s.show_wordmark -%}
+    <div class="gft__wordmark" aria-hidden="true">{{ wordmark | escape }}</div>
+  {%- endif -%}
+</footer>
+
+<script>
+  (function () {
+    var button = document.querySelector('#shopify-section-{{ section.id }} [data-gft-top]');
+    if (!button) return;
+    button.addEventListener('click', function () {
+      var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
+    });
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Footer verre (hero)",
+  "tag": "div",
+  "class": "hero-glass-footer-section",
+  "enabled_on": { "groups": ["footer"] },
+  "settings": [
+    { "type": "header", "content": "Marque" },
+    { "type": "image_picker", "id": "logo", "label": "Logo (image)" },
+    { "type": "range", "id": "logo_width", "label": "Largeur du logo", "min": 60, "max": 260, "step": 10, "unit": "px", "default": 150 },
+    { "type": "richtext", "id": "tagline", "label": "Texte de marque", "default": "<p>Le soin auto, version nuit : des formules nettes, des finitions miroir.</p>" },
+    { "type": "checkbox", "id": "show_social", "label": "Réseaux sociaux", "info": "Liens définis dans Paramètres du thème › Réseaux sociaux.", "default": true },
+
+    { "type": "header", "content": "Bas de page" },
+    { "type": "checkbox", "id": "show_payment", "label": "Moyens de paiement", "default": true },
+    { "type": "checkbox", "id": "show_policies", "label": "Liens des politiques", "default": true },
+    { "type": "text", "id": "copyright_text", "label": "Texte après le copyright", "default": "Tous droits réservés" },
+    { "type": "checkbox", "id": "show_powered", "label": "Mention « Propulsé par Shopify »", "default": false },
+    { "type": "checkbox", "id": "show_wordmark", "label": "Grand nom en filigrane", "default": true },
+    { "type": "text", "id": "wordmark_text", "label": "Texte du filigrane", "info": "Vide = nom de la boutique." },
+
+    { "type": "header", "content": "Couleurs et espacements" },
+    { "type": "color", "id": "accent", "label": "Couleur d'accent", "default": "#FF7A1A" },
+    { "type": "color", "id": "color_bg", "label": "Fond", "default": "#0B0B0D" },
+    { "type": "color", "id": "color_text", "label": "Texte", "default": "#FFFFFF" },
+    { "type": "range", "id": "padding_top", "label": "Marge haute", "min": 24, "max": 160, "step": 8, "unit": "px", "default": 80 },
+    { "type": "range", "id": "padding_bottom", "label": "Marge basse", "min": 8, "max": 96, "step": 8, "unit": "px", "default": 32 }
+  ],
+  "blocks": [
+    {
+      "type": "trust",
+      "name": "Réassurance",
+      "settings": [
+        {
+          "type": "select", "id": "icon", "label": "Icône",
+          "options": [
+            { "value": "truck", "label": "Camion" },
+            { "value": "shield", "label": "Bouclier" },
+            { "value": "undo", "label": "Retour" },
+            { "value": "star", "label": "Étoile" },
+            { "value": "leaf", "label": "Feuille" },
+            { "value": "chat", "label": "Bulle" },
+            { "value": "clock", "label": "Horloge" },
+            { "value": "card", "label": "Carte" }
+          ],
+          "default": "truck"
+        },
+        { "type": "text", "id": "title", "label": "Titre", "default": "Livraison rapide" },
+        { "type": "text", "id": "text", "label": "Texte", "default": "Expédié sous 24 h" }
+      ]
+    },
+    {
+      "type": "link_list",
+      "name": "Menu",
+      "settings": [
+        { "type": "text", "id": "heading", "label": "Titre", "default": "Boutique" },
+        { "type": "link_list", "id": "menu", "label": "Menu", "default": "footer" }
+      ]
+    },
+    {
+      "type": "text",
+      "name": "Texte",
+      "settings": [
+        { "type": "text", "id": "heading", "label": "Titre", "default": "Contact" },
+        { "type": "richtext", "id": "text", "label": "Texte", "default": "<p>Une question ? Écrivez-nous, on répond vite.</p>" }
+      ]
+    },
+    {
+      "type": "newsletter",
+      "name": "Newsletter",
+      "limit": 1,
+      "settings": [
+        { "type": "text", "id": "heading", "label": "Titre", "default": "Restez dans la boucle" },
+        { "type": "text", "id": "text", "label": "Texte", "default": "Nouveautés, conseils d’entretien et offres réservées aux abonnés." },
+        { "type": "text", "id": "placeholder", "label": "Texte du champ", "default": "Votre e-mail" },
+        { "type": "text", "id": "button_label", "label": "Bouton", "default": "Je m’inscris" },
+        { "type": "text", "id": "hint", "label": "Mention sous le champ", "default": "Zéro spam. Désinscription en un clic." },
+        { "type": "text", "id": "success_text", "label": "Message de succès", "default": "Merci ! À très vite." }
+      ]
+    }
+  ],
+  "max_blocks": 12,
+  "presets": [
+    {
+      "name": "Footer verre (hero)",
+      "blocks": [
+        { "type": "trust", "settings": { "icon": "truck", "title": "Livraison rapide", "text": "Expédié sous 24 h" } },
+        { "type": "trust", "settings": { "icon": "shield", "title": "Paiement sécurisé", "text": "Cartes, PayPal, Apple Pay" } },
+        { "type": "trust", "settings": { "icon": "undo", "title": "Rétractation 14 jours", "text": "Satisfait ou remboursé" } },
+        { "type": "link_list", "settings": { "heading": "Boutique", "menu": "main-menu" } },
+        { "type": "link_list", "settings": { "heading": "Informations", "menu": "footer" } },
+        { "type": "newsletter" }
+      ]
+    }
+  ]
+}
+{% endschema %}
