@@ -2533,8 +2533,8 @@ hero-scroll-car,
     transform: none;
   }
 
-  .hsc-sheet__switch--prev { left: 14px; }
-  .hsc-sheet__switch--next { left: 66px; }
+  .hsc-sheet__switch--prev { left: 14px; right: auto; }
+  .hsc-sheet__switch--next { left: 66px; right: auto; }
 
   .hsc-sheet__switch i {
     width: 44px;
