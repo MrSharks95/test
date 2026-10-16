@@ -152,7 +152,12 @@ fluide. Après le plan final, la page défile normalement.
   choix des variantes (prix, promo et photo suivent, les combinaisons épuisées sont barrées), quantité, « Ajouter
   au panier », icônes des moyens de paiement de la boutique, puis Description / Mode d'emploi / Ingrédients en
   accordéon et trois arguments de réassurance (réglages du bloc). Tout se passe dans la fenêtre, aucune page
-  produit n'est nécessaire. Échap, la croix ou le fond sombre la ferment.
+  produit n'est nécessaire. Échap, la croix ou le fond sombre la ferment. Les cartes des quatre arrêts de la
+  vidéo (carrosserie, portière, habitacle, jante) ont le même bouton « En savoir plus » : les flèches de la
+  fenêtre passent d'un produit à l'autre (présentoir d'abord, puis les produits d'arrêt absents du présentoir).
+- **Points d'intérêt** (portière, habitacle) : gros rond pulsant (deux ondes), trait lumineux et libellé bordé
+  d'orange, pour rester visibles sur des plans sombres. Sur mobile, le bouton son monte au-dessus de la carte
+  d'un arrêt pour ne jamais la recouvrir.
 - **Contenu de la fiche** : la description du produit, plus trois métachamps produit créés sur la boutique
   (Produits › fiche produit › Métachamps) : « Points forts (hero voiture) » (liste de phrases courtes, en
   pastilles sous le prix), « Mode d'emploi (hero voiture) » et « Ingrédients (hero voiture) » (texte enrichi).

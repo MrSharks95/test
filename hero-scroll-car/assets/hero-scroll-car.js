@@ -171,6 +171,7 @@
         this.resizeCanvas();
         if (this.sequence.openCard) this.placeHotspotCard(this.sequence.openCard);
       }
+      this.updateSoundDock();
     }
     var mode = this.isStatic() ? 'static' : 'scroll';
     if (mode === this.mode) return;
@@ -850,6 +851,7 @@
   HeroScrollCar.prototype.resizeCanvas = function () {
     var seq = this.sequence;
     if (!seq) return;
+    this.updateSoundDock();
     var rect = seq.stage.getBoundingClientRect();
     var width = Math.round(rect.width);
     var height = Math.round(rect.height);
@@ -1055,6 +1057,21 @@
     card.classList.toggle('is-visible', visible);
     if (!visible) card.classList.remove('is-open');
     card.setAttribute('aria-hidden', visible ? 'false' : 'true');
+    this.updateSoundDock();
+  };
+
+  // Compact layout: a visible stop card is docked at the bottom of the stage, so the sound button
+  // climbs above it instead of sitting on its buttons (`--hsc-sound-lift`, read by the CSS).
+  HeroScrollCar.prototype.updateSoundDock = function () {
+    var button = this.soundButton;
+    if (!button) return;
+    var lift = 0;
+    if (this.compact) {
+      var card = this.querySelector('.hsc-stage .hsc-card.is-visible');
+      var stage = card && card.offsetParent;
+      if (stage) lift = stage.clientHeight - card.offsetTop;
+    }
+    button.style.setProperty('--hsc-sound-lift', lift > 0 ? Math.round(lift) + 'px' : '0px');
   };
 
   HeroScrollCar.prototype.setHotspotVisible = function (marker, visible) {
@@ -1119,6 +1136,7 @@
     var card = seq.cards[id];
     card.classList.add('is-visible', 'is-open');
     card.setAttribute('aria-hidden', 'false');
+    this.updateSoundDock();
     var marker = seq.hotspots[id];
     if (marker) { marker.classList.add('is-active'); marker.setAttribute('aria-expanded', 'true'); }
     var close = card.querySelector('[data-hsc-close]');
@@ -1132,6 +1150,7 @@
     seq.openCard = null;
     var card = seq.cards[id];
     if (card) { card.classList.remove('is-visible', 'is-open'); card.setAttribute('aria-hidden', 'true'); }
+    this.updateSoundDock();
     var marker = seq.hotspots[id];
     if (marker) {
       marker.classList.remove('is-active');
@@ -1983,6 +2002,7 @@
   };
 
   HeroScrollCar.prototype.resizeChapters = function () {
+    this.updateSoundDock();
     var ch = this.chapters;
     var seq = this.sequence;
     if (!ch || !seq) return;
@@ -2427,6 +2447,7 @@
         }
       })
       .then(function () {
+        self.updateSoundDock(); // an error line may have made the card taller
         button.removeAttribute('aria-busy');
         button.classList.remove('is-loading');
       });

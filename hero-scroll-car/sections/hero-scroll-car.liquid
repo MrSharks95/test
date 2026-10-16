@@ -427,15 +427,18 @@
                 <s>{{ variant.compare_at_price | money }}</s>
               {%- endif -%}
             </p>
-            <button
-              type="button"
-              class="hsc-btn hsc-btn--primary hsc-card__add"
-              data-hsc-add
-              data-variant-id="{{ variant.id }}"
-              {% unless product.available %}disabled{% endunless %}
-            >
-              <span data-hsc-add-label>{% if product.available %}{{ s.text_add | escape }}{% else %}{{ s.text_unavailable | escape }}{% endif %}</span>
-            </button>
+            <div class="hsc-card__actions">
+              <button
+                type="button"
+                class="hsc-btn hsc-btn--primary hsc-card__add"
+                data-hsc-add
+                data-variant-id="{{ variant.id }}"
+                {% unless product.available %}disabled{% endunless %}
+              >
+                <span data-hsc-add-label>{% if product.available %}{{ s.text_add | escape }}{% else %}{{ s.text_unavailable | escape }}{% endif %}</span>
+              </button>
+              <button type="button" class="hsc-btn hsc-btn--ghost hsc-card__more" data-hsc-more="{{ product.id }}">{{ shelf.settings.text_more | default: 'En savoir plus' | escape }}</button>
+            </div>
             <p class="hsc-card__msg" role="status" aria-live="polite" data-hsc-msg></p>
           {%- else -%}
             <p class="hsc-card__tagline">Choisissez un produit dans l’éditeur de thème.</p>
@@ -497,6 +500,24 @@
           {%- render 'hero-scroll-car-sheet', product: product, shelf: shelf, s: s -%}
         {%- endfor -%}
       {%- endif -%}
+
+      {%- comment -%} Fiches des produits des arrêts (bouton « En savoir plus » des cartes), sans doublon avec le présentoir {%- endcomment -%}
+      {%- liquid
+        assign sheet_ids = ','
+        if shelf
+          for product in shelf.settings.products
+            assign sheet_ids = sheet_ids | append: product.id | append: ','
+          endfor
+        endif
+      -%}
+      {%- for block in section.blocks -%}
+        {%- if block.type != 'stop' or block.settings.product == blank -%}{%- continue -%}{%- endif -%}
+        {%- assign sheet_key = ',' | append: block.settings.product.id | append: ',' -%}
+        {%- unless sheet_ids contains sheet_key -%}
+          {%- assign sheet_ids = sheet_ids | append: block.settings.product.id | append: ',' -%}
+          {%- render 'hero-scroll-car-sheet', product: block.settings.product, shelf: shelf, s: s -%}
+        {%- endunless -%}
+      {%- endfor -%}
     </section>
   </div>
 
@@ -543,15 +564,18 @@
                 <s>{{ variant.compare_at_price | money }}</s>
               {%- endif -%}
             </p>
-            <button
-              type="button"
-              class="hsc-btn hsc-btn--primary hsc-card__add"
-              data-hsc-add
-              data-variant-id="{{ variant.id }}"
-              {% unless product.available %}disabled{% endunless %}
-            >
-              <span data-hsc-add-label>{% if product.available %}{{ s.text_add | escape }}{% else %}{{ s.text_unavailable | escape }}{% endif %}</span>
-            </button>
+            <div class="hsc-card__actions">
+              <button
+                type="button"
+                class="hsc-btn hsc-btn--primary hsc-card__add"
+                data-hsc-add
+                data-variant-id="{{ variant.id }}"
+                {% unless product.available %}disabled{% endunless %}
+              >
+                <span data-hsc-add-label>{% if product.available %}{{ s.text_add | escape }}{% else %}{{ s.text_unavailable | escape }}{% endif %}</span>
+              </button>
+              <button type="button" class="hsc-btn hsc-btn--ghost hsc-card__more" data-hsc-more="{{ product.id }}">{{ shelf.settings.text_more | default: 'En savoir plus' | escape }}</button>
+            </div>
             <p class="hsc-card__msg" role="status" aria-live="polite" data-hsc-msg></p>
           {%- else -%}
             <p class="hsc-card__tagline">Choisissez un produit dans l’éditeur de thème.</p>
@@ -612,25 +636,23 @@
     {%- endif -%}
   </section>
 
-  {%- if shelf -%}
-    {%- comment -%} Fenêtre « En savoir plus » : panneau en verre par-dessus la scène, rempli depuis les fiches ci-dessus {%- endcomment -%}
-    <div class="hsc-sheet" data-hsc-sheet hidden role="dialog" aria-modal="true">
-      <div class="hsc-sheet__backdrop" data-hsc-sheet-close></div>
-      <div class="hsc-sheet__panel" data-hsc-sheet-panel>
-        <button type="button" class="hsc-sheet__close" data-hsc-sheet-close aria-label="{{ s.text_close | default: 'Fermer' | escape }}">&times;</button>
-        {%- comment -%} D'un produit à l'autre sans fermer (flèches du clavier aussi) {%- endcomment -%}
-        <button type="button" class="hsc-sheet__switch hsc-sheet__switch--prev" data-hsc-sheet-prev aria-label="Produit précédent" hidden>
-          <i aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" focusable="false"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
-          <span class="hsc-sheet__switch-label" data-hsc-sheet-prev-label></span>
-        </button>
-        <button type="button" class="hsc-sheet__switch hsc-sheet__switch--next" data-hsc-sheet-next aria-label="Produit suivant" hidden>
-          <i aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" focusable="false"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
-          <span class="hsc-sheet__switch-label" data-hsc-sheet-next-label></span>
-        </button>
-        <div class="hsc-sheet__content" data-hsc-sheet-content></div>
-      </div>
+  {%- comment -%} Fenêtre « En savoir plus » : panneau en verre par-dessus la scène, rempli depuis les fiches ci-dessus {%- endcomment -%}
+  <div class="hsc-sheet" data-hsc-sheet hidden role="dialog" aria-modal="true">
+    <div class="hsc-sheet__backdrop" data-hsc-sheet-close></div>
+    <div class="hsc-sheet__panel" data-hsc-sheet-panel>
+      <button type="button" class="hsc-sheet__close" data-hsc-sheet-close aria-label="{{ s.text_close | default: 'Fermer' | escape }}">&times;</button>
+      {%- comment -%} D'un produit à l'autre sans fermer (flèches du clavier aussi) {%- endcomment -%}
+      <button type="button" class="hsc-sheet__switch hsc-sheet__switch--prev" data-hsc-sheet-prev aria-label="Produit précédent" hidden>
+        <i aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" focusable="false"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
+        <span class="hsc-sheet__switch-label" data-hsc-sheet-prev-label></span>
+      </button>
+      <button type="button" class="hsc-sheet__switch hsc-sheet__switch--next" data-hsc-sheet-next aria-label="Produit suivant" hidden>
+        <i aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" focusable="false"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
+        <span class="hsc-sheet__switch-label" data-hsc-sheet-next-label></span>
+      </button>
+      <div class="hsc-sheet__content" data-hsc-sheet-content></div>
     </div>
-  {%- endif -%}
+  </div>
 
   <noscript>
     <style>
