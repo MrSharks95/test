@@ -1,0 +1,20 @@
+{
+  "sections": {
+    "main": {
+      "type": "hero-glass-404",
+      "settings": {
+        "code": "404",
+        "heading": "Mauvaise route.",
+        "text": "<p>Cette page n'existe pas ou a été déplacée. Le garage, lui, est toujours ouvert.</p>",
+        "button_label": "Retour au garage",
+        "button_link": "/",
+        "button2_label": "Voir la gamme",
+        "button2_link": "shopify://collections/all",
+        "show_wordmark": true
+      }
+    }
+  },
+  "order": [
+    "main"
+  ]
+}

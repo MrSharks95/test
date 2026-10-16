@@ -197,6 +197,31 @@ Remplacer ensuite les `f_XXXX.webp` dans `/assets` du thème. Il faut ffmpeg et 
 | Écran noir à la place de la vidéo | Choisir la vidéo via « Vidéo d'allumage (Fichiers Shopify) » |
 | Le compteur du panier ne bouge pas | Thème avec un compteur spécifique, voir la section 5 |
 
+## Nouveautés (octobre 2026) et retour arrière
+
+Chaque nouveauté a son interrupteur dans l'éditeur de thème et son propre commit sur la branche ;
+rien n'écrase les fichiers d'origine du thème. Pour tout annuler d'un coup : `git revert` des commits
+« Nouveauté … » puis renvoyer les fichiers sur le thème, ou recoller les gabarits de `backup/`.
+
+| Nouveauté | Où | Pour désactiver | Pour supprimer complètement |
+| --- | --- | --- | --- |
+| Image qui vole vers le panier, badge qui rebondit | Header verre › Nouveautés | Décocher « Animation d'ajout au panier » | Revert du commit « Nouveauté header » |
+| Compte à rebours dans la pilule d'annonce | Header verre › Annonce | Vider « Compte à rebours jusqu'au » | idem |
+| Transitions de page en fondu | Header verre › Nouveautés | Décocher « Transitions de page » | idem |
+| « Complétez le kit » (recommandations) dans le panier | Panier verre › Nouveautés | Décocher « Complétez le kit » | Revert du commit « Nouveauté panier » |
+| Second palier « cadeau offert » dans la barre | Panier verre › Nouveautés | Mettre le seuil cadeau à 0 | idem |
+| Boutons de paiement rapide dans le panier | Panier verre › Nouveautés | Décocher | idem |
+| Halo qui suit le curseur, mode cinéma | Hero › bloc « Effets visuels » | Décocher chaque effet, ou supprimer le bloc | Revert du commit « Nouveauté hero » |
+| Bouton « Prendre tout le kit » sous le présentoir | Hero › bloc Présentoir › Nouveauté | Décocher « Bouton tout le kit » | idem |
+| Réduction automatique « Kit complet : -15 % dès 3 produits » | Shopify › Réductions | Désactiver ou supprimer la réduction | Elle n'est pas dans le code |
+| Section « Avant / après (verre) » | Page d'accueil | Masquer ou supprimer la section | `backup/templates-index.before-nouveautes.json` |
+| Section « Avis clients (verre) » | Page d'accueil | Masquer ou supprimer la section | idem |
+| Page 404 en verre | Gabarit 404 | Remplacer par la section « main-404 » du thème | `backup/templates-404.json` |
+| Thème sombre sur les pages intérieures (schémas de couleurs) | Paramètres du thème › Couleurs | Rétablir les schémas | `backup/settings_data.before-dark.json` |
+
+Conseil : dupliquer le thème (Boutique en ligne › Thèmes › … › Dupliquer) avant de tester une
+nouveauté donne un point de retour complet en un clic.
+
 ## Header et footer en verre (même direction artistique)
 
 Deux sections de groupe accompagnent le hero :

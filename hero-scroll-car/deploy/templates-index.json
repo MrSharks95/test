@@ -1,0 +1,250 @@
+{
+  "sections": {
+    "hero_scroll_car_9UL3JN": {
+      "type": "hero-scroll-car",
+      "blocks": {
+        "stop_qHcJJC": {
+          "type": "stop",
+          "settings": {
+            "product": "produit-carrosserie",
+            "frame": 27,
+            "time": "10",
+            "speed": "2.5",
+            "display": "card",
+            "hotspot_x": 50,
+            "hotspot_y": 50,
+            "hotspot_label": "Voir le produit",
+            "focus_x": 40,
+            "side": "right",
+            "title": "Carrosserie",
+            "tagline": "Un brillant profond, sans traces.",
+            "mobile_image_file": "stop-carrosserie.jpg"
+          }
+        },
+        "stop_yGV63z": {
+          "type": "stop",
+          "settings": {
+            "product": "nettoyant-interieur",
+            "frame": 82,
+            "time": "19.8",
+            "speed": "auto",
+            "display": "hotspot",
+            "hotspot_x": 15,
+            "hotspot_y": 58,
+            "hotspot_label": "Portière",
+            "focus_x": 15,
+            "side": "right",
+            "title": "Portière",
+            "tagline": "Cuir et Alcantara ravivés, sans résidu.",
+            "mobile_image_file": "stop-porte.jpg"
+          }
+        },
+        "stop_C6btQe": {
+          "type": "stop",
+          "settings": {
+            "product": "nettoyant-interieur",
+            "frame": 134,
+            "time": "25.27",
+            "speed": "auto",
+            "display": "hotspot",
+            "hotspot_x": 55,
+            "hotspot_y": 66,
+            "hotspot_label": "Habitacle",
+            "focus_x": 55,
+            "side": "left",
+            "title": "Intérieur",
+            "tagline": "Plastiques et cuirs nourris, odeur de neuf.",
+            "mobile_image_file": "stop-interieur.jpg"
+          }
+        },
+        "stop_DVxLXF": {
+          "type": "stop",
+          "settings": {
+            "product": "produit-carrosserie-copie",
+            "frame": 213,
+            "time": "34.8",
+            "speed": "auto",
+            "display": "card",
+            "hotspot_x": 50,
+            "hotspot_y": 50,
+            "hotspot_label": "Voir le produit",
+            "focus_x": 65,
+            "side": "left",
+            "title": "Jante",
+            "tagline": "Jantes nettes, étriers propres, sans frotter.",
+            "mobile_image_file": "stop-jante.jpg"
+          }
+        },
+        "showcase_Pr7sNt": {
+          "type": "showcase",
+          "settings": {
+            "products": [
+              "produit-carrosserie",
+              "nettoyant-interieur",
+              "produit-carrosserie-copie",
+              "produit-carrosserie-copie-copie"
+            ],
+            "heading": "Toute la gamme",
+            "cards_y": 71,
+            "speed": "2",
+            "idle_seconds": 2.4,
+            "idle_speed": "0.7",
+            "text_more": "En savoir plus",
+            "text_before": "Avant",
+            "text_after": "Après",
+            "mobile_image_file": "stop-presentoir.jpg",
+            "kit_enabled": true,
+            "kit_label": "Prendre tout le kit",
+            "kit_note": "-15 % appliqués automatiquement dès 3 produits"
+          }
+        },
+        "effects_visuels": {
+          "type": "effects",
+          "settings": {
+            "cursor_glow": true,
+            "glow_strength": 40,
+            "cinema_mode": true,
+            "cinema_delay": 4
+          }
+        }
+      },
+      "block_order": [
+        "stop_qHcJJC",
+        "stop_yGV63z",
+        "stop_C6btQe",
+        "stop_DVxLXF",
+        "showcase_Pr7sNt",
+        "effects_visuels"
+      ],
+      "name": "Hero voiture + scroll",
+      "settings": {
+        "heading": "Allumez le contact.",
+        "heading_tag": "h1",
+        "subheading": "Un garage, une voiture, quatre gestes : carrosserie, portière, habitacle, jantes. Des produits pensés pour un résultat net, sans effort.",
+        "cta_label": "Découvrir les produits",
+        "cta_link": "",
+        "show_sound": true,
+        "start_mode": "button",
+        "text_sound_on": "Activer le son",
+        "text_sound_off": "Couper le son",
+        "scroll_hint": "Faire défiler",
+        "sequence_mode": "chapters",
+        "scroll_multiplier": 7,
+        "frames_total": 248,
+        "stop_range": 6,
+        "snap_to_stops": true,
+        "mobile_sequence": true,
+        "ambient_file": "engine-idle.mp3",
+        "sequence_label": "Dodge Challenger noire dans un garage : carrosserie, habitacle puis jante",
+        "chapter_video_file": "https://cdn.shopify.com/videos/c/vp/8bab54e7134740af91ae30c6e4cc8a3e/8bab54e7134740af91ae30c6e4cc8a3e.HD-1080p-7.2Mbps-97714344.mp4",
+        "chapter_video_reverse_file": "https://cdn.shopify.com/videos/c/vp/51b2eb1c100c432fb47d5a8090786e64/51b2eb1c100c432fb47d5a8090786e64.HD-1080p-7.2Mbps-97717218.mp4",
+        "chapter_rate": "1.5",
+        "chapter_end": "48.4",
+        "hero_video": "shopify://files/videos/1791979115229-e6ugc3jsvuk.mp4",
+        "video_file": "hero-ignition.mp4",
+        "audio_file": "",
+        "poster_file": "hero-poster.jpg",
+        "frame_first_file": "f_0001.webp",
+        "text_add": "Ajouter au panier",
+        "text_added": "Ajouté au panier",
+        "text_unavailable": "Indisponible",
+        "text_error": "Impossible d'ajouter ce produit. Réessayez.",
+        "text_close": "Fermer",
+        "accent_color": "#ff7a1a",
+        "color_card_bg": "#0c0c0e",
+        "card_bg_opacity": 65,
+        "product_title_size": 25,
+        "color_title": "#ffffff",
+        "color_subtitle": "#c8c8cc",
+        "color_product_title": "#ffffff",
+        "color_button_text": "#111111"
+      }
+    },
+    "avant_apres": {
+      "type": "hero-glass-compare",
+      "settings": {
+        "kicker": "Avant / après",
+        "heading": "Le résultat, sans filtre",
+        "text": "<p>Glissez le curseur : même voiture, même lumière, un seul lavage.</p>",
+        "image_before": "shopify://shop_images/Dodge_Challenger_SRT_poussiere_et_neons.png",
+        "image_after": "shopify://shop_images/Dodge_Challenger_noir_aux_halos_orange.png",
+        "label_before": "Avant",
+        "label_after": "Après",
+        "start": 50,
+        "ratio": "video",
+        "range_label": "Comparer avant et après",
+        "accent": "#FF7A1A",
+        "color_bg": "#0B0B0D",
+        "color_text": "#FFFFFF",
+        "padding_top": 72,
+        "padding_bottom": 40
+      }
+    },
+    "avis_clients": {
+      "type": "hero-glass-reviews",
+      "blocks": {
+        "avis_1": {
+          "type": "review",
+          "settings": {
+            "name": "Julien",
+            "meta": "Lyon · Golf GTI",
+            "rating": 5,
+            "text": "Un lavage, zéro trace, et le brillant tient deux semaines même avec la pluie. Je ne reviens pas en arrière.",
+            "product": "produit-carrosserie"
+          }
+        },
+        "avis_2": {
+          "type": "review",
+          "settings": {
+            "name": "Sarah",
+            "meta": "Bordeaux · Mini Cooper",
+            "rating": 5,
+            "text": "Le nettoyant intérieur ne laisse aucun film gras sur le tableau de bord, et l'odeur est discrète. Enfin.",
+            "product": "nettoyant-interieur"
+          }
+        },
+        "avis_3": {
+          "type": "review",
+          "settings": {
+            "name": "Karim",
+            "meta": "Lille · BMW Série 3",
+            "rating": 4,
+            "text": "Les jantes passent du noir de poussière de frein au propre en deux minutes, sans brosser. Bluffant.",
+            "product": "produit-carrosserie-copie"
+          }
+        },
+        "avis_4": {
+          "type": "review",
+          "settings": {
+            "name": "Léa",
+            "meta": "Nantes · Clio",
+            "rating": 5,
+            "text": "Vitres sans traces du premier coup, même les teintées. Le kit complet a remis la voiture à neuf en une heure.",
+            "product": "produit-carrosserie-copie-copie"
+          }
+        }
+      },
+      "block_order": [
+        "avis_1",
+        "avis_2",
+        "avis_3",
+        "avis_4"
+      ],
+      "settings": {
+        "kicker": "Avis clients",
+        "heading": "Testé dans leur garage",
+        "summary": "4,9/5 · 128 avis",
+        "accent": "#FF7A1A",
+        "color_bg": "#0B0B0D",
+        "color_text": "#FFFFFF",
+        "padding_top": 40,
+        "padding_bottom": 80
+      }
+    }
+  },
+  "order": [
+    "hero_scroll_car_9UL3JN",
+    "avant_apres",
+    "avis_clients"
+  ]
+}
