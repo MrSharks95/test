@@ -55,12 +55,14 @@
       {%- assign product_key = ',' | append: product.id | append: ',' -%}
       {%- if in_cart contains product_key -%}{%- continue -%}{%- endif -%}
       {%- assign up_variant = product.selected_or_first_available_variant -%}
+      {%- assign up_link = product.url -%}
+      {%- if s.product_links_home -%}{%- assign up_link = routes.root_url | append: '#fiche=' | append: product.handle -%}{%- endif -%}
       <li class="gct__up" data-gct-up>
-        <a class="gct__up-media" href="{{ product.url }}" tabindex="-1" aria-hidden="true">
+        <a class="gct__up-media" href="{{ up_link }}" tabindex="-1" aria-hidden="true">
           {%- if product.featured_image -%}{{ product.featured_image | image_url: width: 240 | image_tag: loading: 'lazy', alt: '' }}{%- endif -%}
         </a>
         <div class="gct__up-info">
-          <a class="gct__up-name" href="{{ product.url }}">{{ product.title | escape }}</a>
+          <a class="gct__up-name" href="{{ up_link }}">{{ product.title | escape }}</a>
           <p class="gct__up-price">{{ up_variant.price | money }}</p>
         </div>
         <button type="button" class="gct__up-add" data-gct-up-add data-variant-id="{{ up_variant.id }}" {% unless product.available %}disabled{% endunless %} aria-label="Ajouter {{ product.title | escape }}">
@@ -110,6 +112,9 @@
     { "type": "text", "id": "gift_text", "label": "Texte avant le palier cadeau", "default": "Plus que [montant] pour un cadeau offert" },
     { "type": "text", "id": "gift_reached", "label": "Texte palier cadeau atteint", "default": "Cadeau offert débloqué !" },
     { "type": "checkbox", "id": "show_dynamic_checkout", "label": "Boutons de paiement rapide (Shop Pay, Apple Pay…) s'ils sont actifs", "default": true },
+
+    { "type": "header", "content": "Pas de page produit" },
+    { "type": "checkbox", "id": "product_links_home", "label": "Les liens produit ouvrent la fiche « En savoir plus » sur l'accueil (au lieu de la page produit)", "default": true },
 
     { "type": "header", "content": "Style verre" },
     { "type": "color", "id": "accent", "label": "Couleur d'accent", "default": "#FF7A1A" },

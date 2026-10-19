@@ -1,0 +1,15 @@
+{
+  "sections": {
+    "main": {
+      "type": "hero-no-product-page",
+      "settings": {
+        "text": "<p>Ce produit se découvre sur la page d'accueil, dans le garage.</p>",
+        "button_label": "Voir le produit",
+        "accent": "#FF7A1A",
+        "color_bg": "#0B0B0D",
+        "color_text": "#FFFFFF"
+      }
+    }
+  },
+  "order": ["main"]
+}

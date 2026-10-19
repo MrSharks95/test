@@ -54,7 +54,7 @@
     endif
   endfor
 -%}
-<template data-hsc-product="{{ product.id }}">
+<template data-hsc-product="{{ product.id }}" data-hsc-handle="{{ product.handle }}">
   <div class="hsc-sheet__gallery{% if slide_count < 2 %} hsc-sheet__gallery--single{% else %} hsc-sheet__gallery--thumbs{% endif %}" data-hsc-gallery>
     <div class="hsc-sheet__track" data-hsc-track tabindex="0" aria-label="{{ product.title | escape }}">
       {%- for media in product.media -%}

@@ -100,6 +100,7 @@
     addMediaListener(this.mqMobile, this.onMediaChange);
     addMediaListener(this.mqReduced, this.onMediaChange);
     this.applyMode();
+    this.setupDeepLink();
   };
 
   HeroScrollCar.prototype.disconnectedCallback = function () {
@@ -111,7 +112,24 @@
     this.teardownEffects();
     if (this.onBlockSelect) document.removeEventListener('shopify:block:select', this.onBlockSelect);
     if (this.onKeydown) document.removeEventListener('keydown', this.onKeydown);
+    if (this.onHashChange) window.removeEventListener('hashchange', this.onHashChange);
     this.hscReady = false;
+  };
+
+  // No product page: links from the cart, the reviews or the former product page come back to the home
+  // page as /#fiche=<handle>, and the sheet of that product opens here (if it is part of the hero).
+  HeroScrollCar.prototype.setupDeepLink = function () {
+    var self = this;
+    var open = function () {
+      var match = /[#?&]fiche=([\w-]+)/.exec(window.location.hash || '') || /[?&]fiche=([\w-]+)/.exec(window.location.search || '');
+      if (!match) return;
+      var template = self.querySelector('template[data-hsc-handle="' + match[1] + '"]');
+      if (!template) return;
+      self.openSheet(template.getAttribute('data-hsc-product'), null);
+    };
+    this.onHashChange = open;
+    window.addEventListener('hashchange', open);
+    open();
   };
 
   HeroScrollCar.prototype.readConfig = function () {

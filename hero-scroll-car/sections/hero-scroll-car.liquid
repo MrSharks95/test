@@ -428,11 +428,11 @@
           {%- endif -%}
           {%- if product != blank -%}
             {%- if product.featured_image -%}
-              <a class="hsc-card__media" href="{{ product.url }}" tabindex="-1" aria-hidden="true">
+              <a class="hsc-card__media" href="{{ product.url }}" data-hsc-more="{{ product.id }}" tabindex="-1" aria-hidden="true">
                 {{ product.featured_image | image_url: width: 640 | image_tag: loading: 'lazy', widths: '320, 480, 640', sizes: '200px', alt: '' }}
               </a>
             {%- endif -%}
-            <h2 class="hsc-card__title"><a href="{{ product.url }}">{{ product.title | escape }}</a></h2>
+            <h2 class="hsc-card__title"><a href="{{ product.url }}" data-hsc-more="{{ product.id }}">{{ product.title | escape }}</a></h2>
             {%- if block.settings.tagline != blank -%}
               <p class="hsc-card__tagline">{{ block.settings.tagline | escape }}</p>
             {%- endif -%}
@@ -586,11 +586,11 @@
           {%- endif -%}
           {%- if product != blank -%}
             {%- if product.featured_image -%}
-              <a class="hsc-card__media" href="{{ product.url }}" tabindex="-1" aria-hidden="true">
+              <a class="hsc-card__media" href="{{ product.url }}" data-hsc-more="{{ product.id }}" tabindex="-1" aria-hidden="true">
                 {{ product.featured_image | image_url: width: 640 | image_tag: loading: 'lazy', widths: '320, 480, 640', sizes: '160px', alt: '' }}
               </a>
             {%- endif -%}
-            <h2 class="hsc-card__title"><a href="{{ product.url }}">{{ product.title | escape }}</a></h2>
+            <h2 class="hsc-card__title"><a href="{{ product.url }}" data-hsc-more="{{ product.id }}">{{ product.title | escape }}</a></h2>
             {%- if block.settings.tagline != blank -%}
               <p class="hsc-card__tagline">{{ block.settings.tagline | escape }}</p>
             {%- endif -%}

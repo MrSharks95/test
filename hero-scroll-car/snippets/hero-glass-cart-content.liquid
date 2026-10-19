@@ -55,8 +55,14 @@
 
   <ul class="gct__items" role="list">
     {%- for item in cart.items -%}
+      {%- liquid
+        assign item_link = item.url
+        if s.product_links_home
+          assign item_link = routes.root_url | append: '#fiche=' | append: item.product.handle
+        endif
+      -%}
       <li class="gct__item" data-gct-item data-line="{{ forloop.index }}" data-key="{{ item.key }}" data-product-id="{{ item.product_id }}">
-        <a class="gct__media" href="{{ item.url }}" tabindex="-1" aria-hidden="true">
+        <a class="gct__media" href="{{ item_link }}" tabindex="-1" aria-hidden="true">
           {%- if item.image -%}
             {{ item.image | image_url: width: 240 | image_tag: loading: 'lazy', widths: '120, 240', sizes: '96px', alt: '' }}
           {%- else -%}
@@ -67,7 +73,7 @@
           {%- if s.show_vendor and item.product.vendor != blank -%}
             <p class="gct__kicker">{{ item.product.vendor | escape }}</p>
           {%- endif -%}
-          <a class="gct__name" href="{{ item.url }}">{{ item.product.title | escape }}</a>
+          <a class="gct__name" href="{{ item_link }}">{{ item.product.title | escape }}</a>
           {%- unless item.product.has_only_default_variant -%}
             <p class="gct__variant">{{ item.variant.title | escape }}</p>
           {%- endunless -%}

@@ -218,6 +218,9 @@ rien n'écrase les fichiers d'origine du thème. Pour tout annuler d'un coup : `
 | Section « Avis clients (verre) » | Page d'accueil | Masquer ou supprimer la section | idem |
 | Page 404 en verre | Gabarit 404 | Remplacer par la section « main-404 » du thème | `backup/templates-404.json` |
 | Thème sombre sur les pages intérieures (schémas de couleurs) | Paramètres du thème › Couleurs | Rétablir les schémas | `backup/settings_data.before-dark.json` |
+| Sans page produit : `/products/…` renvoie à l'accueil et ouvre la fiche « En savoir plus » | Gabarit Produits | Remettre la section « main-product » du thème dans le gabarit | `backup/templates-product.json` |
+| Liens produit du panier et des avis vers la fiche de l'accueil (`/#fiche=handle`) | Panier verre › Pas de page produit · Avis clients | Décocher la case | Revert du commit « Sans page produit » |
+| Image et titre des cartes du hero ouvrent la fiche (plus de lien vers la page produit) | Hero | Aucun réglage : revert du commit | idem |
 
 Conseil : dupliquer le thème (Boutique en ligne › Thèmes › … › Dupliquer) avant de tester une
 nouveauté donne un point de retour complet en un clic.

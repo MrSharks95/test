@@ -8,3 +8,5 @@ recoller le contenu dans l'éditeur de code du thème (ou le renvoyer par l'API)
   du bouton « tout le kit », et des sections « Avant / après » et « Avis clients ».
 - `settings_data.before-dark.json` : réglages du thème (schémas de couleurs) avant le passage en sombre,
   s'il a été appliqué.
+- `templates-product.json` : gabarit produit d'origine du thème Heritage (section `main-product`), avant
+  « Sans page produit ».
