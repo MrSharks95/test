@@ -9,6 +9,7 @@
 
 {%- liquid
   assign s = section.settings
+  assign brand = s.logo_text | default: shop.name
   assign menu = s.menu
   assign overlay = false
   if s.overlay_home and template.name == 'index'
@@ -72,12 +73,12 @@
         aria-label="Menu"
       ><i></i><i></i><i></i></button>
 
-      <a class="ghd__logo" href="{{ routes.root_url }}" aria-label="{{ shop.name | escape }}">
+      <a class="ghd__logo" href="{{ routes.root_url }}" aria-label="{{ brand | escape }}">
         {%- if s.logo != blank -%}
           {%- assign logo_w2 = s.logo_width | default: 150 | times: 2 -%}
-          {{ s.logo | image_url: width: logo_w2 | image_tag: width: s.logo_width, alt: shop.name, loading: 'eager', fetchpriority: 'high' }}
+          {{ s.logo | image_url: width: logo_w2 | image_tag: width: s.logo_width, alt: brand, loading: 'eager', fetchpriority: 'high' }}
         {%- else -%}
-          <i aria-hidden="true"></i><span>{{ s.logo_text | default: shop.name | escape }}</span>
+          <i aria-hidden="true"></i><span>{{ brand | escape }}</span>
         {%- endif -%}
       </a>
 
@@ -164,7 +165,7 @@
 
   <aside class="ghd__drawer" id="ghd-drawer-{{ uid }}" data-ghd-drawer role="dialog" aria-modal="true" aria-label="Menu" aria-hidden="true">
     <div class="ghd__drawer-head">
-      <span class="ghd__logo"><i aria-hidden="true"></i><span>{{ s.logo_text | default: shop.name | escape }}</span></span>
+      <span class="ghd__logo"><i aria-hidden="true"></i><span>{{ brand | escape }}</span></span>
       <button type="button" class="ghd__icon" data-ghd-close aria-label="Fermer le menu">
         <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       </button>
@@ -221,7 +222,7 @@
     { "type": "header", "content": "Logo" },
     { "type": "image_picker", "id": "logo", "label": "Logo (image)" },
     { "type": "range", "id": "logo_width", "label": "Largeur du logo", "min": 60, "max": 260, "step": 10, "unit": "px", "default": 150 },
-    { "type": "text", "id": "logo_text", "label": "Nom (si pas d'image)", "info": "Vide = nom de la boutique." },
+    { "type": "text", "id": "logo_text", "label": "Nom de la marque", "info": "Affiché à la place du logo image, et utilisé pour l'accessibilité. Vide = nom de la boutique." },
 
     { "type": "header", "content": "Navigation" },
     { "type": "link_list", "id": "menu", "label": "Menu", "default": "main-menu" },

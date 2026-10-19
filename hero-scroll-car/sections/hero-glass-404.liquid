@@ -28,7 +28,7 @@
     </div>
   </div>
   {%- if s.show_wordmark -%}
-    <div class="hgs-404__wordmark" aria-hidden="true">{{ shop.name | escape }}</div>
+    <div class="hgs-404__wordmark" aria-hidden="true">{{ s.brand_text | default: shop.name | escape }}</div>
   {%- endif -%}
 </section>
 
@@ -46,7 +46,8 @@
     { "type": "url", "id": "button_link", "label": "Lien du bouton principal" },
     { "type": "text", "id": "button2_label", "label": "Second bouton", "default": "Voir la gamme" },
     { "type": "url", "id": "button2_link", "label": "Lien du second bouton" },
-    { "type": "checkbox", "id": "show_wordmark", "label": "Nom de la boutique en filigrane", "default": true },
+    { "type": "checkbox", "id": "show_wordmark", "label": "Nom en filigrane", "default": true },
+    { "type": "text", "id": "brand_text", "label": "Nom de la marque (filigrane)", "info": "Vide = nom de la boutique." },
     { "type": "header", "content": "Couleurs" },
     { "type": "color", "id": "accent", "label": "Couleur d'accent", "default": "#FF7A1A" },
     { "type": "color", "id": "color_bg", "label": "Fond", "default": "#0B0B0D" },

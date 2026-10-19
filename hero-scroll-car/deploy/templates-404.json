@@ -10,7 +10,8 @@
         "button_link": "/",
         "button2_label": "Voir la gamme",
         "button2_link": "shopify://collections/all",
-        "show_wordmark": true
+        "show_wordmark": true,
+        "brand_text": "Born2Sells"
       }
     }
   },

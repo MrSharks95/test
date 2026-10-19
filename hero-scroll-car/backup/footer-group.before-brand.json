@@ -1,0 +1,155 @@
+{
+  "name": "t:sections.footer.name",
+  "type": "footer",
+  "sections": {
+    "glass_footer": {
+      "type": "hero-glass-footer",
+      "blocks": {
+        "trust_delivery": {
+          "type": "trust",
+          "settings": {
+            "icon": "truck",
+            "title": "Livraison rapide",
+            "text": "Expédié sous 24 h"
+          }
+        },
+        "trust_payment": {
+          "type": "trust",
+          "settings": {
+            "icon": "shield",
+            "title": "Paiement sécurisé",
+            "text": "Cartes, PayPal, Apple Pay"
+          }
+        },
+        "trust_return": {
+          "type": "trust",
+          "settings": {
+            "icon": "undo",
+            "title": "Rétractation 14 jours",
+            "text": "Satisfait ou remboursé"
+          }
+        },
+        "menu_shop": {
+          "type": "link_list",
+          "settings": {
+            "heading": "Boutique",
+            "menu": "main-menu"
+          }
+        },
+        "menu_info": {
+          "type": "link_list",
+          "settings": {
+            "heading": "Informations",
+            "menu": "footer"
+          }
+        },
+        "newsletter": {
+          "type": "newsletter",
+          "settings": {
+            "heading": "Restez dans la boucle",
+            "text": "Nouveautés, conseils d’entretien et offres réservées aux abonnés.",
+            "placeholder": "Votre e-mail",
+            "button_label": "Je m’inscris",
+            "hint": "Zéro spam. Désinscription en un clic.",
+            "success_text": "Merci ! À très vite."
+          }
+        }
+      },
+      "block_order": [
+        "trust_delivery",
+        "trust_payment",
+        "trust_return",
+        "menu_shop",
+        "menu_info",
+        "newsletter"
+      ],
+      "settings": {
+        "logo_width": 150,
+        "tagline": "<p>Le soin auto, version nuit : des formules nettes, des finitions miroir.</p>",
+        "show_social": true,
+        "show_payment": true,
+        "show_policies": true,
+        "copyright_text": "Tous droits réservés",
+        "show_powered": false,
+        "show_wordmark": true,
+        "wordmark_text": "",
+        "accent": "#FF7A1A",
+        "color_bg": "#0B0B0D",
+        "color_text": "#FFFFFF",
+        "padding_top": 80,
+        "padding_bottom": 32
+      }
+    },
+    "footer": {
+      "type": "footer",
+      "disabled": true,
+      "blocks": {
+        "brand_information_Br4bBK": {
+          "type": "brand_information",
+          "settings": {
+            "show_social": true
+          }
+        },
+        "link_list_JWiGYM": {
+          "type": "link_list",
+          "settings": {
+            "heading": "Information",
+            "menu": "footer"
+          }
+        },
+        "link_list_JinYBi": {
+          "type": "link_list",
+          "settings": {
+            "heading": "Shop",
+            "menu": "main-menu"
+          }
+        },
+        "text_UxTGHt": {
+          "type": "text",
+          "settings": {
+            "heading": "Need To Get In Touch?",
+            "subtext": "<p>Questions or comments? Drop us a line, we'd love to hear from you. <a href=\"/pages/contact\" title=\"Contact\">Contact Us</a></p><p>support@heritagetheme.com heritagelabinfo@gmail.com</p>"
+          }
+        }
+      },
+      "block_order": [
+        "brand_information_Br4bBK",
+        "link_list_JWiGYM",
+        "link_list_JinYBi",
+        "text_UxTGHt"
+      ],
+      "settings": {
+        "color_scheme": "scheme-a5804aff-65ef-4d98-9b3d-fee032a22621",
+        "newsletter_enable": false,
+        "show_collapse": true,
+        "collapse_mode": "menu_only",
+        "newsletter_heading": "Subscribe to our emails",
+        "enable_follow_on_shop": true,
+        "show_social": true,
+        "enable_country_selector": true,
+        "enable_language_selector": true,
+        "payment_enable": true,
+        "original": "custom",
+        "payment_icon": "visa,master,paypal,apple_pay,shopify-pay,google-pay",
+        "show_policy": true,
+        "custom_icon_1_width": 34,
+        "custom_icon_2_width": 34,
+        "custom_icon_3_width": 34,
+        "hide_shopify": false,
+        "copyright": "- Theme by <a href=\"https://heritagetheme.com/\" target=\"_blank\" title=\"https://heritagetheme.com/\">Heritage<em>Theme</em></a> © 2025",
+        "show_bottom_text": false,
+        "bottom_text_align": "center",
+        "bottom_text": "Some text",
+        "bottom_text_font_size": 10,
+        "color_bottom_text": "#868686",
+        "margin_top": 0,
+        "padding_top": 60,
+        "padding_bottom": 36
+      }
+    }
+  },
+  "order": [
+    "glass_footer",
+    "footer"
+  ]
+}

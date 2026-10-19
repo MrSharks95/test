@@ -8,7 +8,8 @@
 {%- liquid
   assign s = section.settings
   assign uid = section.id | handleize
-  assign wordmark = s.wordmark_text | default: shop.name
+  assign brand = s.brand_text | default: shop.name
+  assign wordmark = s.wordmark_text | default: brand
   assign has_social = false
   if settings.social_instagram_link != blank or settings.social_facebook_link != blank or settings.social_tiktok_link != blank or settings.social_youtube_link != blank or settings.social_twitter_link != blank or settings.social_pinterest_link != blank
     assign has_social = true
@@ -64,12 +65,12 @@
     <div class="gft__grid">
       {%- comment -%} Marque {%- endcomment -%}
       <div class="gft__panel gft__brand">
-        <a class="gft__logo" href="{{ routes.root_url }}" aria-label="{{ shop.name | escape }}">
+        <a class="gft__logo" href="{{ routes.root_url }}" aria-label="{{ brand | escape }}">
           {%- if s.logo != blank -%}
             {%- assign logo_w2 = s.logo_width | default: 150 | times: 2 -%}
-            {{ s.logo | image_url: width: logo_w2 | image_tag: width: s.logo_width, alt: shop.name, loading: 'lazy' }}
+            {{ s.logo | image_url: width: logo_w2 | image_tag: width: s.logo_width, alt: brand, loading: 'lazy' }}
           {%- else -%}
-            <i aria-hidden="true"></i><span>{{ shop.name }}</span>
+            <i aria-hidden="true"></i><span>{{ brand | escape }}</span>
           {%- endif -%}
         </a>
         {%- if s.tagline != blank -%}
@@ -165,7 +166,7 @@
 
     <div class="gft__bottom">
       <p class="gft__copy">
-        &copy; {{ 'now' | date: '%Y' }} <a href="{{ routes.root_url }}">{{ shop.name }}</a>
+        &copy; {{ 'now' | date: '%Y' }} <a href="{{ routes.root_url }}">{{ brand | escape }}</a>
         {%- if s.copyright_text != blank %} · {{ s.copyright_text | escape }}{% endif -%}
         {%- if s.show_powered %} · {{ powered_by_link }}{% endif -%}
       </p>
@@ -214,6 +215,7 @@
   "settings": [
     { "type": "header", "content": "Marque" },
     { "type": "image_picker", "id": "logo", "label": "Logo (image)" },
+    { "type": "text", "id": "brand_text", "label": "Nom de la marque", "info": "Logo texte, copyright et filigrane. Vide = nom de la boutique." },
     { "type": "range", "id": "logo_width", "label": "Largeur du logo", "min": 60, "max": 260, "step": 10, "unit": "px", "default": 150 },
     { "type": "richtext", "id": "tagline", "label": "Texte de marque", "default": "<p>Le soin auto, version nuit : des formules nettes, des finitions miroir.</p>" },
     { "type": "checkbox", "id": "show_social", "label": "Réseaux sociaux", "info": "Liens définis dans Paramètres du thème › Réseaux sociaux.", "default": true },
