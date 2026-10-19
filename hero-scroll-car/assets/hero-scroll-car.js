@@ -1750,7 +1750,9 @@
         done = true;
         clearTimeout(timer);
         video.removeEventListener('ended', finish);
-        video.pause();
+        // Only the loop's own end pauses the video: once the leg is cancelled (a chapter change took
+        // over), the new playback owns the video and a late pause would leave the scene locked.
+        if (idle.active && idle.token === token && !ch.destroyed) video.pause();
         resolve();
       };
       var speed = function (t) {
@@ -1900,17 +1902,29 @@
     return new Promise(function (resolve) {
       var done = false;
       var timer = null;
+      var resumes = 0;
+      var onPause = function () {
+        // Paused from outside (a late callback of the living loop, a tab switch): the segment is not
+        // over, so play on, a few times at most.
+        if (done || ch.destroyed || video.ended || resumes >= 3) return;
+        if (video.currentTime >= threshold) return;
+        resumes += 1;
+        var again = video.play();
+        if (again && typeof again.catch === 'function') again.catch(function () { /* finish() by the timer */ });
+      };
       var finish = function () {
         if (done) return;
         done = true;
         clearTimeout(timer);
         video.removeEventListener('ended', finish);
+        video.removeEventListener('pause', onPause);
         video.pause();
         resolve();
       };
       // requestVideoFrameCallback stops firing once the last frame is shown: "ended" closes that gap.
       video.addEventListener('ended', finish);
       var threshold = end - 0.75 / ch.fps;
+      video.addEventListener('pause', onPause);
       var check = function (now, meta) {
         if (done) return;
         if (ch.destroyed) { finish(); return; }
