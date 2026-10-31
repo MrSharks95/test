@@ -3,7 +3,7 @@ import { PSEUDO_MAX_LENGTH, PSEUDO_MIN_LENGTH } from "./constants";
 /** Même nettoyage que private.clean_text() côté SQL. */
 export function cleanText(value: string): string {
   return value
-    .replace(/[​-‍⁠﻿­]/g, "")
+    .replace(/[\u200B-\u200D\u2060\uFEFF\u00AD]/g, "")
     .replace(/[\s\p{Cc}]+/gu, " ")
     .trim();
 }

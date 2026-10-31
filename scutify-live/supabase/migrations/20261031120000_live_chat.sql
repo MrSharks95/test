@@ -128,8 +128,8 @@ set search_path = ''
 as $$
   select btrim(
     regexp_replace(
-      regexp_replace(coalesce(p_text, ''), '[​-‍⁠﻿­]', '', 'g'),
-      '[[:space:][:cntrl:]   -     　]+',
+      regexp_replace(coalesce(p_text, ''), '[\u200B-\u200D\u2060\uFEFF\u00AD]', '', 'g'),
+      '[[:space:][:cntrl:]\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000]+',
       ' ',
       'g'
     )
