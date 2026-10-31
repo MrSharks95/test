@@ -20,6 +20,7 @@ export type ChatErrorKind =
   | "invalid_email"
   | "forbidden"
   | "target_admin"
+  | "ip_rate_limit"
   | "duplicate"
   | "network"
   | "unknown";
@@ -45,6 +46,7 @@ const KNOWN_HINTS = new Set<ChatErrorKind>([
   "invalid_email",
   "forbidden",
   "target_admin",
+  "ip_rate_limit",
 ]);
 
 /**

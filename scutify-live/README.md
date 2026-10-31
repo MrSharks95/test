@@ -79,6 +79,16 @@ Supabase (Auth, Postgres, Realtime Broadcast, Cron) · Vercel.
   onglet).
 - **Vider le chat** (attaque de spam).
 
+**Anti-spam par connexion (IP)** : le slow mode est par compte ; pour
+qu'un robot ne contourne pas les limites en multipliant les comptes, la base
+limite aussi, par IP (en-tête Cloudflare `cf-connecting-ip`, non
+falsifiable) : **20 messages / 10 s** et **30 nouveaux pseudos / 10 min**.
+Les admins ne sont pas limités. Réglage (0 = désactivé) :
+
+```sql
+update public.chat_settings set ip_message_limit = 20, ip_profile_limit = 30 where id = 1;
+```
+
 ---
 
 ## Architecture
@@ -366,6 +376,9 @@ npm run load-test -- --clients 4000 --rate 5 --duration 120 --ramp 100
 - Le rapport donne : connexions, déconnexions, erreurs, taux de livraison,
   latence p50/p95/p99, nombre de lots, événements/s estimés, puis un verdict
   **SUCCÈS / ÉCHEC** avec des pistes.
+- L'**anti-spam par IP** doit être coupé le temps du test (toutes les
+  connexions viennent d'une seule machine) : le script l'indique et donne la
+  commande, à remettre ensuite (`20` / `30`).
 - Le chat doit être **ouvert**. Les messages de test sont préfixés
   « 🧪 Test de charge » : cliquez **Vider le chat** dans `/admin` après.
 - Les sessions anonymes des émetteurs sont réutilisées entre deux essais
