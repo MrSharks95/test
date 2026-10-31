@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 /**
  * État public du chat (réglages + 50 derniers messages visibles), mis en cache
- * 2 s sur le CDN Vercel.
+ * ~1 s sur le CDN Vercel.
  *
  * Avec 4 000 spectateurs, une coupure Realtime provoque 4 000 resynchro-
  * nisations quasi simultanées : servies par le CDN, elles coûtent ~1 requête
@@ -50,7 +50,8 @@ export async function GET() {
 
   return NextResponse.json(body, {
     headers: {
-      "Cache-Control": "public, max-age=0, s-maxage=2, stale-while-revalidate=10",
+      // ≤ ~2 s d'ancienneté (le client se rattrape juste après l'abonnement).
+      "Cache-Control": "public, max-age=0, s-maxage=1, stale-while-revalidate=1",
     },
   });
 }

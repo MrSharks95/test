@@ -50,6 +50,17 @@ html.live-lock body {
   overscroll-behavior: none;
 }
 
+/* Téléphone en portrait, clavier ouvert : la vidéo rétrécit et le message
+   épinglé se masque le temps de la saisie, pour garder le champ visible. */
+@media (max-width: 599px) {
+  html[data-keyboard="open"] .live-video {
+    max-width: calc(var(--app-height, 100dvh) * 0.3 * 16 / 9);
+  }
+  html[data-keyboard="open"] .live-pinned {
+    display: none;
+  }
+}
+
 @layer utilities {
   .scrollbar-thin {
     scrollbar-width: thin;

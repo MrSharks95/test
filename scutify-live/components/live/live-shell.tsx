@@ -44,7 +44,7 @@ export function LiveShell() {
         <div className="w-full land:flex land:justify-center lg:flex lg:flex-1 lg:items-center lg:justify-center lg:px-8 lg:pb-8">
           <VideoPlayer
             src={publicEnv.streamEmbedUrl}
-            className="mx-auto max-w-[calc(var(--app-height,100dvh)*0.45*16/9)] land:max-w-[calc(var(--app-height,100dvh)*16/9)] lg:max-w-[calc((var(--app-height,100dvh)-8rem)*16/9)] lg:rounded-2xl lg:shadow-2xl lg:ring-1 lg:ring-white/10"
+            className="live-video mx-auto max-w-[calc(var(--app-height,100dvh)*0.45*16/9)] land:max-w-[calc(var(--app-height,100dvh)*16/9)] lg:max-w-[calc((var(--app-height,100dvh)-8rem)*16/9)] lg:rounded-2xl lg:shadow-2xl lg:ring-1 lg:ring-white/10"
           />
         </div>
       </section>

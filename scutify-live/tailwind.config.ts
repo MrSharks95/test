@@ -8,8 +8,10 @@ const config: Config = {
     container: { center: true, padding: "1rem" },
     extend: {
       screens: {
-        // Téléphone en paysage : vidéo et chat côte à côte.
-        land: { raw: "(orientation: landscape) and (max-height: 520px)" },
+        // Téléphone tourné en paysage : vidéo et chat côte à côte. min-width
+        // évite qu'un téléphone en portrait clavier ouvert (viewport plus large
+        // que haut) bascule dans cette mise en page.
+        land: { raw: "(orientation: landscape) and (max-height: 520px) and (min-width: 600px)" },
       },
       fontFamily: {
         sans: ["var(--font-montserrat)", "ui-sans-serif", "system-ui", "sans-serif"],
