@@ -1,6 +1,6 @@
 import path from "node:path";
 
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 
 export default defineConfig({
   resolve: {
@@ -12,6 +12,8 @@ export default defineConfig({
   },
   test: {
     environment: "node",
+    // scutify-live/ est une app indépendante (ses propres tests).
+    exclude: [...configDefaults.exclude, "scutify-live/**"],
     // env.ts validates the whole server environment at import — provide valid
     // dummy values so importing any server module under test succeeds.
     env: {

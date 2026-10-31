@@ -46,3 +46,12 @@ obligatoire, service key Supabase jamais exposée).
 4. Moteur de délai pays × catégorie — Prompt 4
 5. Email accusé de réception (Resend) — Prompt 5
 6. Theme app extension (bouton visible) — Prompt 6
+
+---
+
+## Autre app du dépôt : Scutify Live
+
+Le dossier [`scutify-live/`](./scutify-live) contient une app **indépendante**
+(live StreamYard + chat modéré Supabase Realtime). Elle a ses propres
+dépendances et se déploie sur Vercel avec *Root Directory = `scutify-live`*.
+Voir [`scutify-live/README.md`](./scutify-live/README.md).

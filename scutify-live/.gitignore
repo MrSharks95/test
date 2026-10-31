@@ -1,0 +1,14 @@
+/node_modules
+/.next/
+/out/
+next-env.d.ts
+*.tsbuildinfo
+.DS_Store
+.vercel
+
+# Secrets — ne jamais committer
+.env
+.env*.local
+
+# Sessions réutilisées par le test de charge
+.loadtest-cache.json
