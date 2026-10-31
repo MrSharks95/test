@@ -1,0 +1,66 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Charte Scutify : bleu foncé #003366, bleu clair #66ccff, blanc */
+    --background: 0 0% 100%;
+    --foreground: 210 60% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 210 60% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 60% 12%;
+    --primary: 210 100% 20%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 200 100% 96%;
+    --secondary-foreground: 210 100% 20%;
+    --muted: 210 30% 96%;
+    --muted-foreground: 210 15% 38%;
+    --accent: 200 100% 70%;
+    --accent-foreground: 210 100% 20%;
+    --destructive: 0 72% 48%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 210 25% 88%;
+    --input: 210 25% 82%;
+    --ring: 200 100% 55%;
+    --radius: 0.75rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-background font-sans text-foreground antialiased;
+  }
+}
+
+/* Page /live : l'app occupe exactement le viewport visible (clavier compris),
+   la page elle-même ne défile jamais. */
+html.live-lock,
+html.live-lock body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+
+  .pb-safe {
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  }
+
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+}
