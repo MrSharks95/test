@@ -26,7 +26,7 @@ export function ChatPanel({ chat }: { chat: LiveChat }) {
       </header>
 
       <ReconnectingBanner state={chat.connection} />
-      <PinnedMessage settings={chat.settings} />
+      <PinnedMessage settings={chat.settings} className="live-pinned" />
 
       {chat.phase === "ready" ? (
         <MessageList

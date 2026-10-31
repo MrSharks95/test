@@ -35,6 +35,12 @@ const BATCH_MS = 80;
 const MAX_RETRY_DELAY_MS = 15_000;
 /** Étale les resynchronisations de milliers de clients après une coupure. */
 const RESYNC_JITTER_MS = 4_000;
+/**
+ * Rattrapage après chaque abonnement : l'instantané CDN peut dater de ~2 s et
+ * les lots partent toutes les ~2 s. Relire l'instantané 2,5 s après
+ * l'abonnement garantit qu'aucun message diffusé avant l'abonnement n'est raté.
+ */
+const CATCH_UP_DELAY_MS = 2_500;
 
 type InitialData = {
   settings: ChatSettings;
@@ -62,6 +68,10 @@ export function useLiveChat({ mode, onUserMuted }: Options) {
   const [state, dispatch] = useReducer(messagesReducer, initialMessagesState);
 
   const userIdRef = useRef<string | null>(null);
+  const profileRef = useRef<Profile | null>(null);
+  useEffect(() => {
+    profileRef.current = profile;
+  }, [profile]);
   const onUserMutedRef = useRef(onUserMuted);
   useEffect(() => {
     onUserMutedRef.current = onUserMuted;
@@ -240,7 +250,8 @@ export function useLiveChat({ mode, onUserMuted }: Options) {
     const uid = userIdRef.current;
     if (!uid) return;
     try {
-      const fresh = await loadData(uid);
+      // Spectateur sans pseudo : pas de profil à relire (épargne la base).
+      const fresh = await loadData(uid, { knownWithoutProfile: !profileRef.current });
       setSettings(fresh.settings);
       setProfile(fresh.profile);
       dispatch({
@@ -319,14 +330,16 @@ export function useLiveChat({ mode, onUserMuted }: Options) {
             clearRetry();
             retries = 0;
             setConnection("online");
-            // Après une coupure : récupère ce qui a été manqué. Délai aléatoire
-            // côté spectateurs pour ne pas resynchroniser 4 000 clients d'un coup.
-            if (wasSubscribed) {
-              const jitter = mode === "viewer" ? Math.random() * RESYNC_JITTER_MS : 0;
-              setTimeout(() => {
-                if (!disposed) void resync();
-              }, jitter);
-            }
+            // Rattrape ce qui a pu être diffusé avant l'abonnement (1re connexion)
+            // ou pendant une coupure. Délai aléatoire côté spectateurs pour ne
+            // pas resynchroniser 4 000 clients au même instant.
+            const delay =
+              mode === "viewer"
+                ? CATCH_UP_DELAY_MS + Math.random() * (wasSubscribed ? RESYNC_JITTER_MS : 1_500)
+                : 300;
+            setTimeout(() => {
+              if (!disposed) void resync();
+            }, delay);
             wasSubscribed = true;
             return;
           }

@@ -43,19 +43,20 @@ export function JoinForm({ onJoin }: Props) {
     if (!result.ok) setError(result.error);
   };
 
+  // Compact : doit tenir au-dessus du clavier mobile (vidéo rétrécie).
   return (
     <form onSubmit={submit} className="space-y-2" noValidate>
-      <p className="text-sm font-bold text-brand-navy">Rejoins la discussion</p>
-      <div className="grid gap-2">
+      <div className="grid grid-cols-2 gap-2">
         <Input
           value={pseudo}
           onChange={(e) => setPseudo(e.target.value)}
-          placeholder="Ton pseudo (2 à 20 caractères)"
+          placeholder="Pseudo"
           maxLength={PSEUDO_MAX_LENGTH}
           autoComplete="nickname"
           autoCapitalize="words"
           enterKeyHint="next"
-          aria-label="Pseudo"
+          aria-label="Pseudo (2 à 20 caractères)"
+          className="h-10"
           autoFocus
           required
         />
@@ -63,12 +64,13 @@ export function JoinForm({ onJoin }: Props) {
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="Ton email"
+          placeholder="Email"
           inputMode="email"
           autoComplete="email"
           autoCapitalize="none"
           enterKeyHint="go"
           aria-label="Email"
+          className="h-10"
           required
         />
       </div>
@@ -77,15 +79,15 @@ export function JoinForm({ onJoin }: Props) {
           {error}
         </p>
       )}
-      <div className="flex gap-2">
-        <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
+      <div className="flex items-center gap-2">
+        <Button type="button" variant="ghost" size="sm" className="h-10 px-3" onClick={() => setOpen(false)}>
           Annuler
         </Button>
-        <Button type="submit" className="flex-1" disabled={submitting}>
+        <Button type="submit" className="h-10 flex-1 rounded-full" disabled={submitting}>
           {submitting ? "Connexion…" : "Rejoindre le chat"}
         </Button>
       </div>
-      <p className="text-[11px] leading-snug text-muted-foreground">
+      <p className="text-[11px] leading-tight text-muted-foreground">
         Ton email reste privé : il n&apos;est jamais affiché dans le chat.
       </p>
     </form>
