@@ -26,7 +26,9 @@ export async function GET() {
   const [settings, messages] = await Promise.all([
     supabase
       .from("chat_settings")
-      .select("chat_enabled,slow_mode_seconds,links_allowed,pinned_message,pinned_url,pinned_label,updated_at")
+      .select(
+        "chat_enabled,slow_mode_seconds,links_allowed,pinned_message,pinned_url,pinned_label,custom_html,custom_html_updated_at,updated_at",
+      )
       .eq("id", 1)
       .single(),
     supabase
@@ -42,8 +44,10 @@ export async function GET() {
     return NextResponse.json({ error: "unavailable" }, { status: 503, headers: { "Cache-Control": "no-store" } });
   }
 
+  const { custom_html: customHtml, ...publicSettings } = settings.data;
   const body: ChatSnapshot = {
-    settings: settings.data,
+    settings: publicSettings,
+    custom_html: customHtml,
     messages: (messages.data ?? []).reverse(),
     generated_at: generatedAt,
   };

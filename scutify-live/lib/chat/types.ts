@@ -15,6 +15,8 @@ export type ChatSettings = {
   pinned_message: string | null;
   pinned_url: string | null;
   pinned_label: string | null;
+  /** Change quand le bloc HTML sous la vidéo est modifié (le HTML n'est pas diffusé). */
+  custom_html_updated_at?: string | null;
   updated_at?: string;
 };
 
@@ -38,6 +40,8 @@ export type ConnectionState = "connecting" | "online" | "reconnecting";
 /** Instantané public servi (et mis en cache) par /api/chat/snapshot. */
 export type ChatSnapshot = {
   settings: ChatSettings;
+  /** Bloc HTML personnalisé sous la vidéo (brut, nettoyé à l'affichage). */
+  custom_html: string | null;
   messages: ChatMessage[];
   /** Horodatage serveur (ISO) de génération de l'instantané. */
   generated_at: string;

@@ -70,7 +70,13 @@ Supabase (Auth, Postgres, Realtime Broadcast, Cron) · Vercel.
   accents, mot entier, `*` = joker : `arnaque*`).
 - Envoi de messages en tant qu'Équipe (même chat fermé, sans slow mode).
 - Épingle avec bouton lien (modèle « 🚀 Rejoindre la formation » prêt à
-  l'emploi) et retrait.
+  l'emploi) et retrait : affichée en **bannière sous la vidéo** et en haut du
+  chat.
+- Onglet **Offre** : bloc HTML libre sous la vidéo (offre, bonus, CTA…), avec
+  aperçu, publication instantanée et retrait. Sur téléphone, il s'ouvre via le
+  bouton « 🎁 Voir l'offre ». Le code est nettoyé (DOMPurify : pas de scripts,
+  d'iframes ni de gestionnaires d'événements ; liens ouverts dans un nouvel
+  onglet).
 - **Vider le chat** (attaque de spam).
 
 ---
@@ -137,10 +143,12 @@ immédiatement ; sinon il attend au plus ~2 s, ce qui est imperceptible à côt�
 du délai de la vidéo. L'auteur voit son propre message instantanément.
 
 Formule : **événements/s ≈ spectateurs connectés ÷ intervalle**.
-Au-delà de ~4 500 spectateurs, passer l'intervalle à 3 s :
+Le projet de production est réglé à **3 s** : 4 000 spectateurs ≈ 1 330
+événements/s, soit ~45 % de marge sous le plafond de 2 500/s (pics
+d'audience, reconnexions). Pour revenir à 2 s (chat un peu plus vif) :
 
 ```sql
-update public.chat_settings set broadcast_interval_seconds = 3 where id = 1;
+update public.chat_settings set broadcast_interval_seconds = 2 where id = 1;
 ```
 
 ### Plan Supabase nécessaire
@@ -252,6 +260,17 @@ commande sur un compte existant met à jour son mot de passe.
 Se connecter ensuite sur **`/admin`**. Le pseudo de l'admin apparaît avec le
 badge **Équipe** dans le chat.
 
+### Ajouter des membres de l'équipe
+
+Même procédure pour chaque personne : créer son compte (*Authentication >
+Users > Add user*, email + mot de passe, **Auto Confirm User**), puis :
+
+```sql
+select private.promote_to_admin('prenom@scutify.fr', 'Prénom Scutify');
+```
+
+Retirer les droits : `update public.profiles set role = 'viewer' where email = 'prenom@scutify.fr';`
+
 ---
 
 ## Variables d'environnement
@@ -299,7 +318,8 @@ Puis ouvrir http://localhost:3000/live et http://localhost:3000/admin.
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run test` | Vitest (reducer du fil, liens, validation, erreurs) |
 | `npm run create-admin` | créer / promouvoir un admin |
-| `npm run load-test` | test de charge |
+| `npm run load-test` | test de charge (4 000 spectateurs par défaut) |
+| `npm run demo-chat` | démo « public en direct » : 200 messages réalistes (🔥, bonjours, questions, trolls) pour voir le rendu |
 
 ---
 
@@ -365,15 +385,18 @@ spend cap, ou augmenter `broadcast_interval_seconds`.
 
 ## Checklist jour J
 
-- [ ] Plan **Pro**, **spend cap désactivé**, compute **Small/Medium**.
+- [ ] Plan **Pro**, **spend cap désactivé**, compute **Medium** (quelques
+      heures avant : le changement redémarre la base ~2 min).
 - [ ] Connexions anonymes **activées** et limite par IP **relevée**.
-- [ ] Realtime : **accès public désactivé**.
+- [ ] Realtime : **accès public désactivé** ; ne plus toucher aux réglages
+      Realtime pendant le live (chaque sauvegarde déconnecte tout le monde).
 - [ ] Vérifier que l'offre **StreamYard** accepte le nombre de spectateurs
       prévu sur la page d'intégration.
+- [ ] Lien à partager : domaine propre (ex. `live.scutify.fr`) configuré
+      dans Vercel.
 - [ ] `npm run load-test` → **SUCCÈS**, puis **Vider le chat**.
-- [ ] Mots-clés bloqués saisis, épingle prête (modèle « Rejoindre la
-      formation »), slow mode choisi (5–10 s conseillé au-delà de quelques
-      centaines de participants actifs).
+- [ ] Mots-clés bloqués saisis, épingle prête, bloc **Offre** publié, slow
+      mode choisi (**10 s** conseillé avec des milliers de spectateurs).
 - [ ] Au moins deux admins connectés sur `/admin` (un sur téléphone).
 
 ---
@@ -381,6 +404,11 @@ spend cap, ou augmenter `broadcast_interval_seconds`.
 ## Après le live
 
 - Les messages s'effacent seuls après 12 h (ou **Vider le chat**).
+- Exporter les contacts (SQL Editor → *Download CSV*) :
+  ```sql
+  select pseudo, email, created_at from public.profiles
+  where role = 'viewer' order by created_at;
+  ```
 - Les **profils** (pseudo + email) sont conservés : ce sont les contacts
   collectés. Pour les supprimer (RGPD) :
   ```sql

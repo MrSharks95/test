@@ -4,7 +4,10 @@
  * chat (🔥, bonjours, questions…) pour voir le rendu du live et de l'admin.
  *
  *   npm run demo-chat                       # 200 messages, ~90 s, 40 spectateurs
- *   npm run demo-chat -- --messages 300 --duration 120 --viewers 50
+ *   npm run demo-chat -- --messages 300 --duration 120 --viewers 50 --trolls 0.2
+ *
+ * --trolls : part de messages « trolls » (mots-clés bloqués → onglet Bloqués,
+ *            liens → refusés) pour tester la modération. Défaut 0.15.
  *
  * Utilise la vraie fonction send_message (slow mode, mots-clés, etc. appliqués).
  * Après la démo : « Vider le chat » dans /admin.
@@ -22,11 +25,13 @@ const { values: args } = parseArgs({
     messages: { type: "string", default: "200" },
     duration: { type: "string", default: "90" },
     viewers: { type: "string", default: "40" },
+    trolls: { type: "string", default: "0.15" },
   },
 });
 const TOTAL = Number(args.messages);
 const DURATION_S = Number(args.duration);
 const VIEWERS = Number(args.viewers);
+const TROLL_RATE = Math.min(1, Math.max(0, Number(args.trolls)));
 
 const URL = requireEnv("NEXT_PUBLIC_SUPABASE_URL");
 const KEY = requireEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY");
@@ -50,6 +55,16 @@ const MESSAGES = [
   "Question : il faut combien de budget pour commencer ?", "Je suis dans l'e-commerce depuis 2 ans, ça me parle",
   "Trop fort 🙌", "Merci l'équipe Scutify", "J'adore l'énergie 😄", "C'est exactement ce qu'il me fallait",
   "Je suis prêt(e) 🔥", "Go go go", "Excellent 👍", "Ça fait plaisir de vous voir en live",
+];
+
+// Messages à modérer : contiennent des mots-clés bloqués courants (→ shadow)
+// ou des liens (→ refusés si les liens sont bloqués).
+const TROLLS = [
+  "C'est une arnaque", "Encore une arnaque ce truc", "ARNAQUE !!!", "Vous êtes des voleurs",
+  "C'est nul", "Franchement nul", "J'ai perdu argent avec ce genre de formation", "Allez voir les avis sur Trustpilot",
+  "Regardez les avis avant d'acheter", "Il y a une vidéo YouTube qui explique tout gratuitement", "5000 € pour ça ?",
+  "1500 balles lol", "Le closing c'est mieux", "Devenez closeur à la place", "8lab c'est mieux",
+  "Va sur monsite.com pour la vraie méthode", "www.promo-crypto.fr gains garantis", "Rejoignez t.me/argentfacile",
 ];
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -92,7 +107,7 @@ for (let n = 0; n < TOTAL; n += 1) {
   if (free.length === 0) continue;
   const viewer = pick(free);
   viewer.nextAt = now + 2_300;
-  const content = pick(MESSAGES);
+  const content = Math.random() < TROLL_RATE ? pick(TROLLS) : pick(MESSAGES);
   viewer.client.rpc("send_message", { content }).then(({ error }) => {
     if (error) {
       refused += 1;

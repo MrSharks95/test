@@ -44,6 +44,7 @@ const CATCH_UP_DELAY_MS = 2_500;
 
 type InitialData = {
   settings: ChatSettings;
+  customHtml: string | null;
   messages: ChatMessage[];
   profile: Profile | null;
   /** Horodatage de l'instantané (ms), pour la réconciliation. */
@@ -63,6 +64,8 @@ export function useLiveChat({ mode, onUserMuted }: Options) {
   const [userId, setUserId] = useState<string | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [settings, setSettings] = useState<ChatSettings | null>(null);
+  const [customHtml, setCustomHtml] = useState<string | null>(null);
+  const customHtmlVersionRef = useRef<string | null>(null);
   const [connection, setConnection] = useState<ConnectionState>("connecting");
   const [nextAllowedAt, setNextAllowedAt] = useState(0);
   const [state, dispatch] = useReducer(messagesReducer, initialMessagesState);
@@ -109,15 +112,26 @@ export function useLiveChat({ mode, onUserMuted }: Options) {
     [supabase],
   );
 
-  const fetchSettings = useCallback(async (): Promise<ChatSettings> => {
+  const fetchSettings = useCallback(async (): Promise<{ settings: ChatSettings; customHtml: string | null }> => {
     const { data, error } = await supabase
       .from("chat_settings")
-      .select("chat_enabled,slow_mode_seconds,links_allowed,pinned_message,pinned_url,pinned_label,updated_at")
+      .select(
+        "chat_enabled,slow_mode_seconds,links_allowed,pinned_message,pinned_url,pinned_label,custom_html,custom_html_updated_at,updated_at",
+      )
       .eq("id", 1)
       .single();
     if (error) throw error;
-    return data;
+    const { custom_html, ...rest } = data;
+    return { settings: rest, customHtml: custom_html };
   }, [supabase]);
+
+  const fetchSnapshot = useCallback(
+    (): Promise<ChatSnapshot | null> =>
+      fetch("/api/chat/snapshot")
+        .then((r) => (r.ok ? (r.json() as Promise<ChatSnapshot>) : null))
+        .catch(() => null),
+    [],
+  );
 
   const fetchProfile = useCallback(
     async (uid: string): Promise<Profile | null> => {
@@ -141,22 +155,21 @@ export function useLiveChat({ mode, onUserMuted }: Options) {
   const loadData = useCallback(
     async (uid: string, options: { knownWithoutProfile?: boolean } = {}): Promise<InitialData> => {
       let settings: ChatSettings;
+      let customHtml: string | null;
       let messages: ChatMessage[];
       let until: number | undefined;
 
-      const snapshot =
-        mode === "viewer"
-          ? await fetch("/api/chat/snapshot")
-              .then((r) => (r.ok ? (r.json() as Promise<ChatSnapshot>) : null))
-              .catch(() => null)
-          : null;
+      const snapshot = mode === "viewer" ? await fetchSnapshot() : null;
 
       if (snapshot) {
         settings = snapshot.settings;
+        customHtml = snapshot.custom_html ?? null;
         messages = snapshot.messages;
         until = Date.parse(snapshot.generated_at);
       } else {
-        [settings, messages] = await Promise.all([fetchSettings(), fetchVisibleMessages()]);
+        let fresh: { settings: ChatSettings; customHtml: string | null };
+        [fresh, messages] = await Promise.all([fetchSettings(), fetchVisibleMessages()]);
+        ({ settings, customHtml } = fresh);
       }
 
       // Un compte anonyme tout juste créé n'a pas encore de profil.
@@ -164,9 +177,15 @@ export function useLiveChat({ mode, onUserMuted }: Options) {
       if (mode === "viewer" && profile) {
         messages = [...messages, ...(await fetchOwnShadow(uid))];
       }
-      return { settings, messages, profile, ...(until !== undefined && Number.isFinite(until) ? { until } : {}) };
+      return {
+        settings,
+        customHtml,
+        messages,
+        profile,
+        ...(until !== undefined && Number.isFinite(until) ? { until } : {}),
+      };
     },
-    [mode, fetchSettings, fetchVisibleMessages, fetchProfile, fetchOwnShadow],
+    [mode, fetchSnapshot, fetchSettings, fetchVisibleMessages, fetchProfile, fetchOwnShadow],
   );
 
   // ------------------------------------------------------- initial load ---
@@ -197,6 +216,8 @@ export function useLiveChat({ mode, onUserMuted }: Options) {
         userIdRef.current = uid;
         setUserId(uid);
         setSettings(initial.settings);
+        setCustomHtml(initial.customHtml);
+        customHtmlVersionRef.current = initial.settings.custom_html_updated_at ?? null;
         setProfile(initial.profile);
         dispatch({ type: "replace", messages: initial.messages });
         setLoadError(null);
@@ -253,6 +274,8 @@ export function useLiveChat({ mode, onUserMuted }: Options) {
       // Spectateur sans pseudo : pas de profil à relire (épargne la base).
       const fresh = await loadData(uid, { knownWithoutProfile: !profileRef.current });
       setSettings(fresh.settings);
+      setCustomHtml(fresh.customHtml);
+      customHtmlVersionRef.current = fresh.settings.custom_html_updated_at ?? null;
       setProfile(fresh.profile);
       dispatch({
         type: "reconcile",
@@ -263,6 +286,28 @@ export function useLiveChat({ mode, onUserMuted }: Options) {
       console.warn("[live-chat] resynchronisation impossible", error);
     }
   }, [loadData]);
+
+  /**
+   * Le bloc HTML n'est pas diffusé (poids × milliers de spectateurs) : on le
+   * relit quand sa date de modification change. Spectateurs : via le CDN,
+   * avec un délai aléatoire (le cache se rafraîchit en ~1-2 s).
+   */
+  const refreshCustomHtml = useCallback(() => {
+    const run = async () => {
+      if (mode === "viewer") {
+        const snapshot = await fetchSnapshot();
+        if (snapshot) setCustomHtml(snapshot.custom_html ?? null);
+      } else {
+        try {
+          const { customHtml: fresh } = await fetchSettings();
+          setCustomHtml(fresh);
+        } catch (error) {
+          console.warn("[live-chat] lecture du bloc impossible", error);
+        }
+      }
+    };
+    setTimeout(() => void run(), mode === "viewer" ? 2_500 + Math.random() * 3_000 : 0);
+  }, [mode, fetchSnapshot, fetchSettings]);
 
   useEffect(() => {
     if (phase !== "ready" || !userId) return;
@@ -313,7 +358,13 @@ export function useLiveChat({ mode, onUserMuted }: Options) {
         })
         .on("broadcast", { event: "settings_updated" }, ({ payload }) => {
           if (payload && typeof payload === "object") {
-            setSettings((prev) => ({ ...(prev ?? ({} as ChatSettings)), ...(payload as ChatSettings) }));
+            const next = payload as ChatSettings;
+            setSettings((prev) => ({ ...(prev ?? ({} as ChatSettings)), ...next }));
+            const version = next.custom_html_updated_at ?? null;
+            if (version !== customHtmlVersionRef.current) {
+              customHtmlVersionRef.current = version;
+              refreshCustomHtml();
+            }
           }
         })
         .on("broadcast", { event: "user_muted" }, ({ payload }) => {
@@ -393,7 +444,7 @@ export function useLiveChat({ mode, onUserMuted }: Options) {
       if (current) void supabase.removeChannel(current);
       current = null;
     };
-  }, [phase, userId, supabase, mode, enqueue, resync]);
+  }, [phase, userId, supabase, mode, enqueue, resync, refreshCustomHtml]);
 
   useEffect(
     () => () => {
@@ -456,6 +507,8 @@ export function useLiveChat({ mode, onUserMuted }: Options) {
       profile,
       settings,
       setSettings,
+      customHtml,
+      setCustomHtml,
       isAdmin,
       messages: state.messages,
       pendingCount: state.pending.length,
@@ -475,6 +528,7 @@ export function useLiveChat({ mode, onUserMuted }: Options) {
       userId,
       profile,
       settings,
+      customHtml,
       isAdmin,
       state,
       nextAllowedAt,

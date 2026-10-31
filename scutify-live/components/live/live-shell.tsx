@@ -1,7 +1,8 @@
 "use client";
 
-import { ChevronDown, MessageCircle } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { ChevronDown, Gift, MessageCircle, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 import { useHtmlClass, useVisualViewportVars } from "@/hooks/use-visual-viewport";
 import { useLiveChat } from "@/hooks/use-live-chat";
@@ -9,6 +10,7 @@ import { publicEnv } from "@/lib/env";
 import { cn } from "@/lib/utils";
 
 import { ChatPanel } from "./chat-panel";
+import { CustomBlock } from "./custom-block";
 import { PinnedMessage } from "./pinned-message";
 import { VideoPlayer } from "./video-player";
 
@@ -21,7 +23,10 @@ import { VideoPlayer } from "./video-player";
  * - desktop (lg) : vidéo ~74 % à gauche, chat pleine hauteur à droite ;
  * - chat fermé par l'équipe : chat MASQUÉ, la vidéo prend tout l'écran (le
  *   message épinglé reste affiché sous la vidéo). Les messages continuent
- *   d'arriver en arrière-plan : à la réouverture, le fil est à jour.
+ *   d'arriver en arrière-plan : à la réouverture, le fil est à jour ;
+ * - bloc HTML de l'équipe (offre…) : sous la vidéo sur desktop (colonne qui
+ *   défile), entre la vidéo et le chat en paysage, et via « Voir l'offre »
+ *   (plein écran) sur téléphone en portrait.
  *
  * Le conteneur racine suit le viewport VISIBLE (--app-height /
  * --app-offset-top), ce qui garde le champ de saisie au-dessus du clavier
@@ -37,6 +42,8 @@ export function LiveShell() {
   const { resume } = chat;
   const rootRef = useRef<HTMLDivElement>(null);
   const chatRef = useRef<HTMLElement>(null);
+  const hasBlock = Boolean(chat.customHtml?.trim());
+  const [offerOpen, setOfferOpen] = useState(false);
 
   // Largeur max de la scène (vidéo + bannière) : la vidéo 16:9 doit tenir en
   // hauteur avec l'en-tête desktop et, le cas échéant, la bannière épinglée.
@@ -82,11 +89,11 @@ export function LiveShell() {
         </header>
         <div
           className={cn(
-            "w-full lg:flex lg:flex-1 lg:items-center lg:justify-center lg:px-8 lg:pb-8 touchland:block touchland:flex-none touchland:p-0",
-            chatHidden && "flex min-h-0 flex-1 items-center justify-center",
+            "scrollbar-thin w-full lg:flex lg:min-h-0 lg:flex-1 lg:flex-col lg:overflow-y-auto lg:px-8 lg:pb-8 touchland:block touchland:flex-none touchland:overflow-visible touchland:p-0",
+            chatHidden && "flex min-h-0 flex-1 flex-col items-center justify-center",
           )}
         >
-          <div className={cn("live-video mx-auto w-full", stageWidth)}>
+          <div className={cn("live-video mx-auto w-full shrink-0", stageWidth, hasBlock ? "lg:mt-0" : "lg:my-auto")}>
             <VideoPlayer
               src={publicEnv.streamEmbedUrl}
               className="lg:rounded-2xl lg:shadow-2xl lg:ring-1 lg:ring-white/10 touchland:rounded-none touchland:shadow-none touchland:ring-0"
@@ -96,7 +103,20 @@ export function LiveShell() {
               settings={chat.settings}
               className="live-pinned lg:mt-3 lg:rounded-xl lg:bg-white/10 lg:ring-1 lg:ring-white/15 touchland:mt-0 touchland:rounded-none touchland:bg-brand-navy touchland:ring-0"
             />
+            {hasBlock && (
+              // Téléphone en portrait : l'offre s'ouvre en plein écran.
+              <button
+                type="button"
+                onClick={() => setOfferOpen(true)}
+                className="live-pinned flex w-full items-center justify-center gap-2 bg-brand-sky py-2 text-sm font-extrabold text-brand-navy lg:hidden touchland:hidden"
+              >
+                <Gift className="size-4" /> Voir l&apos;offre
+              </button>
+            )}
           </div>
+          {hasBlock && (
+            <CustomBlock html={chat.customHtml} className="mx-auto mt-6 hidden max-w-4xl lg:block touchland:hidden" />
+          )}
         </div>
         {!chatHidden && (
           <button
@@ -109,6 +129,13 @@ export function LiveShell() {
         )}
       </section>
 
+      {hasBlock && (
+        // Paysage tactile : le bloc entre la vidéo et le chat.
+        <div className="hidden bg-brand-navy px-4 py-6 touchland:block touchland:shrink-0">
+          <CustomBlock html={chat.customHtml} className="mx-auto max-w-4xl" />
+        </div>
+      )}
+
       {!chatHidden && (
         <aside
           ref={chatRef}
@@ -117,6 +144,44 @@ export function LiveShell() {
           <ChatPanel chat={chat} onBackToLive={scrollToLive} />
         </aside>
       )}
+
+      {offerOpen && hasBlock && <OfferSheet html={chat.customHtml} onClose={() => setOfferOpen(false)} />}
     </div>
+  );
+}
+
+/** Bloc de l'offre en plein écran (téléphone en portrait). */
+function OfferSheet({ html, onClose }: { html: string | null; onClose: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  return createPortal(
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="L'offre"
+      className="fixed inset-x-0 top-0 z-50 flex flex-col bg-white"
+      style={{ height: "var(--app-height, 100dvh)", transform: "translate3d(0, var(--app-offset-top, 0px), 0)" }}
+    >
+      <div className="pt-safe flex shrink-0 items-center justify-between bg-brand-navy px-4 py-3 text-white">
+        <span className="flex items-center gap-2 text-sm font-extrabold uppercase tracking-wide">
+          <Gift className="size-4 text-brand-sky" /> L&apos;offre
+        </span>
+        <button
+          type="button"
+          onClick={onClose}
+          className="inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-1.5 text-sm font-bold"
+        >
+          <X className="size-4" /> Fermer
+        </button>
+      </div>
+      <div className="pb-safe min-h-0 flex-1 overflow-y-auto overscroll-contain p-4">
+        <CustomBlock html={html} />
+      </div>
+    </div>,
+    document.body,
   );
 }
