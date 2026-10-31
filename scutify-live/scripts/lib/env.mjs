@@ -2,11 +2,12 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 /**
- * Charge .env.local puis .env (sans écraser les variables déjà définies).
+ * Charge .env.local, .env puis .env.production (sans écraser les variables
+ * déjà définies).
  * Évite une dépendance à dotenv pour les scripts locaux.
  */
 export function loadEnv(cwd = process.cwd()) {
-  for (const file of [".env.local", ".env"]) {
+  for (const file of [".env.local", ".env", ".env.production"]) {
     const path = resolve(cwd, file);
     if (!existsSync(path)) continue;
     for (const rawLine of readFileSync(path, "utf8").split(/\r?\n/)) {
