@@ -85,6 +85,9 @@ export type Database = {
           pinned_message: string | null;
           pinned_url: string | null;
           pinned_label: string | null;
+          broadcast_interval_seconds: number;
+          custom_html: string | null;
+          custom_html_updated_at: string | null;
           updated_at: string;
         };
         Insert: {
@@ -95,6 +98,9 @@ export type Database = {
           pinned_message?: string | null;
           pinned_url?: string | null;
           pinned_label?: string | null;
+          broadcast_interval_seconds?: number;
+          custom_html?: string | null;
+          custom_html_updated_at?: string | null;
           updated_at?: string;
         };
         Update: {
@@ -105,6 +111,9 @@ export type Database = {
           pinned_message?: string | null;
           pinned_url?: string | null;
           pinned_label?: string | null;
+          broadcast_interval_seconds?: number;
+          custom_html?: string | null;
+          custom_html_updated_at?: string | null;
           updated_at?: string;
         };
         Relationships: [];

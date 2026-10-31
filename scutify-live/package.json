@@ -14,7 +14,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "load-test": "node scripts/load-test.mjs",
-    "create-admin": "node scripts/create-admin.mjs"
+    "create-admin": "node scripts/create-admin.mjs",
+    "demo-chat": "node scripts/demo-chat.mjs"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.2.1",
@@ -26,6 +27,7 @@
     "@supabase/supabase-js": "^2.118.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "dompurify": "^3.4.17",
     "lucide-react": "^1.66.0",
     "next": "^15.5.28",
     "react": "^19.3.1",

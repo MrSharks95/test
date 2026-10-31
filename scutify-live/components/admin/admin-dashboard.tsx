@@ -20,15 +20,16 @@ import { ControlsBar } from "./controls-bar";
 import { type BlockedKeyword, KeywordsPanel } from "./keywords-panel";
 import { LiveFeed } from "./live-feed";
 import { MessageActions } from "./message-actions";
+import { OfferPanel } from "./offer-panel";
 import { PinPanel } from "./pin-panel";
 import { ShadowPanel } from "./shadow-panel";
 import { type ModeratedUser, UsersPanel } from "./users-panel";
 
-type Tab = "direct" | "pin" | "shadow" | "users" | "keywords";
+type Tab = "direct" | "pin" | "offer" | "shadow" | "users" | "keywords";
 type PanelTab = Exclude<Tab, "direct">;
 
 const SETTINGS_COLUMNS =
-  "chat_enabled,slow_mode_seconds,links_allowed,pinned_message,pinned_url,pinned_label,updated_at" as const;
+  "chat_enabled,slow_mode_seconds,links_allowed,pinned_message,pinned_url,pinned_label,custom_html_updated_at,updated_at" as const;
 
 function muteLabel(minutes: number): string {
   if (minutes >= END_OF_LIVE_MINUTES) return "jusqu'à la fin du live";
@@ -47,7 +48,7 @@ export function AdminDashboard({ profile }: { profile: Profile }) {
 
   const onUserMuted = useCallback(() => setUsersVersion((v) => v + 1), []);
   const chat = useLiveChat({ mode: "admin", onUserMuted });
-  const { removeMessages, setSettings } = chat;
+  const { removeMessages, setSettings, setCustomHtml } = chat;
 
   // ------------------------------------------------------------ données ---
 
@@ -91,7 +92,7 @@ export function AdminDashboard({ profile }: { profile: Profile }) {
   }, []);
 
   const updateSettings = useCallback(
-    async (patch: Partial<ChatSettings>): Promise<boolean> => {
+    async (patch: Partial<ChatSettings> & { custom_html?: string | null }): Promise<boolean> => {
       setSavingSettings(true);
       const { data, error } = await supabase
         .from("chat_settings")
@@ -282,6 +283,20 @@ export function AdminDashboard({ profile }: { profile: Profile }) {
               <AdminTabsList shadowCount={shadowCount} usersCount={usersCount} withDirect={!isDesktop} />
             </Tabs>
 
+            {activePanel === "offer" && (
+              <OfferPanel
+                html={chat.customHtml}
+                saving={savingSettings}
+                onSave={async (html) => {
+                  const ok = await updateSettings({ custom_html: html });
+                  if (ok) {
+                    setCustomHtml(html);
+                    toast.success(html ? "Bloc publié sous la vidéo" : "Bloc retiré");
+                  }
+                  return ok;
+                }}
+              />
+            )}
             {activePanel === "pin" && chat.settings && (
               <PinPanel settings={chat.settings} saving={savingSettings} onSave={updateSettings} />
             )}
@@ -333,6 +348,7 @@ function AdminTabsList({
     <TabsList className="scrollbar-thin h-auto w-full justify-start overflow-x-auto">
       {withDirect && <TabsTrigger value="direct">Direct</TabsTrigger>}
       <TabsTrigger value="pin">Épingle</TabsTrigger>
+      <TabsTrigger value="offer">Offre</TabsTrigger>
       <TabsTrigger value="shadow">
         Bloqués
         {shadowCount > 0 && <Counter value={shadowCount} highlight />}

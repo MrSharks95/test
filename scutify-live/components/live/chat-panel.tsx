@@ -10,6 +10,7 @@ import { Composer } from "./composer";
 import { ConnectionStatus, ReconnectingBanner } from "./connection-status";
 import { JoinForm } from "./join-form";
 import { MessageList } from "./message-list";
+import { PinnedMessage } from "./pinned-message";
 
 export function ChatPanel({ chat, onBackToLive }: { chat: LiveChat; onBackToLive?: () => void }) {
   return (
@@ -42,6 +43,12 @@ export function ChatPanel({ chat, onBackToLive }: { chat: LiveChat; onBackToLive
           Chat fermé : masqué pour les spectateurs (tu le vois car tu es admin).
         </div>
       )}
+      {/* Épingle en haut du chat (desktop / paysage). En portrait, la bannière
+          sous la vidéo est déjà collée au-dessus du chat. */}
+      <PinnedMessage
+        settings={chat.settings}
+        className="hidden border-b border-brand-navy-dark lg:flex touchland:flex"
+      />
 
       {chat.phase === "ready" ? (
         <MessageList
