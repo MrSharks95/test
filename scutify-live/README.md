@@ -166,19 +166,27 @@ connexions de pointe et 2,50 $ / million de messages.
 Ordre de grandeur : **~80 à 100 $** pour la soirée (sans lots, la partie
 messages seule dépasserait 500 $, et le quota de 2 500/s serait dépassé).
 
-### Ce qui a été validé (stack Supabase locale réglée sur « Pro sans spend cap »)
+### Ce qui a été validé
+
+**Sur le projet de production** (`scutify-live`, Paris, Pro sans spend cap),
+le 31/10, depuis une seule machine de test située aux États-Unis :
 
 ```
-Spectateurs abonnés      4000/4000, 0 déconnexion
-Messages envoyés         290 (≈ 5 msg/s), 0 erreur
-Livraisons               1 160 000 / 1 160 000 (100 %)
-Latence de livraison     p50 1,1 s · p95 2,0 s · max 2,2 s
-Diffusions               ≈ 0,5/s (≈ 9 messages par lot) → ≈ 1 900 événements/s
+Spectateurs abonnés      4000/4000 (1 coupure isolée, reconnectée)
+Messages envoyés         296 en 60 s (≈ 5 msg/s), 0 erreur
+Livraisons               1 183 990 / 1 184 000 (99,999 %)
+Latence de livraison     p50 1,3 s · p95 2,2 s · max 2,8 s (transatlantique inclus)
+send_message côté serveur  p50 3 ms · p95 165 ms
+Diffusions               ≈ 0,5/s (≈ 10 messages par lot) → ≈ 1 850 événements/s
 ```
 
-Le même test avec les quotas du plan Free a bien échoué (plafond de 200
-connexions, `MessagePerSecondRateLimitReached`) : **refaites le test sur le
-vrai projet** avant le live (voir [Test de charge](#test-de-charge)).
+Le même test avec les quotas du plan Free (stack locale) échoue bien
+(plafond de 200 connexions, `MessagePerSecondRateLimitReached`) : c'est
+pourquoi le plan Pro sans spend cap est indispensable.
+
+> ⚠️ Modifier les réglages **Realtime** dans le tableau de bord **déconnecte
+> tous les clients** (ils se reconnectent seuls). Ne pas y toucher pendant le
+> live.
 
 ### Autres points de charge déjà traités
 
