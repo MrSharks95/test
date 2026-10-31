@@ -99,7 +99,7 @@ export function MessageList({
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="scrollbar-thin h-full overflow-y-auto overscroll-contain py-2"
+        className="scrollbar-thin h-full overflow-y-auto overscroll-contain py-2 touchland:overscroll-auto"
         role="log"
         aria-live="off"
         aria-label="Messages du chat"

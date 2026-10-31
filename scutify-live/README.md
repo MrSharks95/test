@@ -49,13 +49,17 @@ Supabase (Auth, Postgres, Realtime Broadcast, Cron) · Vercel.
 - 200 messages maximum dans le DOM.
 - Messages de l'équipe : badge **Équipe** + couleur distincte.
 - Message épinglé en haut du chat, avec bouton lien optionnel.
-- Champ désactivé avec un texte clair : chat fermé, utilisateur muté/banni.
+- Chat fermé par l'équipe : le chat est **masqué** et la vidéo prend tout
+  l'écran (le message épinglé reste visible sous la vidéo) ; il réapparaît
+  instantanément, à jour, à la réouverture. Utilisateur muté/banni : champ
+  désactivé avec un texte clair.
 - Slow mode : temps restant affiché avant le prochain message.
 - Coupure réseau : bandeau « Reconnexion… », reconnexion automatique et
   récupération des messages manqués.
 
 **Page `/admin`** (email + mot de passe, rôle `admin` obligatoire)
-- Ouvrir / fermer le chat (instantané pour tous).
+- Ouvrir / fermer le chat (instantané pour tous ; fermé = masqué chez les
+  spectateurs, l'équipe continue de le voir).
 - Slow mode : off, 5 s, 10 s, 30 s. Autoriser / bloquer les liens.
 - Fil en direct avec, sur chaque message : supprimer, muter l'auteur (5 min,
   1 h, jusqu'à la fin du live), bannir.
