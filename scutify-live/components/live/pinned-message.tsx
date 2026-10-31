@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, Pin } from "lucide-react";
+import { Pin } from "lucide-react";
 import { useState } from "react";
 
 import { buttonVariants } from "@/components/ui/button";
@@ -13,49 +13,52 @@ type Props = {
   className?: string;
 };
 
+/**
+ * Bannière du message épinglé (sous la vidéo) : texte à gauche, bouton lien
+ * à droite. Un texte long est tronqué à 2 lignes ; un appui l'affiche en
+ * entier.
+ */
 export function PinnedMessage({ settings, className }: Props) {
   const [expanded, setExpanded] = useState(false);
   const message = settings?.pinned_message?.trim() || null;
   const url = isSafeHttpUrl(settings?.pinned_url) ? settings?.pinned_url : null;
   if (!message && !url) return null;
 
-  const isLong = (message?.length ?? 0) > 110;
-
   return (
-    <div className={cn("border-b border-brand-navy-dark bg-brand-navy px-3 py-2.5 text-white", className)}>
-      <div className="flex items-start gap-2">
-        <Pin className="mt-0.5 size-4 shrink-0 rotate-45 text-brand-sky" aria-label="Message épinglé" />
-        <div className="min-w-0 flex-1">
-          {message && (
-            <p
-              className={cn("text-sm font-medium leading-snug [overflow-wrap:anywhere]", !expanded && isLong && "line-clamp-2")}
-            >
-              {message}
-            </p>
+    <div
+      role="region"
+      aria-label="Message épinglé"
+      className={cn("flex items-center gap-3 bg-brand-navy px-3 py-2 text-white sm:px-4", className)}
+    >
+      <Pin className="size-4 shrink-0 rotate-45 text-brand-sky" aria-hidden />
+      {message ? (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          aria-expanded={expanded}
+          className={cn(
+            "min-w-0 flex-1 text-left text-sm font-semibold leading-snug [overflow-wrap:anywhere]",
+            !expanded && "line-clamp-2",
           )}
-          {url && (
-            <a
-              href={url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={cn(buttonVariants({ variant: "accent", size: "sm" }), "mt-2 h-9 max-w-full whitespace-normal text-sm")}
-            >
-              {settings?.pinned_label?.trim() || "Ouvrir le lien"}
-            </a>
+        >
+          {message}
+        </button>
+      ) : (
+        <span className="flex-1" />
+      )}
+      {url && (
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={cn(
+            buttonVariants({ variant: "accent", size: "sm" }),
+            "h-9 max-w-[60%] shrink-0 truncate px-3 text-sm sm:px-4",
           )}
-        </div>
-        {isLong && (
-          <button
-            type="button"
-            onClick={() => setExpanded((v) => !v)}
-            className="rounded p-1 text-brand-sky hover:bg-white/10"
-            aria-label={expanded ? "Réduire le message épinglé" : "Afficher tout le message épinglé"}
-            aria-expanded={expanded}
-          >
-            <ChevronDown className={cn("size-4 transition-transform", expanded && "rotate-180")} />
-          </button>
-        )}
-      </div>
+        >
+          {settings?.pinned_label?.trim() || "Ouvrir le lien"}
+        </a>
+      )}
     </div>
   );
 }

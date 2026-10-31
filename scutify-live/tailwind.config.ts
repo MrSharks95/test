@@ -8,10 +8,11 @@ const config: Config = {
     container: { center: true, padding: "1rem" },
     extend: {
       screens: {
-        // Téléphone tourné en paysage : vidéo et chat côte à côte. min-width
-        // évite qu'un téléphone en portrait clavier ouvert (viewport plus large
-        // que haut) bascule dans cette mise en page.
-        land: { raw: "(orientation: landscape) and (max-height: 520px) and (min-width: 600px)" },
+        // Téléphone ou tablette (écran tactile) en paysage : priorité au live,
+        // vidéo plein écran et chat en dessous (défilement). min-width évite
+        // qu'un téléphone en portrait clavier ouvert (viewport plus large que
+        // haut) bascule dans cette mise en page.
+        touchland: { raw: "(orientation: landscape) and (hover: none) and (pointer: coarse) and (min-width: 600px)" },
       },
       fontFamily: {
         sans: ["var(--font-montserrat)", "ui-sans-serif", "system-ui", "sans-serif"],

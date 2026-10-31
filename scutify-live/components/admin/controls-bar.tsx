@@ -28,7 +28,7 @@ export function ControlsBar({ settings, saving, onUpdate, onClear }: Props) {
             aria-label="Ouvrir ou fermer le chat"
           />
           <span className={cn("text-sm font-bold", settings.chat_enabled ? "text-brand-navy" : "text-destructive")}>
-            {settings.chat_enabled ? "Chat ouvert" : "Chat fermé"}
+            {settings.chat_enabled ? "Chat ouvert" : "Chat fermé et masqué"}
           </span>
         </label>
 
