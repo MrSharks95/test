@@ -259,8 +259,11 @@ badge **Équipe** dans le chat.
 | `NEXT_PUBLIC_STREAM_EMBED_URL` | optionnel | URL d'intégration StreamYard (défaut : `https://streamyard.com/watch/bjJkQR6HBCpX?embed=true`) |
 | `SUPABASE_SERVICE_ROLE_KEY` | **local uniquement** | Pour `npm run create-admin`. Contourne RLS : jamais sur Vercel, jamais en `NEXT_PUBLIC_` |
 
-Les variables `NEXT_PUBLIC_*` sont figées **au build** : après modification
-sur Vercel, redéployer. Une variable requise manquante fait échouer le build
+Les valeurs publiques de production (`NEXT_PUBLIC_SUPABASE_URL`,
+`NEXT_PUBLIC_SUPABASE_ANON_KEY`) sont déjà dans **`.env.production`** : aucune
+variable à saisir sur Vercel. Une variable définie sur Vercel les remplace.
+Les variables `NEXT_PUBLIC_*` sont figées **au build** : après modification,
+redéployer. Une variable requise manquante fait échouer le build
 avec un message explicite.
 
 ---
@@ -300,9 +303,8 @@ Puis ouvrir http://localhost:3000/live et http://localhost:3000/admin.
 
 1. *Add New > Project* → importer le dépôt GitHub.
 2. **Root Directory : `scutify-live`** (Framework : Next.js, détecté).
-3. *Environment Variables* : `NEXT_PUBLIC_SUPABASE_URL`,
-   `NEXT_PUBLIC_SUPABASE_ANON_KEY` (+ `NEXT_PUBLIC_STREAM_EMBED_URL` si
-   besoin) pour **Production** et **Preview**.
+3. *Environment Variables* : rien à saisir (valeurs publiques dans
+   `.env.production`).
 4. *Deploy*, puis ajouter le domaine (ex. `live.scutify.fr`) dans *Settings >
    Domains*.
 
