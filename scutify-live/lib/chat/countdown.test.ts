@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { countdownParts, formatStartDate, pad2, parseStartsAt, toDateTimeLocal } from "./countdown";
+import { countdownParts, formatStartDate, liveGate, pad2, parseStartsAt, toDateTimeLocal } from "./countdown";
 
 const START = Date.parse("2026-11-02T19:00:00Z"); // lundi 2 novembre, 20h00 à Paris
 
@@ -36,5 +36,36 @@ describe("dates", () => {
     expect(value).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/);
     expect(new Date(value).getTime()).toBe(START);
     expect(pad2(7)).toBe("07");
+  });
+});
+
+describe("liveGate", () => {
+  const base = {
+    hasSettings: true,
+    liveOpen: false,
+    isAdmin: false,
+    teamPreview: false,
+    timedOut: false,
+    nowMs: START - 3_600_000,
+    fallbackStartMs: START,
+  };
+
+  it("salle d'attente pour tous tant que le live est fermé", () => {
+    expect(liveGate(base)).toBe("waiting");
+    expect(liveGate({ ...base, teamPreview: true })).toBe("waiting"); // ?equipe sans être admin
+    expect(liveGate({ ...base, isAdmin: true })).toBe("waiting"); // admin sans ?equipe
+  });
+
+  it("vidéo pour un admin avec ?equipe, ou pour tous une fois ouvert", () => {
+    expect(liveGate({ ...base, isAdmin: true, teamPreview: true })).toBe("live");
+    expect(liveGate({ ...base, liveOpen: true })).toBe("live");
+    expect(liveGate({ ...base, liveOpen: undefined })).toBe("live"); // ancienne base
+  });
+
+  it("réglages illisibles : chargement, puis attente avant l'heure, live après", () => {
+    const unknown = { ...base, hasSettings: false, liveOpen: undefined };
+    expect(liveGate(unknown)).toBe("loading");
+    expect(liveGate({ ...unknown, timedOut: true })).toBe("waiting");
+    expect(liveGate({ ...unknown, timedOut: true, nowMs: START + 1 })).toBe("live");
   });
 });

@@ -13,6 +13,8 @@ type Props = {
   connection: ConnectionState;
   /** Relit l'état public (instantané CDN) : filet si le temps réel a sauté. */
   onCheck: () => void;
+  /** Compte équipe : lien discret vers l'aperçu vidéo (jamais montré aux spectateurs). */
+  isAdmin?: boolean;
 };
 
 /** Après l'heure annoncée, on revérifie toutes les 30-45 s (étalé). */
@@ -28,7 +30,7 @@ const REFRESH_HINT_AFTER_MS = 5 * 60_000;
  * L'ouverture du live arrive en temps réel (settings_updated) et bascule la
  * page sans rechargement ; la relecture périodique n'est qu'un filet.
  */
-export function WaitingRoom({ startsAt, connection, onCheck }: Props) {
+export function WaitingRoom({ startsAt, connection, onCheck, isAdmin = false }: Props) {
   const now = useNow(true, 1000);
   const parts = startsAt ? countdownParts(startsAt, now) : null;
   const started = startsAt !== null && now >= startsAt;
@@ -118,6 +120,15 @@ export function WaitingRoom({ startsAt, connection, onCheck }: Props) {
         >
           <RotateCw className="size-4" /> Toujours rien ? Actualiser la page
         </button>
+      )}
+
+      {isAdmin && (
+        <a
+          href="/live?equipe"
+          className="absolute bottom-[max(1rem,env(safe-area-inset-bottom))] rounded-full bg-amber-300 px-3 py-1.5 text-xs font-bold text-brand-navy"
+        >
+          Équipe : vérifier la vidéo avant l&apos;ouverture →
+        </a>
       )}
     </main>
   );

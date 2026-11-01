@@ -43,8 +43,11 @@ Supabase (Auth, Postgres, Realtime Broadcast, Cron) · Vercel.
   le live **sans recharger** (un seul `settings_updated`). Filet : si le temps
   réel d'un appareil a sauté, la page revérifie toute seule (toutes les
   30-45 s après l'heure annoncée, 60 s avant si la connexion est coupée) et
-  propose « Actualiser » 5 min après l'heure. L'équipe voit la page normale
-  (pour vérifier StreamYard) ; aperçu de la salle d'attente : `/live?attente`.
+  propose « Actualiser » 5 min après l'heure. **Tout le monde, équipe comprise,**
+  voit la salle d'attente sur `/live` ; un compte admin peut vérifier la
+  vidéo avant l'ouverture sur `/live?equipe` (sans compte admin, le paramètre
+  ne change rien). Réglages illisibles (requêtes bloquées) : salle d'attente
+  jusqu'à l'heure prévue, jamais le live en avance.
 - Vidéo StreamYard 16:9 responsive.
 - Desktop : vidéo à gauche (~70 %), chat pleine hauteur à droite.
 - Mobile : vidéo collée en haut, chat sur le reste de l'écran, champ de saisie
