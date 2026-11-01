@@ -37,6 +37,14 @@ Supabase (Auth, Postgres, Realtime Broadcast, Cron) · Vercel.
 ## Fonctionnalités
 
 **Page `/live`**
+- **Salle d'attente** tant que l'équipe n'a pas cliqué « Ouvrir le live » :
+  compte à rebours seul (« Karine et Richard », date à l'heure de Paris), ni
+  vidéo, ni chat, ni réactions. L'ouverture bascule tous les spectateurs sur
+  le live **sans recharger** (un seul `settings_updated`). Filet : si le temps
+  réel d'un appareil a sauté, la page revérifie toute seule (toutes les
+  30-45 s après l'heure annoncée, 60 s avant si la connexion est coupée) et
+  propose « Actualiser » 5 min après l'heure. L'équipe voit la page normale
+  (pour vérifier StreamYard) ; aperçu de la salle d'attente : `/live?attente`.
 - Vidéo StreamYard 16:9 responsive.
 - Desktop : vidéo à gauche (~70 %), chat pleine hauteur à droite.
 - Mobile : vidéo collée en haut, chat sur le reste de l'écran, champ de saisie
@@ -67,6 +75,9 @@ Supabase (Auth, Postgres, Realtime Broadcast, Cron) · Vercel.
   récupération des messages manqués.
 
 **Page `/admin`** (email + mot de passe, rôle `admin` obligatoire)
+- Bandeau **Salle d'attente / Live ouvert** : bouton « Ouvrir le live »
+  (confirmation), retour à la salle d'attente, heure du compte à rebours
+  modifiable.
 - Ouvrir / fermer le chat (instantané pour tous ; fermé = masqué chez les
   spectateurs, l'équipe continue de le voir).
 - Slow mode : off, 5 s, 10 s, 30 s. Autoriser / bloquer les liens.
@@ -475,6 +486,9 @@ spend cap, ou augmenter `broadcast_interval_seconds`.
       **relances** préparées pour les moments clés, slow mode choisi (**10 s**
       conseillé avec des milliers de spectateurs).
 - [ ] Au moins deux admins connectés sur `/admin` (un sur téléphone).
+- [ ] À l'heure : **1) lancer la diffusion StreamYard**, **2) « Ouvrir le
+      live »** dans `/admin` (les spectateurs quittent la salle d'attente),
+      3) ouvrir le chat quand tu veux.
 
 ---
 

@@ -19,6 +19,7 @@ import { ConfirmDialog, type ConfirmRequest } from "./confirm-dialog";
 import { ControlsBar } from "./controls-bar";
 import { type BlockedKeyword, KeywordsPanel } from "./keywords-panel";
 import { LiveFeed } from "./live-feed";
+import { LiveGateCard } from "./live-gate-card";
 import { MessageActions } from "./message-actions";
 import { OfferPanel } from "./offer-panel";
 import { PinPanel } from "./pin-panel";
@@ -31,7 +32,7 @@ type Tab = "direct" | "relance" | "pin" | "offer" | "shadow" | "users" | "keywor
 type PanelTab = Exclude<Tab, "direct">;
 
 const SETTINGS_COLUMNS =
-  "chat_enabled,slow_mode_seconds,links_allowed,pinned_message,pinned_url,pinned_label,custom_html_updated_at,quick_replies,quick_replies_until,reactions_enabled,updated_at" as const;
+  "chat_enabled,slow_mode_seconds,links_allowed,pinned_message,pinned_url,pinned_label,custom_html_updated_at,quick_replies,quick_replies_until,reactions_enabled,live_open,live_starts_at,updated_at" as const;
 
 function muteLabel(minutes: number): string {
   if (minutes >= END_OF_LIVE_MINUTES) return "jusqu'à la fin du live";
@@ -224,6 +225,35 @@ export function AdminDashboard({ profile }: { profile: Profile }) {
     return true;
   };
 
+  const toggleLive = (open: boolean) =>
+    setConfirm(
+      open
+        ? {
+            title: "Ouvrir le live ?",
+            description:
+              "La salle d'attente disparaît : tous les spectateurs voient la vidéo StreamYard tout de suite, sans recharger. Lance d'abord la diffusion sur StreamYard.",
+            confirmLabel: "Ouvrir le live",
+            onConfirm: async () => {
+              if (await updateSettings({ live_open: true })) toast.success("Live ouvert 🎬");
+            },
+          }
+        : {
+            title: "Remettre la salle d'attente ?",
+            description: "Les spectateurs ne verront plus la vidéo, seulement le compte à rebours.",
+            confirmLabel: "Remettre la salle d'attente",
+            destructive: true,
+            onConfirm: async () => {
+              if (await updateSettings({ live_open: false })) toast.success("Salle d'attente remise");
+            },
+          },
+    );
+
+  const saveStart = async (iso: string): Promise<boolean> => {
+    const ok = await updateSettings({ live_starts_at: iso });
+    if (ok) toast.success("Compte à rebours mis à jour");
+    return ok;
+  };
+
   const clearChat = () =>
     setConfirm({
       title: "Vider le chat ?",
@@ -303,6 +333,14 @@ export function AdminDashboard({ profile }: { profile: Profile }) {
       </header>
 
       <main className="mx-auto max-w-7xl space-y-3 p-3 sm:space-y-4 sm:p-6">
+        {chat.settings && (
+          <LiveGateCard
+            settings={chat.settings}
+            saving={savingSettings}
+            onToggle={toggleLive}
+            onSaveStart={saveStart}
+          />
+        )}
         {chat.settings ? (
           <ControlsBar
             settings={chat.settings}

@@ -22,6 +22,10 @@ export type ChatSettings = {
   quick_replies_until?: string | null;
   /** Boutons de réactions (🔥 💰 ❤️ 👍) affichés aux spectateurs. */
   reactions_enabled?: boolean;
+  /** false : salle d'attente (compte à rebours seul) pour les spectateurs. */
+  live_open?: boolean;
+  /** Début du live annoncé (compte à rebours). */
+  live_starts_at?: string | null;
   updated_at?: string;
 };
 
