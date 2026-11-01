@@ -273,3 +273,9 @@ revoke execute on function
 from public, anon, authenticated;
 revoke execute on function public.set_profile(text, text), public.send_message(text) from public, anon;
 grant execute on function public.set_profile(text, text), public.send_message(text) to authenticated;
+
+-- Tables internes : RLS activée sans policy (défense en profondeur ; elles ne
+-- sont ni exposées par l'API ni accessibles aux rôles anon / authenticated, et
+-- les fonctions SECURITY DEFINER du propriétaire ne sont pas concernées).
+alter table private.rate_limit_hits enable row level security;
+alter table private.broadcast_state enable row level security;
