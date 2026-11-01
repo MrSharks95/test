@@ -3,6 +3,8 @@
 Page de live pour les conférences Scutify : vidéo StreamYard + chat temps réel
 modéré, dimensionné pour **~4 000 spectateurs simultanés** sur une soirée.
 
+**Production** : https://live.scutify.io/live · admin : https://live.scutify.io/admin
+
 - **Public** : `/live` (vidéo + chat, mobile et desktop)
 - **Équipe** : `/admin` (modération, réglages, épingle — utilisable sur téléphone)
 
@@ -201,6 +203,10 @@ Latence de livraison     p50 1,3 s · p95 2,2 s · max 2,8 s (transatlantique in
 send_message côté serveur  p50 3 ms · p95 165 ms
 Diffusions               ≈ 0,5/s (≈ 10 messages par lot) → ≈ 1 850 événements/s
 ```
+
+Refait le 01/11 en compute **Medium** avec la diffusion à 3 s : 4000/4000
+connectés, 0 déconnexion, 0 erreur, **1 196 000 / 1 196 000 livraisons
+(100 %)**, latence p95 3,2 s, ≈ 1 290 événements/s.
 
 Le même test avec les quotas du plan Free (stack locale) échoue bien
 (plafond de 200 connexions, `MessagePerSecondRateLimitReached`) : c'est
