@@ -22,6 +22,7 @@ import { LiveFeed } from "./live-feed";
 import { MessageActions } from "./message-actions";
 import { OfferPanel } from "./offer-panel";
 import { PinPanel } from "./pin-panel";
+import { ReactionStats } from "./reaction-stats";
 import { RelancePanel, type RelancePreset } from "./relance-panel";
 import { ShadowPanel } from "./shadow-panel";
 import { type ModeratedUser, UsersPanel } from "./users-panel";
@@ -30,7 +31,7 @@ type Tab = "direct" | "relance" | "pin" | "offer" | "shadow" | "users" | "keywor
 type PanelTab = Exclude<Tab, "direct">;
 
 const SETTINGS_COLUMNS =
-  "chat_enabled,slow_mode_seconds,links_allowed,pinned_message,pinned_url,pinned_label,custom_html_updated_at,quick_replies,quick_replies_until,updated_at" as const;
+  "chat_enabled,slow_mode_seconds,links_allowed,pinned_message,pinned_url,pinned_label,custom_html_updated_at,quick_replies,quick_replies_until,reactions_enabled,updated_at" as const;
 
 function muteLabel(minutes: number): string {
   if (minutes >= END_OF_LIVE_MINUTES) return "jusqu'à la fin du live";
@@ -303,7 +304,13 @@ export function AdminDashboard({ profile }: { profile: Profile }) {
 
       <main className="mx-auto max-w-7xl space-y-3 p-3 sm:space-y-4 sm:p-6">
         {chat.settings ? (
-          <ControlsBar settings={chat.settings} saving={savingSettings} onUpdate={updateSettings} onClear={clearChat} />
+          <ControlsBar
+            settings={chat.settings}
+            saving={savingSettings}
+            onUpdate={updateSettings}
+            onClear={clearChat}
+            reactionStats={<ReactionStats chat={chat} />}
+          />
         ) : (
           <div className="h-[68px] animate-pulse rounded-xl bg-white" />
         )}

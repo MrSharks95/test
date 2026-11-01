@@ -4,6 +4,7 @@ import { ChevronUp, Loader2 } from "lucide-react";
 
 import { useNow } from "@/hooks/use-now";
 import type { LiveChat } from "@/hooks/use-live-chat";
+import type { LiveReactions } from "@/hooks/use-reactions";
 import { isMutedNow } from "@/lib/chat/format";
 import { activeQuickReplies } from "@/lib/chat/relance";
 
@@ -12,8 +13,16 @@ import { ConnectionStatus, ReconnectingBanner } from "./connection-status";
 import { JoinForm } from "./join-form";
 import { MessageList } from "./message-list";
 import { PinnedMessage } from "./pinned-message";
+import { ReactionBar } from "./reaction-bar";
 
-export function ChatPanel({ chat, onBackToLive }: { chat: LiveChat; onBackToLive?: () => void }) {
+type Props = {
+  chat: LiveChat;
+  /** Réactions 🔥 💰 ❤️ 👍 en pied de chat (sans pseudo). */
+  reactions?: LiveReactions;
+  onBackToLive?: () => void;
+};
+
+export function ChatPanel({ chat, reactions, onBackToLive }: Props) {
   return (
     <div className="flex h-full min-h-0 flex-col">
       <header className="flex h-11 shrink-0 items-center justify-between gap-2 border-b px-3">
@@ -74,6 +83,7 @@ export function ChatPanel({ chat, onBackToLive }: { chat: LiveChat; onBackToLive
       )}
 
       <footer className="pb-safe shrink-0 border-t bg-white px-3 pt-2">
+        {reactions && <ReactionBar reactions={reactions} className="mb-2" />}
         <ChatFooter chat={chat} />
       </footer>
     </div>

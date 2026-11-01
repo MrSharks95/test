@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "r
 import { CHAT_CHANNEL, INITIAL_MESSAGES, MESSAGE_COLUMNS, MIN_SEND_INTERVAL_SECONDS } from "@/lib/chat/constants";
 import { parseChatError } from "@/lib/chat/errors";
 import { initialMessagesState, messagesReducer } from "@/lib/chat/messages-reducer";
+import { parseReactionCounts, type ReactionCounts } from "@/lib/chat/reactions";
 import {
   type ChatMessage,
   type ChatSettings,
@@ -116,7 +117,7 @@ export function useLiveChat({ mode, onUserMuted }: Options) {
     const { data, error } = await supabase
       .from("chat_settings")
       .select(
-        "chat_enabled,slow_mode_seconds,links_allowed,pinned_message,pinned_url,pinned_label,custom_html,custom_html_updated_at,quick_replies,quick_replies_until,updated_at",
+        "chat_enabled,slow_mode_seconds,links_allowed,pinned_message,pinned_url,pinned_label,custom_html,custom_html_updated_at,quick_replies,quick_replies_until,reactions_enabled,updated_at",
       )
       .eq("id", 1)
       .single();
@@ -254,6 +255,8 @@ export function useLiveChat({ mode, onUserMuted }: Options) {
 
   const queueRef = useRef<ChatMessage[]>([]);
   const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Abonnés aux totaux de réactions (animations, statistiques admin). */
+  const reactionListenersRef = useRef(new Set<(counts: ReactionCounts) => void>());
 
   const enqueue = useCallback((message: ChatMessage) => {
     // Regroupe les messages reçus (≈ 80 ms) : un seul rendu par rafale.
@@ -332,15 +335,19 @@ export function useLiveChat({ mode, onUserMuted }: Options) {
       current = channel;
 
       channel
-        // Les messages arrivent par lots ({ messages: [...] }) : une seule
-        // diffusion toutes les ~2 s quel que soit le débit du chat.
+        // Les messages arrivent par lots ({ messages: [...], reactions? }) :
+        // une seule diffusion toutes les ~3 s quel que soit le débit du chat,
+        // totaux des réactions compris.
         .on("broadcast", { event: "new_message" }, ({ payload }) => {
-          const batch = (payload as { messages?: unknown } | undefined)?.messages;
+          const data = payload as { messages?: unknown; reactions?: unknown } | undefined;
+          const batch = data?.messages;
           if (Array.isArray(batch)) {
             for (const message of batch) if (isChatMessage(message)) enqueue(message);
           } else if (isChatMessage(payload)) {
             enqueue(payload);
           }
+          const reactions = parseReactionCounts(data?.reactions);
+          if (reactions) for (const listener of reactionListenersRef.current) listener(reactions);
         })
         .on("broadcast", { event: "message_deleted" }, ({ payload }) => {
           const data = (payload ?? {}) as { all?: boolean; ids?: unknown };
@@ -498,6 +505,28 @@ export function useLiveChat({ mode, onUserMuted }: Options) {
     [supabase, isAdmin, slowModeSeconds, resync],
   );
 
+  /** S'abonne aux totaux de réactions reçus ; renvoie la désinscription. */
+  const onReactions = useCallback((listener: (counts: ReactionCounts) => void) => {
+    const listeners = reactionListenersRef.current;
+    listeners.add(listener);
+    return () => {
+      listeners.delete(listener);
+    };
+  }, []);
+
+  /** true si les réactions ont été comptées (sinon ignorées sans erreur). */
+  const sendReactions = useCallback(
+    async (counts: ReactionCounts): Promise<boolean> => {
+      const { data, error } = await supabase.rpc("send_reactions", counts);
+      if (error) {
+        console.warn("[live-chat] réactions non envoyées", error.message);
+        return false;
+      }
+      return data === true;
+    },
+    [supabase],
+  );
+
   return useMemo(
     () => ({
       phase,
@@ -520,6 +549,8 @@ export function useLiveChat({ mode, onUserMuted }: Options) {
       joinChat,
       sendMessage,
       resync,
+      onReactions,
+      sendReactions,
     }),
     [
       phase,
@@ -538,6 +569,8 @@ export function useLiveChat({ mode, onUserMuted }: Options) {
       joinChat,
       sendMessage,
       resync,
+      onReactions,
+      sendReactions,
     ],
   );
 }

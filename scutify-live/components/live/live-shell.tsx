@@ -1,17 +1,19 @@
 "use client";
 
 import { ChevronDown, Gift, MessageCircle, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { type CSSProperties, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { useHtmlClass, useVisualViewportVars } from "@/hooks/use-visual-viewport";
 import { useLiveChat } from "@/hooks/use-live-chat";
+import { useReactions } from "@/hooks/use-reactions";
 import { publicEnv } from "@/lib/env";
 import { cn } from "@/lib/utils";
 
 import { ChatPanel } from "./chat-panel";
 import { CustomBlock } from "./custom-block";
 import { PinnedMessage } from "./pinned-message";
+import { ReactionBar } from "./reaction-bar";
 import { VideoPlayer } from "./video-player";
 
 /**
@@ -26,7 +28,9 @@ import { VideoPlayer } from "./video-player";
  *   d'arriver en arrière-plan : à la réouverture, le fil est à jour ;
  * - bloc HTML de l'équipe (offre…) : sous la vidéo sur desktop (colonne qui
  *   défile), entre la vidéo et le chat en paysage, et via « Voir l'offre »
- *   (plein écran) sur téléphone en portrait.
+ *   (plein écran) sur téléphone en portrait ;
+ * - réactions 🔥 💰 ❤️ 👍 (sans pseudo) : en pied de chat, ou sous la vidéo
+ *   quand le chat est fermé.
  *
  * Le conteneur racine suit le viewport VISIBLE (--app-height /
  * --app-offset-top), ce qui garde le champ de saisie au-dessus du clavier
@@ -36,6 +40,7 @@ export function LiveShell() {
   useVisualViewportVars();
   useHtmlClass("live-lock");
   const chat = useLiveChat({ mode: "viewer" });
+  const reactions = useReactions(chat);
   // L'équipe garde le chat visible (elle peut écrire même chat fermé).
   const chatHidden = chat.phase === "ready" && chat.settings?.chat_enabled === false && !chat.isAdmin;
   const hasPinned = Boolean(chat.settings?.pinned_message || chat.settings?.pinned_url);
@@ -45,12 +50,21 @@ export function LiveShell() {
   const hasBlock = Boolean(chat.customHtml?.trim());
   const [offerOpen, setOfferOpen] = useState(false);
 
+  // Chat fermé : les réactions passent sous la vidéo.
+  const stageReactions = chatHidden && reactions.enabled;
+
   // Largeur max de la scène (vidéo + bannière) : la vidéo 16:9 doit tenir en
-  // hauteur avec l'en-tête desktop et, le cas échéant, la bannière épinglée.
+  // hauteur avec l'en-tête desktop et, le cas échéant, la bannière épinglée
+  // et les réactions (hauteur réservée en rem, par mise en page).
+  const stageReserve = chatHidden
+    ? ({
+        "--stage-reserve": `${(hasPinned ? 6 : 0) + (stageReactions ? 3.5 : 0)}rem`,
+        "--stage-reserve-lg": `${(hasPinned ? 12 : 8) + (stageReactions ? 4 : 0)}rem`,
+        "--stage-reserve-touch": `${(hasPinned ? 3.5 : 0) + (stageReactions ? 3.5 : 0)}rem`,
+      } as CSSProperties)
+    : undefined;
   const stageWidth = chatHidden
-    ? hasPinned
-      ? "max-w-[calc((var(--app-height,100dvh)-6rem)*16/9)] lg:max-w-[calc((var(--app-height,100dvh)-12rem)*16/9)] touchland:max-w-[calc((var(--app-height,100dvh)-3.5rem)*16/9)]"
-      : "max-w-[calc(var(--app-height,100dvh)*16/9)] lg:max-w-[calc((var(--app-height,100dvh)-8rem)*16/9)] touchland:max-w-[calc(var(--app-height,100dvh)*16/9)]"
+    ? "max-w-[calc((var(--app-height,100dvh)-var(--stage-reserve,0rem))*16/9)] lg:max-w-[calc((var(--app-height,100dvh)-var(--stage-reserve-lg,8rem))*16/9)] touchland:max-w-[calc((var(--app-height,100dvh)-var(--stage-reserve-touch,0rem))*16/9)]"
     : hasPinned
       ? "max-w-[calc(var(--app-height,100dvh)*0.45*16/9)] lg:max-w-[calc((var(--app-height,100dvh)-12rem)*16/9)] touchland:max-w-[calc((var(--app-height,100dvh)-3.5rem)*16/9)]"
       : "max-w-[calc(var(--app-height,100dvh)*0.45*16/9)] lg:max-w-[calc((var(--app-height,100dvh)-8rem)*16/9)] touchland:max-w-[calc(var(--app-height,100dvh)*16/9)]";
@@ -93,7 +107,10 @@ export function LiveShell() {
             chatHidden && "flex min-h-0 flex-1 flex-col items-center justify-center",
           )}
         >
-          <div className={cn("live-video mx-auto w-full shrink-0", stageWidth, hasBlock ? "lg:mt-0" : "lg:my-auto")}>
+          <div
+            className={cn("live-video mx-auto w-full shrink-0", stageWidth, hasBlock ? "lg:mt-0" : "lg:my-auto")}
+            style={stageReserve}
+          >
             <VideoPlayer
               src={publicEnv.streamEmbedUrl}
               className="lg:rounded-2xl lg:shadow-2xl lg:ring-1 lg:ring-white/10 touchland:rounded-none touchland:shadow-none touchland:ring-0"
@@ -103,6 +120,13 @@ export function LiveShell() {
               settings={chat.settings}
               className="live-pinned lg:mt-3 lg:rounded-xl lg:bg-white/10 lg:ring-1 lg:ring-white/15 touchland:mt-0 touchland:rounded-none touchland:bg-brand-navy touchland:ring-0"
             />
+            {stageReactions && (
+              <ReactionBar
+                reactions={reactions}
+                tone="dark"
+                className="bg-brand-navy px-3 py-2 sm:px-4 lg:mt-3 lg:rounded-xl lg:bg-white/10 lg:ring-1 lg:ring-white/15 touchland:mt-0 touchland:rounded-none touchland:bg-brand-navy touchland:ring-0"
+              />
+            )}
             {hasBlock && (
               // Téléphone en portrait : l'offre s'ouvre en plein écran.
               <button
@@ -141,7 +165,7 @@ export function LiveShell() {
           ref={chatRef}
           className="flex min-h-0 flex-1 flex-col bg-white lg:w-[26%] lg:min-w-[320px] lg:max-w-[400px] lg:flex-none touchland:h-[var(--app-height,100dvh)] touchland:w-full touchland:min-w-0 touchland:max-w-none touchland:flex-none touchland:snap-start"
         >
-          <ChatPanel chat={chat} onBackToLive={scrollToLive} />
+          <ChatPanel chat={chat} reactions={reactions} onBackToLive={scrollToLive} />
         </aside>
       )}
 

@@ -20,6 +20,8 @@ export type ChatSettings = {
   /** Relance en cours : boutons de réponse rapide et date de fin. */
   quick_replies?: string[] | null;
   quick_replies_until?: string | null;
+  /** Boutons de réactions (🔥 💰 ❤️ 👍) affichés aux spectateurs. */
+  reactions_enabled?: boolean;
   updated_at?: string;
 };
 

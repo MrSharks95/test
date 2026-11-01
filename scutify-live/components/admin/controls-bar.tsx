@@ -1,6 +1,7 @@
 "use client";
 
 import { Trash2 } from "lucide-react";
+import type { ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -14,9 +15,12 @@ type Props = {
   saving: boolean;
   onUpdate: (patch: Partial<ChatSettings>) => void;
   onClear: () => void;
+  /** Compteurs de réactions (dernière minute). */
+  reactionStats?: ReactNode;
 };
 
-export function ControlsBar({ settings, saving, onUpdate, onClear }: Props) {
+export function ControlsBar({ settings, saving, onUpdate, onClear, reactionStats }: Props) {
+  const reactionsOn = settings.reactions_enabled !== false;
   return (
     <Card className="p-3 sm:p-4">
       <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
@@ -68,6 +72,21 @@ export function ControlsBar({ settings, saving, onUpdate, onClear }: Props) {
             {settings.links_allowed ? "Liens autorisés" : "Liens bloqués"}
           </span>
         </label>
+
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <label className="flex cursor-pointer items-center gap-3">
+            <Switch
+              checked={reactionsOn}
+              disabled={saving}
+              onCheckedChange={(checked) => onUpdate({ reactions_enabled: checked })}
+              aria-label="Activer ou désactiver les réactions"
+            />
+            <span className="text-sm font-bold text-brand-navy">
+              {reactionsOn ? "Réactions 🔥 activées" : "Réactions désactivées"}
+            </span>
+          </label>
+          {reactionsOn && reactionStats}
+        </div>
 
         <Button variant="destructive" size="sm" className="h-9 sm:ml-auto" onClick={onClear}>
           <Trash2 /> Vider le chat
