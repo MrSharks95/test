@@ -135,7 +135,7 @@ console.log(`   ${CLIENTS} spectateurs · ${RATE} msg/s · ${DURATION_S} s · ${
 const probe = authClient();
 const { data: settings, error: settingsError } = await probe
   .from("chat_settings")
-  .select("chat_enabled,slow_mode_seconds")
+  .select("*")
   .eq("id", 1)
   .single();
 if (settingsError) {
@@ -145,6 +145,15 @@ if (settingsError) {
 }
 if (!settings.chat_enabled) {
   console.error("✖ Le chat est fermé : ouvre-le depuis /admin avant le test.");
+  process.exit(1);
+}
+if ((settings.ip_message_limit ?? 0) > 0 || (settings.ip_profile_limit ?? 0) > 0) {
+  console.error(
+    "✖ L'anti-spam par IP est actif : un test lancé depuis une seule machine serait bloqué.\n" +
+      "  Coupe-le le temps du test (SQL Editor), puis remets-le :\n" +
+      "    update public.chat_settings set ip_message_limit = 0, ip_profile_limit = 0 where id = 1;\n" +
+      "    update public.chat_settings set ip_message_limit = 20, ip_profile_limit = 30 where id = 1;",
+  );
   process.exit(1);
 }
 

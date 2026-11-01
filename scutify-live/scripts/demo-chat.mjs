@@ -72,6 +72,20 @@ const pick = (list) => list[Math.floor(Math.random() * list.length)];
 
 console.log(`\n🎬 Démo chat : ${TOTAL} messages, ${VIEWERS} spectateurs, ~${DURATION_S} s\n`);
 
+{
+  const probe = createClient(URL, KEY, { auth: { persistSession: false, storageKey: "scutify-demo-probe" } });
+  const { data: settings } = await probe.from("chat_settings").select("*").eq("id", 1).single();
+  if (settings && ((settings.ip_message_limit ?? 0) > 0 || (settings.ip_profile_limit ?? 0) > 0)) {
+    console.error(
+    "✖ L'anti-spam par IP est actif : une démo lancée depuis une seule machine serait bloqué.\n" +
+      "  Coupe-le le temps de la démo (SQL Editor), puis remets-le :\n" +
+      "    update public.chat_settings set ip_message_limit = 0, ip_profile_limit = 0 where id = 1;\n" +
+      "    update public.chat_settings set ip_message_limit = 20, ip_profile_limit = 30 where id = 1;",
+    );
+    process.exit(1);
+  }
+}
+
 const viewers = [];
 for (let i = 0; i < VIEWERS; i += 1) {
   const client = createClient(URL, KEY, {

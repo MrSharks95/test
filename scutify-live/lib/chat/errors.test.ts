@@ -21,6 +21,16 @@ describe("parseChatError", () => {
     ).toMatchObject({ kind: "slow_mode", retryAfter: 7 });
   });
 
+  it("shows the per-IP anti-spam message", () => {
+    expect(
+      parseChatError({
+        message: "Trop de messages depuis ta connexion. Patiente quelques secondes.",
+        hint: "ip_rate_limit",
+        code: "P0001",
+      }),
+    ).toEqual({ kind: "ip_rate_limit", message: "Trop de messages depuis ta connexion. Patiente quelques secondes." });
+  });
+
   it("maps network failures", () => {
     expect(parseChatError({ message: "TypeError: Failed to fetch" }).kind).toBe("network");
   });
