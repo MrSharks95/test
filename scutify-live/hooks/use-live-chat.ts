@@ -117,7 +117,7 @@ export function useLiveChat({ mode, onUserMuted }: Options) {
     const { data, error } = await supabase
       .from("chat_settings")
       .select(
-        "chat_enabled,slow_mode_seconds,links_allowed,pinned_message,pinned_url,pinned_label,custom_html,custom_html_updated_at,quick_replies,quick_replies_until,reactions_enabled,updated_at",
+        "chat_enabled,slow_mode_seconds,links_allowed,pinned_message,pinned_url,pinned_label,custom_html,custom_html_updated_at,quick_replies,quick_replies_until,reactions_enabled,live_open,live_starts_at,updated_at",
       )
       .eq("id", 1)
       .single();

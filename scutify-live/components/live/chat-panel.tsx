@@ -48,6 +48,11 @@ export function ChatPanel({ chat, reactions, onBackToLive }: Props) {
       </header>
 
       <ReconnectingBanner state={chat.connection} />
+      {chat.isAdmin && chat.settings?.live_open === false && (
+        <div className="bg-sky-100 px-3 py-1.5 text-center text-xs font-semibold text-brand-navy">
+          Salle d&apos;attente : les spectateurs voient le compte à rebours (tu vois le live car tu es admin).
+        </div>
+      )}
       {chat.isAdmin && chat.settings?.chat_enabled === false && (
         <div className="bg-amber-100 px-3 py-1.5 text-center text-xs font-semibold text-amber-900">
           Chat fermé : masqué pour les spectateurs (tu le vois car tu es admin).

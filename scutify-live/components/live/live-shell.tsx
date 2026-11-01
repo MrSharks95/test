@@ -1,12 +1,13 @@
 "use client";
 
 import { ChevronDown, Gift, MessageCircle, X } from "lucide-react";
-import { type CSSProperties, useEffect, useRef, useState } from "react";
+import { type CSSProperties, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 
 import { useHtmlClass, useVisualViewportVars } from "@/hooks/use-visual-viewport";
-import { useLiveChat } from "@/hooks/use-live-chat";
-import { useReactions } from "@/hooks/use-reactions";
+import { type LiveChat, useLiveChat } from "@/hooks/use-live-chat";
+import { type LiveReactions, useReactions } from "@/hooks/use-reactions";
+import { parseStartsAt } from "@/lib/chat/countdown";
 import { publicEnv } from "@/lib/env";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +16,20 @@ import { CustomBlock } from "./custom-block";
 import { PinnedMessage } from "./pinned-message";
 import { ReactionBar } from "./reaction-bar";
 import { VideoPlayer } from "./video-player";
+import { LiveLoading, WaitingRoom } from "./waiting-room";
+
+/** Sans réglages au bout de 8 s (Supabase injoignable) : on montre le live. */
+const GATE_TIMEOUT_MS = 8_000;
+
+const noopSubscribe = () => () => {};
+/** /live?attente : aperçu de la salle d'attente (utile à l'équipe). */
+function useWaitingPreview(): boolean {
+  return useSyncExternalStore(
+    noopSubscribe,
+    () => new URLSearchParams(window.location.search).has("attente"),
+    () => false,
+  );
+}
 
 /**
  * Mise en page :
@@ -32,6 +47,8 @@ import { VideoPlayer } from "./video-player";
  * - réactions 🔥 💰 ❤️ 👍 (sans pseudo) : en pied de chat, ou sous la vidéo
  *   quand le chat est fermé.
  *
+ * Salle d'attente (live non ouvert par l'équipe) : compte à rebours seul.
+ *
  * Le conteneur racine suit le viewport VISIBLE (--app-height /
  * --app-offset-top), ce qui garde le champ de saisie au-dessus du clavier
  * sur iOS comme sur Android.
@@ -41,6 +58,33 @@ export function LiveShell() {
   useHtmlClass("live-lock");
   const chat = useLiveChat({ mode: "viewer" });
   const reactions = useReactions(chat);
+  const preview = useWaitingPreview();
+  const [gateTimedOut, setGateTimedOut] = useState(false);
+
+  useEffect(() => {
+    const id = setTimeout(() => setGateTimedOut(true), GATE_TIMEOUT_MS);
+    return () => clearTimeout(id);
+  }, []);
+
+  // Salle d'attente tant que l'équipe n'a pas ouvert le live (l'équipe, elle,
+  // voit la page normale pour vérifier StreamYard).
+  if (chat.settings) {
+    if (preview || (chat.settings.live_open === false && !chat.isAdmin)) {
+      return (
+        <WaitingRoom
+          startsAt={parseStartsAt(chat.settings.live_starts_at)}
+          connection={chat.connection}
+          onCheck={chat.resync}
+        />
+      );
+    }
+  } else if (!gateTimedOut) {
+    return <LiveLoading />;
+  }
+  return <LiveLayout chat={chat} reactions={reactions} />;
+}
+
+function LiveLayout({ chat, reactions }: { chat: LiveChat; reactions: LiveReactions }) {
   // L'équipe garde le chat visible (elle peut écrire même chat fermé).
   const chatHidden = chat.phase === "ready" && chat.settings?.chat_enabled === false && !chat.isAdmin;
   const hasPinned = Boolean(chat.settings?.pinned_message || chat.settings?.pinned_url);

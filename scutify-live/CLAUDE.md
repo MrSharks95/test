@@ -67,7 +67,13 @@ en français, concise, actionnable. Voir README.md pour le détail.
   thumbs}` au payload `new_message` (même lot que les messages). Limites
   `reaction_user_limit` 8/10 s, `ip_reaction_limit` 150/10 s (0 = off pour
   `npm run reactions-test -- --load`, puis remettre 8/150).
-- `lib/chat/` = logique pure testée (Vitest, 56 tests).
+- **Salle d'attente** : `chat_settings.live_open` (false = compte à rebours
+  seul pour les spectateurs : « Karine et Richard », PAS de mention Scutify,
+  ni chat ni réactions) et `live_starts_at` (02/11 19:00 UTC = 20h Paris).
+  Bascule via `settings_updated`, filet = `resync()` périodique (CDN). Admin
+  voit le live ; aperçu `/live?attente`. Titre de page « Karine et Richard ·
+  Le live ».
+- `lib/chat/` = logique pure testée (Vitest, 62 tests).
 
 ## Fonctionnalités en production
 Live responsive (portrait, paysage « priorité au live », desktop chat 26 %),
@@ -87,8 +93,9 @@ derrière proxy : regarder `edge_logs.response.origin_time`, pas le client).
 
 ## Reste à faire (utilisateur)
 Réglages Supabase « leaked passwords » + Auth connexions en pourcentage ;
-capacité StreamYard 4 000 ; comptes équipe ; le soir : ouvrir le chat, slow
-mode 10 s, épingle + Offre, relances prêtes ; redescendre Medium après.
+capacité StreamYard 4 000 ; comptes équipe ; le soir : lancer StreamYard
+PUIS « Ouvrir le live » (salle d'attente), ouvrir le chat, slow mode 10 s,
+épingle + Offre, relances prêtes ; redescendre Medium après.
 Coût : pic connexions déjà facturé 40 $ (tests) si même période.
 
 ## Commandes (depuis scutify-live/)
