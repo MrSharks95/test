@@ -5,7 +5,7 @@
 -- choisir de pseudo. Chaque appui n'est PAS diffusé (4 000 spectateurs ×
 -- chaque appui = quota Realtime explosé) :
 --   1. le navigateur regroupe les appuis et appelle send_reactions() au plus
---      toutes les ~2 s (compteurs par type) ;
+--      toutes les ~4 s (compteurs par type) ;
 --   2. la base empile ces compteurs dans une table UNLOGGED (insertion seule,
 --      aucune contention) ;
 --   3. private.flush_messages() (pg_cron, chaque seconde) vide la pile et

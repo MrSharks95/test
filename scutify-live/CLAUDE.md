@@ -60,18 +60,30 @@ en français, concise, actionnable. Voir README.md pour le détail.
 - Pas de fausse activité (refusé : faux spectateurs) ; pas de compteur de
   spectateurs (refusé par l'utilisateur).
 - `SUPABASE_SERVICE_ROLE_KEY` : scripts locaux uniquement, jamais NEXT_PUBLIC_.
-- `lib/chat/` = logique pure testée (Vitest, 47 tests).
+- **Réactions** 🔥 💰 ❤️ 👍 : jamais diffusées une par une. Client : appuis
+  groupés, `send_reactions()` toutes les **4 s** max (+ délai aléatoire
+  0,5-2,5 s au 1er envoi) ; base : pile UNLOGGED `private.reaction_events`
+  vidée par `flush_messages()` qui ajoute `reactions: {fire,money,heart,
+  thumbs}` au payload `new_message` (même lot que les messages). Limites
+  `reaction_user_limit` 8/10 s, `ip_reaction_limit` 150/10 s (0 = off pour
+  `npm run reactions-test -- --load`, puis remettre 8/150).
+- `lib/chat/` = logique pure testée (Vitest, 56 tests).
 
 ## Fonctionnalités en production
 Live responsive (portrait, paysage « priorité au live », desktop chat 26 %),
 clavier mobile géré, bannière épinglée sous la vidéo + en haut du chat, bloc
 HTML « Offre » (DOMPurify, bouton « Voir l'offre » sur mobile), relances
-(boutons de réponse rapide, onglet Relances), admin complet (ouvrir/fermer,
-slow mode, liens, mots-clés, bloqués, mute/ban, vider, message équipe).
+(boutons de réponse rapide, onglet Relances), réactions sans pseudo (pied de
+chat, sous la vidéo si chat fermé ; admin : interrupteur + compteur 1 min),
+admin complet (ouvrir/fermer, slow mode, liens, mots-clés, bloqués, mute/ban,
+vider, message équipe).
 
 ## Validé
 Test de charge prod en Medium : 4 000/4 000, 0 déconnexion, 100 % livrés,
 p95 3,2 s. Vague relance : 300 appuis en 2 s, 300/300, p95 142 ms.
+Réactions : totaux diffusés = acceptés à l'unité ; serveur ~350 appels/s à
+p95 ≈ 110 ms (1 ms en base), saturation API vers 600/s (machine de test
+derrière proxy : regarder `edge_logs.response.origin_time`, pas le client).
 
 ## Reste à faire (utilisateur)
 Réglages Supabase « leaked passwords » + Auth connexions en pourcentage ;
@@ -79,14 +91,6 @@ capacité StreamYard 4 000 ; comptes équipe ; le soir : ouvrir le chat, slow
 mode 10 s, épingle + Offre, relances prêtes ; redescendre Medium après.
 Coût : pic connexions déjà facturé 40 $ (tests) si même période.
 
-## Prochaine fonctionnalité (demandée, pas commencée)
-**Réactions sans rejoindre le chat** : boutons 🔥 💰 ❤️ 👍 pour tous les
-spectateurs (session anonyme déjà présente), animation flottante. Contraintes :
-ne PAS diffuser chaque réaction (quota) → RPC `react(kind)` avec limite par
-utilisateur/IP, agrégation côté base (compteurs par fenêtre) et diffusion
-groupée périodique (ex. totaux toutes les 2-3 s via le flush ou un cron),
-animation locale immédiate pour l'auteur.
-
 ## Commandes (depuis scutify-live/)
 `npm run dev` · `build` · `lint` · `typecheck` · `test` · `load-test` ·
-`demo-chat` · `create-admin`
+`demo-chat` · `reactions-test` · `create-admin`

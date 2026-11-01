@@ -1,7 +1,7 @@
 /**
  * Réactions du live (🔥 💰 ❤️ 👍) : logique pure, sans dépendance UI.
  *
- * Les appuis sont regroupés côté navigateur (un appel toutes les ~2 s) puis
+ * Les appuis sont regroupés côté navigateur (un appel toutes les ~4 s) puis
  * additionnés en base et diffusés en totaux avec le lot de messages (~3 s).
  */
 
@@ -20,8 +20,12 @@ export const REACTION_KINDS: readonly ReactionKind[] = REACTIONS.map((r) => r.ki
 /** Doit correspondre au plafond par type et par appel de send_reactions(). */
 export const MAX_REACTIONS_PER_CALL = 30;
 
-/** Un appel au plus toutes les 2 s (limite serveur : 8 appels / 10 s). */
-export const REACTION_SEND_INTERVAL_MS = 2_000;
+/**
+ * Un appel au plus toutes les 4 s par spectateur (limite serveur : 8 / 10 s).
+ * Mesuré en prod (Medium) : ~350 appels/s tenus à p95 ≈ 110 ms, saturation
+ * vers 600/s. À 4 s, 4 000 spectateurs dont 35 % tapent sans arrêt = 350/s.
+ */
+export const REACTION_SEND_INTERVAL_MS = 4_000;
 
 export function emptyCounts(): ReactionCounts {
   return { fire: 0, money: 0, heart: 0, thumbs: 0 };

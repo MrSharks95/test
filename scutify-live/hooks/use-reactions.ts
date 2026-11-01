@@ -20,8 +20,12 @@ import {
 const MAX_PARTICLES = 40;
 /** Les totaux arrivent toutes les ~3 s : on les étale pour un flux continu. */
 const SPREAD_MS = 2_800;
-/** Premier envoi après un appui : regroupe une rafale d'appuis. */
-const FIRST_SEND_DELAY_MS = 400;
+/**
+ * Premier envoi après un appui : regroupe la rafale et, avec un délai
+ * aléatoire, étale les appels quand l'animateur lance « envoyez des flammes ! ».
+ */
+const FIRST_SEND_MIN_MS = 500;
+const FIRST_SEND_JITTER_MS = 2_000;
 /** Appuis gardés en attente par type au maximum (auto-clic). */
 const MAX_PENDING = 60;
 /** Ses propres réactions non retrouvées dans un lot sont oubliées après 10 s. */
@@ -31,7 +35,7 @@ const OWN_TTL_MS = 10_000;
  * Réactions du spectateur (une instance pour la page, l'affichage peut se
  * déplacer entre le chat et la vidéo sans perdre les appuis en attente).
  *
- * - appui : émoji animé tout de suite, envoi groupé au plus toutes les 2 s ;
+ * - appui : émoji animé tout de suite, envoi groupé au plus toutes les 4 s ;
  * - réception : totaux du lot (hors ses propres réactions) animés en continu.
  *
  * Les émojis sont créés directement dans le DOM (aucun rendu React par émoji).
@@ -109,7 +113,10 @@ export function useReactions(chat: LiveChat) {
           ? setTimeout(() => void send(), Math.max(0, lastSentRef.current + REACTION_SEND_INTERVAL_MS - Date.now()))
           : null;
     };
-    const wait = Math.max(FIRST_SEND_DELAY_MS, lastSentRef.current + REACTION_SEND_INTERVAL_MS - Date.now());
+    const wait = Math.max(
+      FIRST_SEND_MIN_MS + Math.random() * FIRST_SEND_JITTER_MS,
+      lastSentRef.current + REACTION_SEND_INTERVAL_MS - Date.now(),
+    );
     timerRef.current = setTimeout(() => void send(), wait);
   }, [sendReactions]);
 
