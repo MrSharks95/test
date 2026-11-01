@@ -107,7 +107,7 @@ function ChatFooter({ chat }: { chat: LiveChat }) {
       <div className="space-y-2">
         {quickReplies.length > 0 && (
           <p className="text-center text-xs font-bold text-brand-navy">
-            💬 L&apos;équipe vous pose une question : participe au chat pour répondre en un clic !
+            💬 L&apos;équipe vous pose une question : choisis un pseudo pour répondre en un clic !
           </p>
         )}
         <JoinForm onJoin={chat.joinChat} />

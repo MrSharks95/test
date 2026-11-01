@@ -43,8 +43,10 @@ Supabase (Auth, Postgres, Realtime Broadcast, Cron) · Vercel.
   collé en bas et **visible quand le clavier s'ouvre** (iOS via
   `visualViewport`, Android via `interactive-widget=resizes-content`).
   Téléphone en paysage : vidéo et chat côte à côte.
-- Pseudo (2–20 caractères) + email avant d'écrire ; session mémorisée (pas
-  redemandée au rechargement). Le chat est lisible sans pseudo.
+- Le chat est lisible par tous sans rien saisir. Pour écrire : **un pseudo
+  suffit** (2–20 caractères, un seul champ en bas du chat) ; session mémorisée
+  (pas redemandée au rechargement). L'email est facultatif côté base (non
+  demandé dans l'interface).
 - 50 derniers messages au chargement, puis temps réel.
 - Auto-scroll, sauf si l'utilisateur remonte le fil : le fil se met en pause
   et un bouton **« ⬇ Nouveaux messages (n) »** apparaît.
@@ -432,11 +434,13 @@ spend cap, ou augmenter `broadcast_interval_seconds`.
 ## Après le live
 
 - Les messages s'effacent seuls après 12 h (ou **Vider le chat**).
-- Exporter les contacts (SQL Editor → *Download CSV*) :
+- Exporter les participants (SQL Editor → *Download CSV*) :
   ```sql
   select pseudo, email, created_at from public.profiles
   where role = 'viewer' order by created_at;
   ```
+  (l'email n'est plus demandé : la colonne est vide pour les nouveaux
+  participants).
 - Les **profils** (pseudo + email) sont conservés : ce sont les contacts
   collectés. Pour les supprimer (RGPD) :
   ```sql

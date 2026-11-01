@@ -460,8 +460,8 @@ export function useLiveChat({ mode, onUserMuted }: Options) {
   const removeMessages = useCallback((ids: string[]) => dispatch({ type: "remove", ids }), []);
 
   const joinChat = useCallback(
-    async (pseudo: string, email: string): Promise<ActionResult> => {
-      const { data, error } = await supabase.rpc("set_profile", { pseudo, email });
+    async (pseudo: string): Promise<ActionResult> => {
+      const { data, error } = await supabase.rpc("set_profile", { pseudo });
       if (error) return { ok: false, error: parseChatError(error).message };
       setProfile(data as unknown as Profile);
       return { ok: true };

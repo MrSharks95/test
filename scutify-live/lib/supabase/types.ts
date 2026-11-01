@@ -12,7 +12,7 @@ export type Database = {
         Row: {
           id: string;
           pseudo: string;
-          email: string;
+          email: string | null;
           role: "viewer" | "admin";
           muted_until: string | null;
           banned: boolean;
@@ -21,7 +21,7 @@ export type Database = {
         Insert: {
           id: string;
           pseudo: string;
-          email: string;
+          email?: string | null;
           role?: "viewer" | "admin";
           muted_until?: string | null;
           banned?: boolean;
@@ -30,7 +30,7 @@ export type Database = {
         Update: {
           id?: string;
           pseudo?: string;
-          email?: string;
+          email?: string | null;
           role?: "viewer" | "admin";
           muted_until?: string | null;
           banned?: boolean;
@@ -139,7 +139,7 @@ export type Database = {
     };
     Views: { [_ in never]: never };
     Functions: {
-      set_profile: { Args: { pseudo: string; email: string }; Returns: Json };
+      set_profile: { Args: { pseudo: string; email?: string | null }; Returns: Json };
       send_message: { Args: { content: string }; Returns: Json };
       admin_set_message_status: { Args: { message_id: string; status: string }; Returns: undefined };
       admin_mute_user: { Args: { user_id: string; minutes: number | null }; Returns: string | null };
