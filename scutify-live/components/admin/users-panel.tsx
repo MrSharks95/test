@@ -11,7 +11,7 @@ import { formatMuteUntil, isMutedNow } from "@/lib/chat/format";
 export type ModeratedUser = {
   id: string;
   pseudo: string;
-  email: string;
+  email: string | null;
   muted_until: string | null;
   banned: boolean;
 };
@@ -57,7 +57,7 @@ export function UsersPanel({ users, loading, onRefresh, onUnmute, onUnban }: Pro
                       <Badge variant="accent">Muté · {formatMuteUntil(user.muted_until as string, now)}</Badge>
                     )}
                   </p>
-                  <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+                  {user.email && <p className="truncate text-xs text-muted-foreground">{user.email}</p>}
                 </div>
                 <Button
                   size="sm"

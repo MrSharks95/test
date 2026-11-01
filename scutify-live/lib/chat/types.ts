@@ -26,7 +26,8 @@ export type ChatSettings = {
 export type Profile = {
   id: string;
   pseudo: string;
-  email: string;
+  /** Facultatif : un pseudo suffit pour écrire. */
+  email: string | null;
   role: "viewer" | "admin";
   muted_until: string | null;
   banned: boolean;
