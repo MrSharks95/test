@@ -70,10 +70,11 @@ en français, concise, actionnable. Voir README.md pour le détail.
 - **Salle d'attente** : `chat_settings.live_open` (false = compte à rebours
   seul pour les spectateurs : « Karine et Richard », PAS de mention Scutify,
   ni chat ni réactions) et `live_starts_at` (02/11 19:00 UTC = 20h Paris).
-  Bascule via `settings_updated`, filet = `resync()` périodique (CDN). Admin
-  voit le live ; aperçu `/live?attente`. Titre de page « Karine et Richard ·
-  Le live ».
-- `lib/chat/` = logique pure testée (Vitest, 62 tests).
+  Bascule via `settings_updated`, filet = `resync()` périodique (CDN). Tout
+  le monde (admins compris) voit l'attente ; admin + `/live?equipe` = vidéo ;
+  réglages illisibles = attente jusqu'à l'heure (logique `liveGate()`).
+  Titre de page « Karine et Richard · Le live ».
+- `lib/chat/` = logique pure testée (Vitest, 65 tests).
 
 ## Fonctionnalités en production
 Live responsive (portrait, paysage « priorité au live », desktop chat 26 %),

@@ -4,10 +4,11 @@ import { ChevronDown, Gift, MessageCircle, X } from "lucide-react";
 import { type CSSProperties, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 
+import { useNow } from "@/hooks/use-now";
 import { useHtmlClass, useVisualViewportVars } from "@/hooks/use-visual-viewport";
 import { type LiveChat, useLiveChat } from "@/hooks/use-live-chat";
 import { type LiveReactions, useReactions } from "@/hooks/use-reactions";
-import { parseStartsAt } from "@/lib/chat/countdown";
+import { DEFAULT_LIVE_STARTS_AT, liveGate, parseStartsAt } from "@/lib/chat/countdown";
 import { publicEnv } from "@/lib/env";
 import { cn } from "@/lib/utils";
 
@@ -18,15 +19,19 @@ import { ReactionBar } from "./reaction-bar";
 import { VideoPlayer } from "./video-player";
 import { LiveLoading, WaitingRoom } from "./waiting-room";
 
-/** Sans réglages au bout de 8 s (Supabase injoignable) : on montre le live. */
+/** Sans réglages au bout de 8 s (Supabase injoignable) : voir liveGate(). */
 const GATE_TIMEOUT_MS = 8_000;
+const FALLBACK_START_MS = Date.parse(DEFAULT_LIVE_STARTS_AT);
 
 const noopSubscribe = () => () => {};
-/** /live?attente : aperçu de la salle d'attente (utile à l'équipe). */
-function useWaitingPreview(): boolean {
+/**
+ * /live?equipe : un compte ADMIN voit la vidéo avant l'ouverture (vérifier
+ * StreamYard). Sans compte admin, le paramètre ne change rien.
+ */
+function useTeamPreview(): boolean {
   return useSyncExternalStore(
     noopSubscribe,
-    () => new URLSearchParams(window.location.search).has("attente"),
+    () => new URLSearchParams(window.location.search).has("equipe"),
     () => false,
   );
 }
@@ -58,28 +63,36 @@ export function LiveShell() {
   useHtmlClass("live-lock");
   const chat = useLiveChat({ mode: "viewer" });
   const reactions = useReactions(chat);
-  const preview = useWaitingPreview();
+  const teamPreview = useTeamPreview();
   const [gateTimedOut, setGateTimedOut] = useState(false);
 
   useEffect(() => {
     const id = setTimeout(() => setGateTimedOut(true), GATE_TIMEOUT_MS);
     return () => clearTimeout(id);
   }, []);
+  // Réglages illisibles : réévalue régulièrement (passage de l'heure prévue).
+  const now = useNow(!chat.settings && gateTimedOut, 5_000);
 
-  // Salle d'attente tant que l'équipe n'a pas ouvert le live (l'équipe, elle,
-  // voit la page normale pour vérifier StreamYard).
-  if (chat.settings) {
-    if (preview || (chat.settings.live_open === false && !chat.isAdmin)) {
-      return (
-        <WaitingRoom
-          startsAt={parseStartsAt(chat.settings.live_starts_at)}
-          connection={chat.connection}
-          onCheck={chat.resync}
-        />
-      );
-    }
-  } else if (!gateTimedOut) {
-    return <LiveLoading />;
+  // Salle d'attente pour tout le monde tant que le live n'est pas ouvert.
+  const gate = liveGate({
+    hasSettings: Boolean(chat.settings),
+    liveOpen: chat.settings?.live_open,
+    isAdmin: chat.isAdmin,
+    teamPreview,
+    timedOut: gateTimedOut,
+    nowMs: now,
+    fallbackStartMs: FALLBACK_START_MS,
+  });
+  if (gate === "loading") return <LiveLoading />;
+  if (gate === "waiting") {
+    return (
+      <WaitingRoom
+        startsAt={chat.settings ? parseStartsAt(chat.settings.live_starts_at) : FALLBACK_START_MS}
+        connection={chat.connection}
+        onCheck={chat.resync}
+        isAdmin={chat.isAdmin}
+      />
+    );
   }
   return <LiveLayout chat={chat} reactions={reactions} />;
 }

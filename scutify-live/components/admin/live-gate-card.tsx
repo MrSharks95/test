@@ -81,6 +81,19 @@ export function LiveGateCard({ settings, saving, onToggle, onSaveStart }: Props)
               </button>
             </p>
           ))}
+        {!open && (
+          <p className="mt-1 text-xs text-brand-navy/70">
+            Tout le monde (équipe comprise) voit la salle d&apos;attente sur /live.{" "}
+            <a
+              href="/live?equipe"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-brand-navy underline underline-offset-2"
+            >
+              Vérifier la vidéo (équipe)
+            </a>
+          </p>
+        )}
       </div>
 
       {open ? (
