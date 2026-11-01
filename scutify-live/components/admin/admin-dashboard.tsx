@@ -22,14 +22,15 @@ import { LiveFeed } from "./live-feed";
 import { MessageActions } from "./message-actions";
 import { OfferPanel } from "./offer-panel";
 import { PinPanel } from "./pin-panel";
+import { RelancePanel, type RelancePreset } from "./relance-panel";
 import { ShadowPanel } from "./shadow-panel";
 import { type ModeratedUser, UsersPanel } from "./users-panel";
 
-type Tab = "direct" | "pin" | "offer" | "shadow" | "users" | "keywords";
+type Tab = "direct" | "relance" | "pin" | "offer" | "shadow" | "users" | "keywords";
 type PanelTab = Exclude<Tab, "direct">;
 
 const SETTINGS_COLUMNS =
-  "chat_enabled,slow_mode_seconds,links_allowed,pinned_message,pinned_url,pinned_label,custom_html_updated_at,updated_at" as const;
+  "chat_enabled,slow_mode_seconds,links_allowed,pinned_message,pinned_url,pinned_label,custom_html_updated_at,quick_replies,quick_replies_until,updated_at" as const;
 
 function muteLabel(minutes: number): string {
   if (minutes >= END_OF_LIVE_MINUTES) return "jusqu'à la fin du live";
@@ -41,7 +42,7 @@ export function AdminDashboard({ profile }: { profile: Profile }) {
   const supabase = getSupabase();
   const isDesktop = useMediaQuery("(min-width: 1024px)");
   const [tab, setTab] = useState<Tab>("direct");
-  const [panelTab, setPanelTab] = useState<PanelTab>("pin");
+  const [panelTab, setPanelTab] = useState<PanelTab>("relance");
   const [confirm, setConfirm] = useState<ConfirmRequest | null>(null);
   const [savingSettings, setSavingSettings] = useState(false);
   const [usersVersion, setUsersVersion] = useState(0);
@@ -185,6 +186,43 @@ export function AdminDashboard({ profile }: { profile: Profile }) {
     [],
   );
 
+  const launchRelance = async (preset: RelancePreset): Promise<boolean> => {
+    const replies = preset.replies.map((r) => r.trim()).filter(Boolean);
+    if (replies.length === 0) {
+      toast.error("Ajoute au moins un bouton de réponse.");
+      return false;
+    }
+    if (preset.message.trim()) {
+      const sent = await chat.sendMessage(preset.message.trim());
+      if (!sent.ok) {
+        toast.error(sent.error);
+        return false;
+      }
+    }
+    const { data: until, error } = await supabase.rpc("admin_set_quick_replies", {
+      replies,
+      seconds: preset.seconds,
+    });
+    if (error) {
+      fail(error);
+      return false;
+    }
+    setSettings((prev) => (prev ? { ...prev, quick_replies: replies, quick_replies_until: until } : prev));
+    toast.success(`Relance lancée pour ${preset.seconds} s 🔥`);
+    return true;
+  };
+
+  const stopRelance = async (): Promise<boolean> => {
+    const { error } = await supabase.rpc("admin_set_quick_replies", { replies: [], seconds: 0 });
+    if (error) {
+      fail(error);
+      return false;
+    }
+    setSettings((prev) => (prev ? { ...prev, quick_replies: null, quick_replies_until: null } : prev));
+    toast.success("Relance arrêtée");
+    return true;
+  };
+
   const clearChat = () =>
     setConfirm({
       title: "Vider le chat ?",
@@ -283,6 +321,9 @@ export function AdminDashboard({ profile }: { profile: Profile }) {
               <AdminTabsList shadowCount={shadowCount} usersCount={usersCount} withDirect={!isDesktop} />
             </Tabs>
 
+            {activePanel === "relance" && chat.settings && (
+              <RelancePanel settings={chat.settings} onLaunch={launchRelance} onStop={stopRelance} />
+            )}
             {activePanel === "offer" && (
               <OfferPanel
                 html={chat.customHtml}
@@ -347,6 +388,7 @@ function AdminTabsList({
   return (
     <TabsList className="scrollbar-thin h-auto w-full justify-start overflow-x-auto">
       {withDirect && <TabsTrigger value="direct">Direct</TabsTrigger>}
+      <TabsTrigger value="relance">Relances</TabsTrigger>
       <TabsTrigger value="pin">Épingle</TabsTrigger>
       <TabsTrigger value="offer">Offre</TabsTrigger>
       <TabsTrigger value="shadow">

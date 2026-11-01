@@ -88,6 +88,10 @@ export type Database = {
           broadcast_interval_seconds: number;
           custom_html: string | null;
           custom_html_updated_at: string | null;
+          ip_message_limit: number;
+          ip_profile_limit: number;
+          quick_replies: string[] | null;
+          quick_replies_until: string | null;
           updated_at: string;
         };
         Insert: {
@@ -101,6 +105,10 @@ export type Database = {
           broadcast_interval_seconds?: number;
           custom_html?: string | null;
           custom_html_updated_at?: string | null;
+          ip_message_limit?: number;
+          ip_profile_limit?: number;
+          quick_replies?: string[] | null;
+          quick_replies_until?: string | null;
           updated_at?: string;
         };
         Update: {
@@ -114,6 +122,10 @@ export type Database = {
           broadcast_interval_seconds?: number;
           custom_html?: string | null;
           custom_html_updated_at?: string | null;
+          ip_message_limit?: number;
+          ip_profile_limit?: number;
+          quick_replies?: string[] | null;
+          quick_replies_until?: string | null;
           updated_at?: string;
         };
         Relationships: [];
@@ -133,6 +145,7 @@ export type Database = {
       admin_mute_user: { Args: { user_id: string; minutes: number | null }; Returns: string | null };
       admin_ban_user: { Args: { user_id: string; banned: boolean }; Returns: undefined };
       admin_clear_chat: { Args: Record<PropertyKey, never>; Returns: number };
+      admin_set_quick_replies: { Args: { replies: string[]; seconds: number }; Returns: string | null };
     };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };

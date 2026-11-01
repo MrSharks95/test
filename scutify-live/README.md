@@ -3,6 +3,8 @@
 Page de live pour les conférences Scutify : vidéo StreamYard + chat temps réel
 modéré, dimensionné pour **~4 000 spectateurs simultanés** sur une soirée.
 
+**Production** : https://live.scutify.io/live · admin : https://live.scutify.io/admin
+
 - **Public** : `/live` (vidéo + chat, mobile et desktop)
 - **Équipe** : `/admin` (modération, réglages, épingle — utilisable sur téléphone)
 
@@ -72,6 +74,14 @@ Supabase (Auth, Postgres, Realtime Broadcast, Cron) · Vercel.
 - Épingle avec bouton lien (modèle « 🚀 Rejoindre la formation » prêt à
   l'emploi) et retrait : affichée en **bannière sous la vidéo** et en haut du
   chat.
+- Onglet **Relances** : un clic lance un message Équipe + des **boutons de
+  réponse rapide** (« OUI 🔥 », « Chaud ! »…) chez les spectateurs pendant 30,
+  60 ou 120 s ; un appui = un vrai message (slow mode, anti-spam et mots-clés
+  s'appliquent). 4 relances prêtes, modifiables et mémorisées sur l'appareil
+  de l'admin ; bouton « Arrêter ». Pendant une vague, chaque diffusion montre
+  les 100 réponses les plus récentes (le fil reste fluide) ; chacun voit
+  toujours sa propre réponse. Validé : 300 appuis en 2 s, 300/300 acceptés,
+  p95 142 ms.
 - Onglet **Offre** : bloc HTML libre sous la vidéo (offre, bonus, CTA…), avec
   aperçu, publication instantanée et retrait. Sur téléphone, il s'ouvre via le
   bouton « 🎁 Voir l'offre ». Le code est nettoyé (DOMPurify : pas de scripts,
@@ -201,6 +211,10 @@ Latence de livraison     p50 1,3 s · p95 2,2 s · max 2,8 s (transatlantique in
 send_message côté serveur  p50 3 ms · p95 165 ms
 Diffusions               ≈ 0,5/s (≈ 10 messages par lot) → ≈ 1 850 événements/s
 ```
+
+Refait le 01/11 en compute **Medium** avec la diffusion à 3 s : 4000/4000
+connectés, 0 déconnexion, 0 erreur, **1 196 000 / 1 196 000 livraisons
+(100 %)**, latence p95 3,2 s, ≈ 1 290 événements/s.
 
 Le même test avec les quotas du plan Free (stack locale) échoue bien
 (plafond de 200 connexions, `MessagePerSecondRateLimitReached`) : c'est
@@ -408,8 +422,9 @@ spend cap, ou augmenter `broadcast_interval_seconds`.
 - [ ] Lien à partager : domaine propre (ex. `live.scutify.fr`) configuré
       dans Vercel.
 - [ ] `npm run load-test` → **SUCCÈS**, puis **Vider le chat**.
-- [ ] Mots-clés bloqués saisis, épingle prête, bloc **Offre** publié, slow
-      mode choisi (**10 s** conseillé avec des milliers de spectateurs).
+- [ ] Mots-clés bloqués saisis, épingle prête, bloc **Offre** publié,
+      **relances** préparées pour les moments clés, slow mode choisi (**10 s**
+      conseillé avec des milliers de spectateurs).
 - [ ] Au moins deux admins connectés sur `/admin` (un sur téléphone).
 
 ---

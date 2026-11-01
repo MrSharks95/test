@@ -5,6 +5,7 @@ import { ChevronUp, Loader2 } from "lucide-react";
 import { useNow } from "@/hooks/use-now";
 import type { LiveChat } from "@/hooks/use-live-chat";
 import { isMutedNow } from "@/lib/chat/format";
+import { activeQuickReplies } from "@/lib/chat/relance";
 
 import { Composer } from "./composer";
 import { ConnectionStatus, ReconnectingBanner } from "./connection-status";
@@ -83,7 +84,10 @@ function ChatFooter({ chat }: { chat: LiveChat }) {
   const { phase, settings, profile, isAdmin } = chat;
   const mutedUntil = profile?.muted_until ?? null;
   // Rafraîchit l'affichage à l'expiration d'un mute.
-  const now = useNow(Boolean(mutedUntil) && isMutedNow(mutedUntil, Date.now()), 1000);
+  const relanceRunning = activeQuickReplies(settings, Date.now()).length > 0;
+  const now = useNow((Boolean(mutedUntil) && isMutedNow(mutedUntil, Date.now())) || relanceRunning, 1000);
+  // Relance : boutons visibles jusqu'à la fin (horloge rafraîchie chaque seconde).
+  const quickReplies = activeQuickReplies(settings, now);
 
   const composer = (disabledReason: string | null) => (
     <Composer
@@ -92,12 +96,24 @@ function ChatFooter({ chat }: { chat: LiveChat }) {
       nextAllowedAt={chat.nextAllowedAt}
       slowModeSeconds={settings?.slow_mode_seconds ?? 0}
       isAdmin={isAdmin}
+      quickReplies={isAdmin ? [] : quickReplies}
     />
   );
 
   if (phase !== "ready" || !settings) return composer("Connexion au chat…");
   if (!settings.chat_enabled && !isAdmin) return composer("Le chat est fermé pour le moment");
-  if (!profile) return <JoinForm onJoin={chat.joinChat} />;
+  if (!profile) {
+    return (
+      <div className="space-y-2">
+        {quickReplies.length > 0 && (
+          <p className="text-center text-xs font-bold text-brand-navy">
+            💬 L&apos;équipe vous pose une question : participe au chat pour répondre en un clic !
+          </p>
+        )}
+        <JoinForm onJoin={chat.joinChat} />
+      </div>
+    );
+  }
   if (profile.banned || isMutedNow(mutedUntil, now)) return composer("Tu ne peux plus écrire dans le chat");
   return composer(null);
 }
