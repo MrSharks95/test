@@ -74,6 +74,14 @@ Supabase (Auth, Postgres, Realtime Broadcast, Cron) · Vercel.
 - Épingle avec bouton lien (modèle « 🚀 Rejoindre la formation » prêt à
   l'emploi) et retrait : affichée en **bannière sous la vidéo** et en haut du
   chat.
+- Onglet **Relances** : un clic lance un message Équipe + des **boutons de
+  réponse rapide** (« OUI 🔥 », « Chaud ! »…) chez les spectateurs pendant 30,
+  60 ou 120 s ; un appui = un vrai message (slow mode, anti-spam et mots-clés
+  s'appliquent). 4 relances prêtes, modifiables et mémorisées sur l'appareil
+  de l'admin ; bouton « Arrêter ». Pendant une vague, chaque diffusion montre
+  les 100 réponses les plus récentes (le fil reste fluide) ; chacun voit
+  toujours sa propre réponse. Validé : 300 appuis en 2 s, 300/300 acceptés,
+  p95 142 ms.
 - Onglet **Offre** : bloc HTML libre sous la vidéo (offre, bonus, CTA…), avec
   aperçu, publication instantanée et retrait. Sur téléphone, il s'ouvre via le
   bouton « 🎁 Voir l'offre ». Le code est nettoyé (DOMPurify : pas de scripts,
@@ -414,8 +422,9 @@ spend cap, ou augmenter `broadcast_interval_seconds`.
 - [ ] Lien à partager : domaine propre (ex. `live.scutify.fr`) configuré
       dans Vercel.
 - [ ] `npm run load-test` → **SUCCÈS**, puis **Vider le chat**.
-- [ ] Mots-clés bloqués saisis, épingle prête, bloc **Offre** publié, slow
-      mode choisi (**10 s** conseillé avec des milliers de spectateurs).
+- [ ] Mots-clés bloqués saisis, épingle prête, bloc **Offre** publié,
+      **relances** préparées pour les moments clés, slow mode choisi (**10 s**
+      conseillé avec des milliers de spectateurs).
 - [ ] Au moins deux admins connectés sur `/admin` (un sur téléphone).
 
 ---

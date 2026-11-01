@@ -17,6 +17,9 @@ export type ChatSettings = {
   pinned_label: string | null;
   /** Change quand le bloc HTML sous la vidéo est modifié (le HTML n'est pas diffusé). */
   custom_html_updated_at?: string | null;
+  /** Relance en cours : boutons de réponse rapide et date de fin. */
+  quick_replies?: string[] | null;
+  quick_replies_until?: string | null;
   updated_at?: string;
 };
 

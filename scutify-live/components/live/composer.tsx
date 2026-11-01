@@ -20,6 +20,8 @@ type Props = {
   slowModeSeconds: number;
   isAdmin: boolean;
   placeholder?: string;
+  /** Relance en cours : boutons de réponse rapide (un appui = un message). */
+  quickReplies?: string[];
 };
 
 export function Composer({
@@ -29,6 +31,7 @@ export function Composer({
   slowModeSeconds,
   isAdmin,
   placeholder = "Écris ton message…",
+  quickReplies = [],
 }: Props) {
   const [value, setValue] = useState("");
   const [sending, setSending] = useState(false);
@@ -64,8 +67,35 @@ export function Composer({
     inputRef.current?.focus();
   };
 
+  const sendQuickReply = async (reply: string) => {
+    if (sending || remaining > 0 || disabled) return;
+    setSending(true);
+    setError(null);
+    const result = await onSend(reply);
+    setSending(false);
+    if (!result.ok) setError(result.error);
+  };
+
+  const showQuickReplies = !disabled && quickReplies.length > 0;
+
   return (
     <form onSubmit={submit} className="space-y-1.5">
+      {showQuickReplies && (
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Réponses rapides">
+          {quickReplies.map((reply) => (
+            <button
+              key={reply}
+              type="button"
+              disabled={sending || remaining > 0}
+              onPointerDown={(e) => e.preventDefault()}
+              onClick={() => void sendQuickReply(reply)}
+              className="animate-in fade-in zoom-in-95 rounded-full border-2 border-brand-sky bg-brand-sky-light px-3.5 py-1.5 text-sm font-bold text-brand-navy shadow-sm transition active:scale-95 disabled:opacity-50"
+            >
+              {reply}
+            </button>
+          ))}
+        </div>
+      )}
       <div className="flex items-center gap-2">
         <div className="relative min-w-0 flex-1">
           {disabled && (
