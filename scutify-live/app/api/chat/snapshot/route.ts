@@ -27,7 +27,7 @@ export async function GET() {
     supabase
       .from("chat_settings")
       .select(
-        "chat_enabled,slow_mode_seconds,links_allowed,pinned_message,pinned_url,pinned_label,custom_html,custom_html_updated_at,quick_replies,quick_replies_until,updated_at",
+        "chat_enabled,slow_mode_seconds,links_allowed,pinned_message,pinned_url,pinned_label,custom_html,custom_html_updated_at,quick_replies,quick_replies_until,reactions_enabled,updated_at",
       )
       .eq("id", 1)
       .single(),

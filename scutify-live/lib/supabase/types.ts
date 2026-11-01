@@ -92,6 +92,9 @@ export type Database = {
           ip_profile_limit: number;
           quick_replies: string[] | null;
           quick_replies_until: string | null;
+          reactions_enabled: boolean;
+          reaction_user_limit: number;
+          ip_reaction_limit: number;
           updated_at: string;
         };
         Insert: {
@@ -109,6 +112,9 @@ export type Database = {
           ip_profile_limit?: number;
           quick_replies?: string[] | null;
           quick_replies_until?: string | null;
+          reactions_enabled?: boolean;
+          reaction_user_limit?: number;
+          ip_reaction_limit?: number;
           updated_at?: string;
         };
         Update: {
@@ -126,6 +132,9 @@ export type Database = {
           ip_profile_limit?: number;
           quick_replies?: string[] | null;
           quick_replies_until?: string | null;
+          reactions_enabled?: boolean;
+          reaction_user_limit?: number;
+          ip_reaction_limit?: number;
           updated_at?: string;
         };
         Relationships: [];
@@ -146,6 +155,10 @@ export type Database = {
       admin_ban_user: { Args: { user_id: string; banned: boolean }; Returns: undefined };
       admin_clear_chat: { Args: Record<PropertyKey, never>; Returns: number };
       admin_set_quick_replies: { Args: { replies: string[]; seconds: number }; Returns: string | null };
+      send_reactions: {
+        Args: { fire?: number; money?: number; heart?: number; thumbs?: number };
+        Returns: boolean;
+      };
     };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };

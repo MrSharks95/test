@@ -58,6 +58,11 @@ Supabase (Auth, Postgres, Realtime Broadcast, Cron) · Vercel.
   instantanément, à jour, à la réouverture. Utilisateur muté/banni : champ
   désactivé avec un texte clair.
 - Slow mode : temps restant affiché avant le prochain message.
+- **Réactions 🔥 💰 ❤️ 👍** pour tous, **sans pseudo** : ligne « Réagis au
+  live » en pied de chat (sous la vidéo quand le chat est fermé, masquée
+  clavier ouvert). L'émoji monte tout de suite pour celui qui appuie ; les
+  réactions des autres arrivent toutes les ~3 s et défilent en continu
+  (40 émojis animés au plus, fluide sur mobile).
 - Coupure réseau : bandeau « Reconnexion… », reconnexion automatique et
   récupération des messages manqués.
 
@@ -90,6 +95,9 @@ Supabase (Auth, Postgres, Realtime Broadcast, Cron) · Vercel.
   d'iframes ni de gestionnaires d'événements ; liens ouverts dans un nouvel
   onglet).
 - **Vider le chat** (attaque de spam).
+- Interrupteur **Réactions** (coupure instantanée chez tous) et compteur des
+  réactions de la **dernière minute** (🔥 12 💰 3 ❤️ 40 👍 8), pour rebondir
+  en direct.
 
 **Anti-spam par connexion (IP)** : le slow mode est par compte ; pour
 qu'un robot ne contourne pas les limites en multipliant les comptes, la base
@@ -99,6 +107,19 @@ Les admins ne sont pas limités. Réglage (0 = désactivé) :
 
 ```sql
 update public.chat_settings set ip_message_limit = 20, ip_profile_limit = 30 where id = 1;
+```
+
+**Réactions, sans exploser le quota** : chaque appui n'est pas diffusé. Le
+navigateur regroupe les appuis (1 appel `send_reactions()` toutes les 4 s au
+plus, délai aléatoire au premier envoi), la base les empile dans une table
+UNLOGGED et `flush_messages()` envoie les **totaux dans le même lot que les
+messages** : toujours une seule diffusion toutes les 3 s par spectateur.
+Limites (au-delà, réactions ignorées sans erreur) : 8 appels / 10 s par
+compte, 150 / 10 s par IP, 30 réactions par type et par appel ; comptes
+bannis ignorés.
+
+```sql
+update public.chat_settings set reaction_user_limit = 8, ip_reaction_limit = 150 where id = 1;
 ```
 
 ---
@@ -217,6 +238,15 @@ Diffusions               ≈ 0,5/s (≈ 10 messages par lot) → ≈ 1 850 évé
 Refait le 01/11 en compute **Medium** avec la diffusion à 3 s : 4000/4000
 connectés, 0 déconnexion, 0 erreur, **1 196 000 / 1 196 000 livraisons
 (100 %)**, latence p95 3,2 s, ≈ 1 290 événements/s.
+
+**Réactions** (01/11, prod Medium, `npm run reactions-test -- --load`) :
+totaux diffusés = totaux acceptés à l'unité près (jusqu'à 117 000 réactions
+en 40 s), un lot toutes les ~3,2 s, aucune erreur serveur. Côté serveur
+(logs Supabase) : **~350 appels/s tenus avec p95 ≈ 110 ms** (aller-retour
+transatlantique compris), 1 ms de base par appel ; saturation de l'API vers
+600 appels/s. D'où l'envoi toutes les 4 s : 4 000 spectateurs dont 35 % qui
+tapent sans arrêt = 350 appels/s. En cas de lenteur du chat pendant une
+avalanche de réactions : interrupteur **Réactions** dans `/admin`.
 
 Le même test avec les quotas du plan Free (stack locale) échoue bien
 (plafond de 200 connexions, `MessagePerSecondRateLimitReached`) : c'est
@@ -405,6 +435,21 @@ npm run load-test -- --clients 4000 --rate 5 --duration 120 --ramp 100
   conseillée. Le test lui-même consomme du quota Realtime (≈ 2 000
   événements/s pendant sa durée).
 
+**Réactions** : vérification fonctionnelle (limites actives), puis charge
+(limites coupées le temps du test, le script donne le SQL) :
+
+```bash
+npm run reactions-test
+```
+
+```bash
+npm run reactions-test -- --load --reactors 200 --rate 350 --duration 30
+```
+
+Une seule machine (surtout derrière un proxy) sature avant le serveur :
+comparer avec la durée mesurée côté serveur (logs Supabase, `edge_logs`,
+`response.origin_time`).
+
 **Lire un échec** : `jamais connectés` > 0 → quota de connexions ;
 livraisons < 99,5 % ou déconnexions → quota de messages/s (logs Realtime :
 `MessagePerSecondRateLimitReached`, `tenant_events`). Vérifier le plan, le
@@ -424,6 +469,8 @@ spend cap, ou augmenter `broadcast_interval_seconds`.
 - [ ] Lien à partager : domaine propre (ex. `live.scutify.fr`) configuré
       dans Vercel.
 - [ ] `npm run load-test` → **SUCCÈS**, puis **Vider le chat**.
+- [ ] `npm run reactions-test` → réactions opérationnelles ; limites de
+      réactions remises à **8 / 150** après un test de charge.
 - [ ] Mots-clés bloqués saisis, épingle prête, bloc **Offre** publié,
       **relances** préparées pour les moments clés, slow mode choisi (**10 s**
       conseillé avec des milliers de spectateurs).

@@ -61,6 +61,64 @@ html.live-lock body {
   }
 }
 
+/* Clavier ouvert : les boutons de réactions laissent la place à la saisie. */
+html[data-keyboard="open"] .live-reactions {
+  display: none;
+}
+
+/* Réactions : émoji qui monte en ondulant puis s'efface (transform + opacity
+   uniquement, rendu GPU). Variables posées par hooks/use-reactions.ts. */
+.reaction-particle {
+  position: absolute;
+  bottom: 0;
+  left: var(--x, 50%);
+  font-size: var(--size, 1.5rem);
+  line-height: 1;
+  opacity: 0;
+  pointer-events: none;
+  user-select: none;
+  will-change: transform, opacity;
+  filter: drop-shadow(0 2px 3px rgb(0 0 0 / 0.25));
+  animation: reaction-float var(--dur, 2.4s) cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+}
+
+@keyframes reaction-float {
+  0% {
+    opacity: 0;
+    transform: translate3d(-50%, 0, 0) scale(0.4);
+  }
+  12% {
+    opacity: 1;
+    transform: translate3d(calc(-50% + var(--sway, 0px) * 0.4), calc(var(--rise, 200px) * -0.12), 0) scale(1.15);
+  }
+  55% {
+    opacity: 1;
+    transform: translate3d(calc(-50% - var(--sway, 0px)), calc(var(--rise, 200px) * -0.55), 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(calc(-50% + var(--drift, 0px)), calc(var(--rise, 200px) * -1), 0) scale(0.85);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reaction-particle {
+    animation: reaction-fade 1.2s ease-out forwards;
+  }
+
+  @keyframes reaction-fade {
+    0%,
+    100% {
+      opacity: 0;
+      transform: translate3d(-50%, -40px, 0);
+    }
+    30% {
+      opacity: 1;
+      transform: translate3d(-50%, -40px, 0);
+    }
+  }
+}
+
 @layer utilities {
   .scrollbar-thin {
     scrollbar-width: thin;
