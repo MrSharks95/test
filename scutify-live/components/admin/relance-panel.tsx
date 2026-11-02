@@ -19,11 +19,19 @@ export type RelancePreset = {
   seconds: number;
 };
 
-const STORAGE_KEY = "scutify-live-relances-v1";
+// v2 (02/11) : nouvelle liste pour tous les admins (les listes enregistrées
+// sur les appareils avec l'ancienne clé sont ignorées).
+const STORAGE_KEY = "scutify-live-relances-v2";
 const DURATIONS = [30, 60, 120] as const;
 const MAX_REPLIES = 4;
 
 const DEFAULT_PRESETS: RelancePreset[] = [
+  {
+    id: "son",
+    message: "Petit check technique 🎧 Vous nous voyez et nous entendez bien ? Répondez en un clic 👇",
+    replies: ["Parfait 👌", "Un peu faible 🔉", "Ça coupe ⚠️", "Pas de son 🔇"],
+    seconds: 60,
+  },
   {
     id: "action",
     message: "Si on vous donne ces 4 points clés, vous passez à l'action ? Répondez OUI 🔥",
@@ -34,18 +42,6 @@ const DEFAULT_PRESETS: RelancePreset[] = [
     id: "pret",
     message: "Vous êtes prêts pour la suite ? 🚀",
     replies: ["Prêt(e) ! 🚀", "GO 🔥", "💪"],
-    seconds: 60,
-  },
-  {
-    id: "parle",
-    message: "Est-ce que ça vous parle ? Dites-le dans le chat 👇",
-    replies: ["Grave ! 🙌", "Oui 💯", "🔥"],
-    seconds: 60,
-  },
-  {
-    id: "origine",
-    message: "D'où vous nous regardez ce soir ? 🌍",
-    replies: ["France 🇫🇷", "Belgique 🇧🇪", "Suisse 🇨🇭", "Ailleurs 🌍"],
     seconds: 60,
   },
 ];
