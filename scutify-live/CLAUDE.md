@@ -74,7 +74,9 @@ en français, concise, actionnable. Voir README.md pour le détail.
   Bascule via `settings_updated`, filet = `resync()` périodique (CDN). Tout
   le monde (admins compris) voit l'attente ; admin + `/live?equipe` = vidéo ;
   réglages illisibles = attente jusqu'à l'heure (logique `liveGate()`).
-  Titre de page « Karine et Richard · Le live ».
+  Titre de page « Karine et Richard · Le live ». Une fois le live ouvert, la
+  marque Scutify reste (en-tête, chat, pseudo « Equipe Scutify ») : validé
+  par l'utilisateur le 02/11.
 - **pg-safeupdate** : Supabase refuse tout DELETE/UPDATE **sans WHERE** dans
   une requête PostgREST, même dans une fonction SECURITY DEFINER (pg_cron
   n'est pas concerné → un test « via cron » ne suffit pas). Toujours mettre
