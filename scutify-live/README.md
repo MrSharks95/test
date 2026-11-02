@@ -78,9 +78,12 @@ Supabase (Auth, Postgres, Realtime Broadcast, Cron) · Vercel.
   récupération des messages manqués.
 
 **Page `/admin`** (email + mot de passe, rôle `admin` obligatoire)
-- Bandeau **Salle d'attente / Live ouvert** : bouton « Ouvrir le live »
-  (confirmation), retour à la salle d'attente, heure du compte à rebours
-  modifiable.
+- Bandeau **Salle d'attente / Live ouvert / Live terminé** : « Ouvrir le
+  live », retour à la salle d'attente, heure du compte à rebours modifiable,
+  **« Terminer le live »** (tous les spectateurs basculent sans recharger sur
+  une page de remerciement avec le bloc Offre ; vidéo, chat et réactions
+  coupés, chat fermé) et « Rouvrir le live » en cas d'erreur. Confirmation à
+  chaque étape.
 - Ouvrir / fermer le chat (instantané pour tous ; fermé = masqué chez les
   spectateurs, l'équipe continue de le voir).
 - Slow mode : off, 5 s, 10 s, 30 s. Autoriser / bloquer les liens.
@@ -493,7 +496,7 @@ spend cap, ou augmenter `broadcast_interval_seconds`.
 - [ ] Au moins deux admins connectés sur `/admin` (un sur téléphone).
 - [ ] À l'heure : **1) lancer la diffusion StreamYard**, **2) « Ouvrir le
       live »** dans `/admin` (les spectateurs quittent la salle d'attente),
-      3) ouvrir le chat quand tu veux.
+      3) ouvrir le chat quand tu veux ; à la fin : **« Terminer le live »**.
 
 ---
 

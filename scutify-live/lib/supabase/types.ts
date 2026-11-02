@@ -99,6 +99,7 @@ export type Database = {
           live_starts_at: string | null;
           custom_html_enabled: boolean;
           pinned_enabled: boolean;
+          live_ended: boolean;
           updated_at: string;
         };
         Insert: {
@@ -123,6 +124,7 @@ export type Database = {
           live_starts_at?: string | null;
           custom_html_enabled?: boolean;
           pinned_enabled?: boolean;
+          live_ended?: boolean;
           updated_at?: string;
         };
         Update: {
@@ -147,6 +149,7 @@ export type Database = {
           live_starts_at?: string | null;
           custom_html_enabled?: boolean;
           pinned_enabled?: boolean;
+          live_ended?: boolean;
           updated_at?: string;
         };
         Relationships: [];

@@ -17,6 +17,7 @@ import { CustomBlock } from "./custom-block";
 import { PinnedMessage } from "./pinned-message";
 import { ReactionBar } from "./reaction-bar";
 import { VideoPlayer } from "./video-player";
+import { ThankYouPage } from "./thank-you-page";
 import { LiveLoading, WaitingRoom } from "./waiting-room";
 
 /** Sans réglages au bout de 8 s (Supabase injoignable) : voir liveGate(). */
@@ -77,6 +78,7 @@ export function LiveShell() {
   const gate = liveGate({
     hasSettings: Boolean(chat.settings),
     liveOpen: chat.settings?.live_open,
+    liveEnded: chat.settings?.live_ended,
     isAdmin: chat.isAdmin,
     teamPreview,
     timedOut: gateTimedOut,
@@ -84,6 +86,8 @@ export function LiveShell() {
     fallbackStartMs: FALLBACK_START_MS,
   });
   if (gate === "loading") return <LiveLoading />;
+  // Live terminé : vidéo, chat et réactions disparaissent (iframe démontée).
+  if (gate === "ended") return <ThankYouPage html={chat.customHtml} settings={chat.settings} />;
   if (gate === "waiting") {
     return (
       <WaitingRoom

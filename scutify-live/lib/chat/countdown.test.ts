@@ -62,6 +62,14 @@ describe("liveGate", () => {
     expect(liveGate({ ...base, liveOpen: undefined })).toBe("live"); // ancienne base
   });
 
+  it("live terminé : page de remerciement pour tous, prioritaire", () => {
+    expect(liveGate({ ...base, liveOpen: true, liveEnded: true })).toBe("ended");
+    expect(liveGate({ ...base, liveOpen: false, liveEnded: true })).toBe("ended");
+    expect(liveGate({ ...base, liveOpen: true, liveEnded: true, isAdmin: true })).toBe("ended");
+    expect(liveGate({ ...base, liveOpen: true, liveEnded: true, isAdmin: true, teamPreview: true })).toBe("live");
+    expect(liveGate({ ...base, liveOpen: true, liveEnded: false })).toBe("live");
+  });
+
   it("réglages illisibles : chargement, puis attente avant l'heure, live après", () => {
     const unknown = { ...base, hasSettings: false, liveOpen: undefined };
     expect(liveGate(unknown)).toBe("loading");

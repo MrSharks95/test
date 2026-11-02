@@ -30,6 +30,8 @@ export type ChatSettings = {
   live_open?: boolean;
   /** Début du live annoncé (compte à rebours). */
   live_starts_at?: string | null;
+  /** Live terminé : page de remerciement (avec l'offre) pour tous. */
+  live_ended?: boolean;
   updated_at?: string;
 };
 
