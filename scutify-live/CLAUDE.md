@@ -110,8 +110,10 @@ derrière proxy : regarder `edge_logs.response.origin_time`, pas le client).
 ## Reste à faire (utilisateur)
 Réglages Supabase « leaked passwords » + Auth connexions en pourcentage ;
 capacité StreamYard 4 000 ; comptes équipe ; le soir : lancer StreamYard
-PUIS « Ouvrir le live » (salle d'attente), ouvrir le chat, slow mode 10 s,
-épingle + Offre, relances prêtes ; redescendre Medium après.
+PUIS « Ouvrir le live » (salle d'attente), ouvrir le chat, afficher Offre /
+Épingle (interrupteurs), relances ; redescendre Medium après.
+État remis à neuf le 02/11 ~11h30 : chat vidé et fermé, slow mode 10 s déjà
+réglé, offre + épingle chargées et masquées, salle d'attente active.
 Coût : pic connexions déjà facturé 40 $ (tests) si même période.
 
 ## Commandes (depuis scutify-live/)
