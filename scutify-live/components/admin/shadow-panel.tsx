@@ -21,7 +21,9 @@ export function ShadowPanel({ messages, loading, onRefresh, onApprove, ...modera
     <Card>
       <CardHeader className="flex-row items-start justify-between gap-2 space-y-0">
         <div className="space-y-1">
-          <CardTitle>Messages bloqués</CardTitle>
+          <CardTitle>
+            Messages bloqués{messages && messages.length > 0 ? ` (${messages.length})` : ""}
+          </CardTitle>
           <CardDescription>
             Contiennent un mot-clé bloqué : visibles uniquement par leur auteur. Actualisé toutes les 10 s.
           </CardDescription>
@@ -36,7 +38,7 @@ export function ShadowPanel({ messages, loading, onRefresh, onApprove, ...modera
         ) : !messages || messages.length === 0 ? (
           <p className="py-6 text-center text-sm text-muted-foreground">Aucun message bloqué. ✅</p>
         ) : (
-          <ul className="divide-y">
+          <ul className="scrollbar-thin -mx-2 max-h-[min(60vh,560px)] divide-y overflow-y-auto overscroll-contain px-2">
             {messages.map((message) => (
               <li key={message.id} className="space-y-2 py-3">
                 <div className="flex items-start gap-2">

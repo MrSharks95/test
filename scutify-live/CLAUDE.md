@@ -74,12 +74,21 @@ en français, concise, actionnable. Voir README.md pour le détail.
   Bascule via `settings_updated`, filet = `resync()` périodique (CDN). Tout
   le monde (admins compris) voit l'attente ; admin + `/live?equipe` = vidéo ;
   réglages illisibles = attente jusqu'à l'heure (logique `liveGate()`).
-  Titre de page « Karine et Richard · Le live ».
+  Titre de page « Karine et Richard · Le live ». Une fois le live ouvert, la
+  marque Scutify reste (en-tête, chat, pseudo « Equipe Scutify ») : validé
+  par l'utilisateur le 02/11.
 - **pg-safeupdate** : Supabase refuse tout DELETE/UPDATE **sans WHERE** dans
   une requête PostgREST, même dans une fonction SECURITY DEFINER (pg_cron
   n'est pas concerné → un test « via cron » ne suffit pas). Toujours mettre
   un WHERE (ex. `where id > 0`) et tester les RPC depuis le site/API. Bug
   trouvé le jour J (flush des réactions) et corrigé (migration 20261102100000).
+- **Offre / épingle** : contenu enregistré à l'avance, affiché seulement si
+  `custom_html_enabled` / `pinned_enabled` (interrupteurs admin, défaut
+  false). Contenu du 02/11 pré-chargé (offre Déclic Scutify 997 €, épingle
+  « Rejoins Déclic Scutify ce soir » → checkout).
+- Mots-clés bloqués : 112 (liste utilisateur du 02/11 ajoutée) ; « formation »,
+  « site », « montre »… en font partie (questions des spectateurs masquées →
+  onglet Bloqués, à rendre visibles au besoin).
 - `lib/chat/` = logique pure testée (Vitest, 65 tests).
 
 ## Fonctionnalités en production

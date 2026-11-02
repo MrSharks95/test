@@ -15,6 +15,10 @@ export type ChatSettings = {
   pinned_message: string | null;
   pinned_url: string | null;
   pinned_label: string | null;
+  /** Épingle prête à l'avance : affichée seulement si true. */
+  pinned_enabled?: boolean;
+  /** Bloc « Offre » prêt à l'avance : affiché seulement si true. */
+  custom_html_enabled?: boolean;
   /** Change quand le bloc HTML sous la vidéo est modifié (le HTML n'est pas diffusé). */
   custom_html_updated_at?: string | null;
   /** Relance en cours : boutons de réponse rapide et date de fin. */

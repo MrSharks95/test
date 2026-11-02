@@ -9,7 +9,7 @@ import type { ChatSettings } from "@/lib/chat/types";
 import { cn } from "@/lib/utils";
 
 type Props = {
-  settings: Pick<ChatSettings, "pinned_message" | "pinned_url" | "pinned_label"> | null;
+  settings: Pick<ChatSettings, "pinned_message" | "pinned_url" | "pinned_label" | "pinned_enabled"> | null;
   className?: string;
 };
 
@@ -20,9 +20,11 @@ type Props = {
  */
 export function PinnedMessage({ settings, className }: Props) {
   const [expanded, setExpanded] = useState(false);
+  // Épingle préparée mais masquée par l'équipe.
+  const hidden = settings?.pinned_enabled === false;
   const message = settings?.pinned_message?.trim() || null;
   const url = isSafeHttpUrl(settings?.pinned_url) ? settings?.pinned_url : null;
-  if (!message && !url) return null;
+  if (hidden || (!message && !url)) return null;
 
   return (
     <div

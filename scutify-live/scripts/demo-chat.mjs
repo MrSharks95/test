@@ -65,6 +65,9 @@ const TROLLS = [
   "Regardez les avis avant d'acheter", "Il y a une vidéo YouTube qui explique tout gratuitement", "5000 € pour ça ?",
   "1500 balles lol", "Le closing c'est mieux", "Devenez closeur à la place", "8lab c'est mieux",
   "Va sur monsite.com pour la vraie méthode", "www.promo-crypto.fr gains garantis", "Rejoignez t.me/argentfacile",
+  "C'est juste du dropshipping AliExpress", "SCAM !!!", "Bande d'escrocs", "Remboursez les gens", "5000€ pour ça ?",
+  "Système pyramidal classique", "Allez sur keh92.buzz", "Tout vient de Chine", "Encore des influvoleurs",
+  "Faites un tour sur tannabuzz.com", "Placement crypto garanti, écrivez-moi",
 ];
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

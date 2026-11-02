@@ -97,6 +97,8 @@ export type Database = {
           ip_reaction_limit: number;
           live_open: boolean;
           live_starts_at: string | null;
+          custom_html_enabled: boolean;
+          pinned_enabled: boolean;
           updated_at: string;
         };
         Insert: {
@@ -119,6 +121,8 @@ export type Database = {
           ip_reaction_limit?: number;
           live_open?: boolean;
           live_starts_at?: string | null;
+          custom_html_enabled?: boolean;
+          pinned_enabled?: boolean;
           updated_at?: string;
         };
         Update: {
@@ -141,6 +145,8 @@ export type Database = {
           ip_reaction_limit?: number;
           live_open?: boolean;
           live_starts_at?: string | null;
+          custom_html_enabled?: boolean;
+          pinned_enabled?: boolean;
           updated_at?: string;
         };
         Relationships: [];
