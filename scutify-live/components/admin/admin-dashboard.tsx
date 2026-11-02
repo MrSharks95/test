@@ -32,7 +32,7 @@ type Tab = "direct" | "relance" | "pin" | "offer" | "shadow" | "users" | "keywor
 type PanelTab = Exclude<Tab, "direct">;
 
 const SETTINGS_COLUMNS =
-  "chat_enabled,slow_mode_seconds,links_allowed,pinned_message,pinned_url,pinned_label,custom_html_updated_at,quick_replies,quick_replies_until,reactions_enabled,live_open,live_starts_at,custom_html_enabled,pinned_enabled,updated_at" as const;
+  "chat_enabled,slow_mode_seconds,links_allowed,pinned_message,pinned_url,pinned_label,custom_html_updated_at,quick_replies,quick_replies_until,reactions_enabled,live_open,live_starts_at,custom_html_enabled,pinned_enabled,live_ended,updated_at" as const;
 
 function muteLabel(minutes: number): string {
   if (minutes >= END_OF_LIVE_MINUTES) return "jusqu'à la fin du live";
@@ -248,6 +248,30 @@ export function AdminDashboard({ profile }: { profile: Profile }) {
           },
     );
 
+  const endLive = (end: boolean) =>
+    setConfirm(
+      end
+        ? {
+            title: "Terminer le live ?",
+            description:
+              "Tous les spectateurs basculent tout de suite sur la page de remerciement avec ton offre : la vidéo, le chat et les réactions disparaissent, et le chat est fermé. Tu pourras rouvrir le live si besoin.",
+            confirmLabel: "Terminer le live",
+            destructive: true,
+            onConfirm: async () => {
+              if (await updateSettings({ live_ended: true, chat_enabled: false })) toast.success("Live terminé 🏁");
+            },
+          }
+        : {
+            title: "Rouvrir le live ?",
+            description:
+              "Les spectateurs revoient la vidéo. Le chat reste fermé : rouvre-le avec l'interrupteur si tu veux.",
+            confirmLabel: "Rouvrir le live",
+            onConfirm: async () => {
+              if (await updateSettings({ live_ended: false })) toast.success("Live rouvert 🎬");
+            },
+          },
+    );
+
   const toggleVisibility = async (patch: { custom_html_enabled: boolean } | { pinned_enabled: boolean }) => {
     const ok = await updateSettings(patch);
     if (!ok) return;
@@ -345,6 +369,7 @@ export function AdminDashboard({ profile }: { profile: Profile }) {
             settings={chat.settings}
             saving={savingSettings}
             onToggle={toggleLive}
+            onEnd={endLive}
             onSaveStart={saveStart}
           />
         )}

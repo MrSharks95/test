@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock, Play, Undo2 } from "lucide-react";
+import { Clock, Flag, Play, RotateCcw, Undo2 } from "lucide-react";
 import { type FormEvent, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,8 @@ type Props = {
   saving: boolean;
   /** Ouvre (true) ou remet (false) la salle d'attente, après confirmation. */
   onToggle: (open: boolean) => void;
+  /** Termine (true) ou rouvre (false) le live, après confirmation. */
+  onEnd: (ended: boolean) => void;
   onSaveStart: (iso: string) => Promise<boolean>;
 };
 
@@ -22,7 +24,8 @@ type Props = {
  * Salle d'attente : tant que le live n'est pas ouvert, les spectateurs ne
  * voient qu'un compte à rebours. Un clic ouvre le live chez tout le monde.
  */
-export function LiveGateCard({ settings, saving, onToggle, onSaveStart }: Props) {
+export function LiveGateCard({ settings, saving, onToggle, onEnd, onSaveStart }: Props) {
+  const ended = settings.live_ended === true;
   const open = settings.live_open !== false;
   const startsAt = parseStartsAt(settings.live_starts_at);
   const [editing, setEditing] = useState(false);
@@ -39,14 +42,18 @@ export function LiveGateCard({ settings, saving, onToggle, onSaveStart }: Props)
     <Card
       className={cn(
         "flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:p-4",
-        open ? "border-emerald-300 bg-emerald-50" : "border-sky-300 bg-sky-50",
+        ended ? "border-slate-300 bg-slate-100" : open ? "border-emerald-300 bg-emerald-50" : "border-sky-300 bg-sky-50",
       )}
     >
       <div className="min-w-0 flex-1">
         <p className="text-sm font-extrabold text-brand-navy">
-          {open ? "🎬 Live ouvert : les spectateurs voient la vidéo" : "⏳ Salle d'attente : les spectateurs voient le compte à rebours"}
+          {ended
+            ? "🏁 Live terminé : les spectateurs voient la page de remerciement avec l'offre"
+            : open
+              ? "🎬 Live ouvert : les spectateurs voient la vidéo"
+              : "⏳ Salle d'attente : les spectateurs voient le compte à rebours"}
         </p>
-        {!open &&
+        {!open && !ended &&
           (editing ? (
             <form onSubmit={save} className="mt-2 flex flex-wrap items-center gap-2">
               <Input
@@ -81,7 +88,7 @@ export function LiveGateCard({ settings, saving, onToggle, onSaveStart }: Props)
               </button>
             </p>
           ))}
-        {!open && (
+        {!open && !ended && (
           <p className="mt-1 text-xs text-brand-navy/70">
             Tout le monde (équipe comprise) voit la salle d&apos;attente sur /live.{" "}
             <a
@@ -96,10 +103,19 @@ export function LiveGateCard({ settings, saving, onToggle, onSaveStart }: Props)
         )}
       </div>
 
-      {open ? (
-        <Button variant="outline" size="sm" className="h-9 shrink-0" disabled={saving} onClick={() => onToggle(false)}>
-          <Undo2 /> Remettre la salle d&apos;attente
+      {ended ? (
+        <Button variant="outline" size="sm" className="h-9 shrink-0" disabled={saving} onClick={() => onEnd(false)}>
+          <RotateCcw /> Rouvrir le live
         </Button>
+      ) : open ? (
+        <div className="flex shrink-0 flex-wrap gap-2">
+          <Button variant="outline" size="sm" className="h-9" disabled={saving} onClick={() => onToggle(false)}>
+            <Undo2 /> Remettre la salle d&apos;attente
+          </Button>
+          <Button variant="destructive" size="sm" className="h-9 font-extrabold" disabled={saving} onClick={() => onEnd(true)}>
+            <Flag /> Terminer le live
+          </Button>
+        </div>
       ) : (
         <Button size="lg" className="h-11 shrink-0 text-base font-extrabold" disabled={saving} onClick={() => onToggle(true)}>
           <Play /> Ouvrir le live

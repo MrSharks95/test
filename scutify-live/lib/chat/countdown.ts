@@ -56,12 +56,13 @@ export const pad2 = (n: number) => String(n).padStart(2, "0");
 /** Début du live si les réglages sont illisibles (identique au défaut SQL). */
 export const DEFAULT_LIVE_STARTS_AT = "2026-11-02T19:00:00Z";
 
-export type LiveGate = "loading" | "waiting" | "live";
+export type LiveGate = "loading" | "waiting" | "live" | "ended";
 
 /**
  * Que montrer sur /live ?
  * - salle d'attente tant que le live n'est pas ouvert, POUR TOUT LE MONDE
  *   (équipe comprise) ; seul un compte admin avec ?equipe voit la vidéo ;
+ * - live terminé : page de remerciement pour tous (même règle ?equipe) ;
  * - réglages illisibles : écran de chargement, puis (après le délai de
  *   secours) salle d'attente avant l'heure prévue, live après — bloquer les
  *   requêtes ne permet pas d'arriver sur le live en avance.
@@ -69,6 +70,7 @@ export type LiveGate = "loading" | "waiting" | "live";
 export function liveGate(input: {
   hasSettings: boolean;
   liveOpen: boolean | undefined;
+  liveEnded?: boolean | undefined;
   isAdmin: boolean;
   teamPreview: boolean;
   timedOut: boolean;
@@ -79,6 +81,8 @@ export function liveGate(input: {
     if (!input.timedOut) return "loading";
     return input.nowMs < input.fallbackStartMs ? "waiting" : "live";
   }
-  if (input.liveOpen === false) return input.isAdmin && input.teamPreview ? "live" : "waiting";
+  const teamView = input.isAdmin && input.teamPreview;
+  if (input.liveEnded === true) return teamView ? "live" : "ended";
+  if (input.liveOpen === false) return teamView ? "live" : "waiting";
   return "live";
 }
