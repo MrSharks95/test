@@ -21,9 +21,13 @@ en français, concise, actionnable. Voir README.md pour le détail.
   `scutify-live` (`prj_CG6oQYsEAd3IYvwHipYnu67XpWdg`), Root Directory
   `scutify-live`, déploie `main` du dépôt MrSharks95/test. Valeurs publiques
   dans `.env.production` (pas de variables à saisir).
-- **Admin** : ecomprocharly@gmail.com (pseudo « Equipe Scutify »). Ajouter un
-  membre : compte créé dans Supabase Auth puis
-  `select private.promote_to_admin('email', 'Pseudo');`.
+- **Admin** : ecomprocharly@gmail.com (pseudo « Equipe Scutify ») + 3 admins
+  équipe ajoutés le 02/11 (pseudos Dylan, Christensen, Shanon ; liste :
+  `select pseudo, email from public.profiles where role = 'admin'`).
+  Ajouter un membre : compte Supabase Auth puis
+  `select private.promote_to_admin('email', 'Pseudo');` (sans clé service :
+  insertion SQL dans auth.users + auth.identities avec un hash bcrypt calculé
+  en local, puis vérifier la connexion).
 
 ## Accès outils (important)
 - Supabase MCP : `execute_sql` OK pour SELECT / UPDATE / DDL non destructif
