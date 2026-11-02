@@ -12,6 +12,7 @@ import { usePolling } from "@/hooks/use-polling";
 import { END_OF_LIVE_MINUTES, MESSAGE_COLUMNS } from "@/lib/chat/constants";
 import { parseChatError } from "@/lib/chat/errors";
 import type { ChatMessage, ChatSettings, Profile } from "@/lib/chat/types";
+import { publicEnv } from "@/lib/env";
 import { getSupabase } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -32,7 +33,7 @@ type Tab = "direct" | "relance" | "pin" | "offer" | "shadow" | "users" | "keywor
 type PanelTab = Exclude<Tab, "direct">;
 
 const SETTINGS_COLUMNS =
-  "chat_enabled,slow_mode_seconds,links_allowed,pinned_message,pinned_url,pinned_label,custom_html_updated_at,quick_replies,quick_replies_until,reactions_enabled,live_open,live_starts_at,custom_html_enabled,pinned_enabled,live_ended,updated_at" as const;
+  "chat_enabled,slow_mode_seconds,links_allowed,pinned_message,pinned_url,pinned_label,custom_html_updated_at,quick_replies,quick_replies_until,reactions_enabled,live_open,live_starts_at,custom_html_enabled,pinned_enabled,live_ended,stream_url,updated_at" as const;
 
 function muteLabel(minutes: number): string {
   if (minutes >= END_OF_LIVE_MINUTES) return "jusqu'à la fin du live";
@@ -279,6 +280,12 @@ export function AdminDashboard({ profile }: { profile: Profile }) {
     else toast.success(patch.pinned_enabled ? "Épingle affichée 📌" : "Épingle masquée");
   };
 
+  const saveStream = async (url: string | null): Promise<boolean> => {
+    const ok = await updateSettings({ stream_url: url });
+    if (ok) toast.success(url ? "Vidéo changée pour tous les spectateurs 🎥" : "Retour à la vidéo par défaut");
+    return ok;
+  };
+
   const saveStart = async (iso: string): Promise<boolean> => {
     const ok = await updateSettings({ live_starts_at: iso });
     if (ok) toast.success("Compte à rebours mis à jour");
@@ -371,6 +378,8 @@ export function AdminDashboard({ profile }: { profile: Profile }) {
             onToggle={toggleLive}
             onEnd={endLive}
             onSaveStart={saveStart}
+            defaultStreamUrl={publicEnv.streamEmbedUrl}
+            onSaveStream={saveStream}
           />
         )}
         {chat.settings ? (

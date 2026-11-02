@@ -100,6 +100,7 @@ export type Database = {
           custom_html_enabled: boolean;
           pinned_enabled: boolean;
           live_ended: boolean;
+          stream_url: string | null;
           updated_at: string;
         };
         Insert: {
@@ -125,6 +126,7 @@ export type Database = {
           custom_html_enabled?: boolean;
           pinned_enabled?: boolean;
           live_ended?: boolean;
+          stream_url?: string | null;
           updated_at?: string;
         };
         Update: {
@@ -150,6 +152,7 @@ export type Database = {
           custom_html_enabled?: boolean;
           pinned_enabled?: boolean;
           live_ended?: boolean;
+          stream_url?: string | null;
           updated_at?: string;
         };
         Relationships: [];

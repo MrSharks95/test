@@ -1,12 +1,13 @@
 "use client";
 
-import { Clock, Flag, Play, RotateCcw, Undo2 } from "lucide-react";
+import { Clock, Flag, Play, RotateCcw, Undo2, Video } from "lucide-react";
 import { type FormEvent, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { formatStartDate, parseStartsAt, toDateTimeLocal } from "@/lib/chat/countdown";
+import { parseStreamyardEmbed, streamyardId } from "@/lib/chat/stream";
 import type { ChatSettings } from "@/lib/chat/types";
 import { cn } from "@/lib/utils";
 
@@ -18,13 +19,25 @@ type Props = {
   /** Termine (true) ou rouvre (false) le live, après confirmation. */
   onEnd: (ended: boolean) => void;
   onSaveStart: (iso: string) => Promise<boolean>;
+  /** Lien StreamYard du code (utilisé quand aucun lien n'est choisi). */
+  defaultStreamUrl: string;
+  /** Enregistre le lien StreamYard (null = revenir au lien par défaut). */
+  onSaveStream: (url: string | null) => Promise<boolean>;
 };
 
 /**
  * Salle d'attente : tant que le live n'est pas ouvert, les spectateurs ne
  * voient qu'un compte à rebours. Un clic ouvre le live chez tout le monde.
  */
-export function LiveGateCard({ settings, saving, onToggle, onEnd, onSaveStart }: Props) {
+export function LiveGateCard({
+  settings,
+  saving,
+  onToggle,
+  onEnd,
+  onSaveStart,
+  defaultStreamUrl,
+  onSaveStream,
+}: Props) {
   const ended = settings.live_ended === true;
   const open = settings.live_open !== false;
   const startsAt = parseStartsAt(settings.live_starts_at);
@@ -88,6 +101,12 @@ export function LiveGateCard({ settings, saving, onToggle, onEnd, onSaveStart }:
               </button>
             </p>
           ))}
+        <StreamRow
+          streamUrl={settings.stream_url ?? null}
+          defaultStreamUrl={defaultStreamUrl}
+          saving={saving}
+          onSave={onSaveStream}
+        />
         {!open && !ended && (
           <p className="mt-1 text-xs text-brand-navy/70">
             Tout le monde (équipe comprise) voit la salle d&apos;attente sur /live.{" "}
@@ -122,5 +141,98 @@ export function LiveGateCard({ settings, saving, onToggle, onEnd, onSaveStart }:
         </Button>
       )}
     </Card>
+  );
+}
+
+/** Vidéo StreamYard diffusée : coller un code d'intégration ou un lien. */
+function StreamRow({
+  streamUrl,
+  defaultStreamUrl,
+  saving,
+  onSave,
+}: {
+  streamUrl: string | null;
+  defaultStreamUrl: string;
+  saving: boolean;
+  onSave: (url: string | null) => Promise<boolean>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const current = parseStreamyardEmbed(streamUrl) ?? defaultStreamUrl;
+  const isDefault = !parseStreamyardEmbed(streamUrl);
+
+  const save = async (event: FormEvent) => {
+    event.preventDefault();
+    const url = parseStreamyardEmbed(value);
+    if (!url) {
+      setError("Colle le code d'intégration StreamYard ou un lien https://streamyard.com/watch/…");
+      return;
+    }
+    setError(null);
+    if (await onSave(url)) {
+      setEditing(false);
+      setValue("");
+    }
+  };
+
+  if (editing) {
+    return (
+      <form onSubmit={save} className="mt-2 space-y-2">
+        <Input
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          placeholder="Colle ici le code d'intégration StreamYard (ou le lien)"
+          className="h-9 bg-white font-mono text-xs"
+          aria-label="Code d'intégration StreamYard"
+          autoFocus
+        />
+        {error && (
+          <p className="text-xs font-semibold text-destructive" role="alert">
+            {error}
+          </p>
+        )}
+        <div className="flex flex-wrap gap-2">
+          <Button type="submit" size="sm" className="h-9" disabled={saving}>
+            Changer la vidéo
+          </Button>
+          {!isDefault && (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-9"
+              disabled={saving}
+              onClick={async () => {
+                if (await onSave(null)) setEditing(false);
+              }}
+            >
+              Revenir au lien par défaut ({streamyardId(defaultStreamUrl)})
+            </Button>
+          )}
+          <Button type="button" size="sm" variant="ghost" className="h-9" onClick={() => setEditing(false)}>
+            Annuler
+          </Button>
+        </div>
+      </form>
+    );
+  }
+
+  return (
+    <p className="mt-1 flex flex-wrap items-center gap-x-2 text-sm text-brand-navy/80">
+      <Video className="size-3.5" aria-hidden />
+      Vidéo StreamYard : <strong className="font-mono">{streamyardId(current)}</strong>
+      {isDefault && <span className="text-xs">(par défaut)</span>}
+      <button
+        type="button"
+        onClick={() => {
+          setError(null);
+          setEditing(true);
+        }}
+        className="font-semibold text-brand-navy underline underline-offset-2"
+      >
+        changer
+      </button>
+    </p>
   );
 }
