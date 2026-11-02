@@ -1,6 +1,6 @@
 "use client";
 
-import { Eye, Save, Trash2 } from "lucide-react";
+import { Eye, Save } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { CustomBlock } from "@/components/live/custom-block";
@@ -8,15 +8,20 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 
+import { VisibilitySwitch } from "./visibility-switch";
+
 const MAX_LENGTH = 30_000;
 
 type Props = {
   html: string | null;
+  /** Bloc affiché aux spectateurs (le contenu reste enregistré sinon). */
+  enabled: boolean;
   saving: boolean;
   onSave: (html: string | null) => Promise<boolean>;
+  onToggle: (enabled: boolean) => void;
 };
 
-export function OfferPanel({ html, saving, onSave }: Props) {
+export function OfferPanel({ html, enabled, saving, onSave, onToggle }: Props) {
   const [value, setValue] = useState(html ?? "");
   const [preview, setPreview] = useState(html ?? "");
   const dirtyRef = useRef(false);
@@ -40,14 +45,21 @@ export function OfferPanel({ html, saving, onSave }: Props) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Bloc sous la vidéo (HTML)</CardTitle>
+        <CardTitle>Bloc « Offre » sous la vidéo</CardTitle>
         <CardDescription>
-          Colle ton code HTML (styles en ligne). Affiché sous la vidéo sur ordinateur et via le bouton « 🎁 Voir
-          l&apos;offre » sur téléphone. Les scripts sont retirés automatiquement, les liens s&apos;ouvrent dans un nouvel
-          onglet.
+          Prépare ton bloc à l&apos;avance : il reste enregistré et n&apos;apparaît chez les spectateurs que lorsque tu
+          l&apos;affiches (sous la vidéo sur ordinateur, bouton « 🎁 Voir l&apos;offre » sur téléphone). Les scripts sont
+          retirés automatiquement, les liens s&apos;ouvrent dans un nouvel onglet.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
+        <VisibilitySwitch
+          checked={enabled}
+          disabled={saving || (!html && !enabled)}
+          onChange={onToggle}
+          onLabel="Offre affichée aux spectateurs"
+          offLabel={html ? "Offre prête, masquée" : "Enregistre d'abord un bloc"}
+        />
         <Textarea
           value={value}
           onChange={(e) => {
@@ -66,13 +78,8 @@ export function OfferPanel({ html, saving, onSave }: Props) {
             <Eye /> Aperçu
           </Button>
           <Button type="button" size="sm" disabled={saving} onClick={() => void save(value.trim() || null)}>
-            <Save /> Publier
+            <Save /> Enregistrer
           </Button>
-          {html && (
-            <Button type="button" size="sm" variant="outline" disabled={saving} onClick={() => void save(null)}>
-              <Trash2 /> Retirer le bloc
-            </Button>
-          )}
           <span className="ml-auto text-xs tabular-nums text-muted-foreground">
             {value.length.toLocaleString("fr-FR")} / {MAX_LENGTH.toLocaleString("fr-FR")}
           </span>

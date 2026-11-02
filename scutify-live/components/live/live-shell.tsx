@@ -100,11 +100,13 @@ export function LiveShell() {
 function LiveLayout({ chat, reactions }: { chat: LiveChat; reactions: LiveReactions }) {
   // L'équipe garde le chat visible (elle peut écrire même chat fermé).
   const chatHidden = chat.phase === "ready" && chat.settings?.chat_enabled === false && !chat.isAdmin;
-  const hasPinned = Boolean(chat.settings?.pinned_message || chat.settings?.pinned_url);
+  // Épingle et offre préparées à l'avance : visibles seulement si activées.
+  const hasPinned =
+    chat.settings?.pinned_enabled !== false && Boolean(chat.settings?.pinned_message || chat.settings?.pinned_url);
   const { resume } = chat;
   const rootRef = useRef<HTMLDivElement>(null);
   const chatRef = useRef<HTMLElement>(null);
-  const hasBlock = Boolean(chat.customHtml?.trim());
+  const hasBlock = chat.settings?.custom_html_enabled !== false && Boolean(chat.customHtml?.trim());
   const [offerOpen, setOfferOpen] = useState(false);
 
   // Chat fermé : les réactions passent sous la vidéo.

@@ -1,6 +1,6 @@
 "use client";
 
-import { Pin, PinOff, Sparkles } from "lucide-react";
+import { Save, Sparkles } from "lucide-react";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 
 import { PinnedMessage } from "@/components/live/pinned-message";
@@ -13,13 +13,16 @@ import { PINNED_TEMPLATE } from "@/lib/chat/constants";
 import { isSafeHttpUrl } from "@/lib/chat/linkify";
 import type { ChatSettings } from "@/lib/chat/types";
 
+import { VisibilitySwitch } from "./visibility-switch";
+
 type Props = {
   settings: ChatSettings;
   saving: boolean;
   onSave: (patch: Pick<ChatSettings, "pinned_message" | "pinned_label" | "pinned_url">) => Promise<boolean>;
+  onToggle: (enabled: boolean) => void;
 };
 
-export function PinPanel({ settings, saving, onSave }: Props) {
+export function PinPanel({ settings, saving, onSave, onToggle }: Props) {
   const [message, setMessage] = useState(settings.pinned_message ?? "");
   const [label, setLabel] = useState(settings.pinned_label ?? "");
   const [url, setUrl] = useState(settings.pinned_url ?? "");
@@ -59,16 +62,6 @@ export function PinPanel({ settings, saving, onSave }: Props) {
     if (ok) dirtyRef.current = false;
   };
 
-  const unpin = async () => {
-    const ok = await onSave({ pinned_message: null, pinned_label: null, pinned_url: null });
-    if (ok) {
-      dirtyRef.current = false;
-      setMessage("");
-      setLabel("");
-      setUrl("");
-    }
-  };
-
   const useTemplate = () => {
     dirtyRef.current = true;
     setMessage(PINNED_TEMPLATE.message);
@@ -76,30 +69,42 @@ export function PinPanel({ settings, saving, onSave }: Props) {
     setUrl(PINNED_TEMPLATE.url);
   };
 
-  const isPinned = Boolean(settings.pinned_message || settings.pinned_url);
+  const hasContent = Boolean(settings.pinned_message || settings.pinned_url);
+  const enabled = settings.pinned_enabled !== false;
   const preview = { pinned_message: message || null, pinned_label: label || null, pinned_url: url || null };
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Message épinglé</CardTitle>
-        <CardDescription>Affiché en haut du chat pour tous les spectateurs, avec un bouton lien optionnel.</CardDescription>
+        <CardDescription>
+          Prépare-le à l&apos;avance : il reste enregistré et n&apos;apparaît (bannière sous la vidéo + haut du chat) que
+          lorsque tu l&apos;affiches.
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={submit} className="space-y-3">
+          <VisibilitySwitch
+            checked={enabled}
+            disabled={saving || (!hasContent && !enabled)}
+            onChange={onToggle}
+            onLabel="Épingle affichée aux spectateurs"
+            offLabel={hasContent ? "Épingle prête, masquée" : "Enregistre d'abord un message"}
+          />
+
           <Button type="button" variant="secondary" size="sm" onClick={useTemplate}>
-            <Sparkles /> Modèle « Rejoindre la formation »
+            <Sparkles /> Modèle « Déclic Scutify »
           </Button>
 
           <div className="space-y-1.5">
-            <Label htmlFor="pin-message">Texte</Label>
+            <Label htmlFor="pin-message">Titre</Label>
             <Textarea
               id="pin-message"
               value={message}
               onChange={(e) => edit(setMessage)(e.target.value)}
               maxLength={280}
               rows={3}
-              placeholder="Ex. La formation est ouverte pendant le live !"
+              placeholder="Ex. Rejoins Déclic Scutify ce soir"
             />
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -110,7 +115,7 @@ export function PinPanel({ settings, saving, onSave }: Props) {
                 value={label}
                 onChange={(e) => edit(setLabel)(e.target.value)}
                 maxLength={60}
-                placeholder="🚀 Rejoindre la formation"
+                placeholder="👉 Je profite de l’offre"
               />
             </div>
             <div className="space-y-1.5">
@@ -141,13 +146,8 @@ export function PinPanel({ settings, saving, onSave }: Props) {
 
           <div className="flex flex-wrap gap-2">
             <Button type="submit" disabled={saving}>
-              <Pin /> Épingler
+              <Save /> Enregistrer
             </Button>
-            {isPinned && (
-              <Button type="button" variant="outline" disabled={saving} onClick={unpin}>
-                <PinOff /> Retirer l&apos;épingle
-              </Button>
-            )}
           </div>
         </form>
       </CardContent>

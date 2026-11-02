@@ -26,8 +26,8 @@ export const MUTE_OPTIONS = [
 ] as const;
 
 export const PINNED_TEMPLATE = {
-  message: "La formation Scutify est ouverte : places limitées pendant le live !",
-  label: "🚀 Rejoindre la formation",
+  message: "Rejoins Déclic Scutify ce soir",
+  label: "👉 Je profite de l’offre",
   url: "https://www.scutify-club.com/offers/ym7bNY2K/checkout",
 } as const;
 

@@ -32,7 +32,7 @@ type Tab = "direct" | "relance" | "pin" | "offer" | "shadow" | "users" | "keywor
 type PanelTab = Exclude<Tab, "direct">;
 
 const SETTINGS_COLUMNS =
-  "chat_enabled,slow_mode_seconds,links_allowed,pinned_message,pinned_url,pinned_label,custom_html_updated_at,quick_replies,quick_replies_until,reactions_enabled,live_open,live_starts_at,updated_at" as const;
+  "chat_enabled,slow_mode_seconds,links_allowed,pinned_message,pinned_url,pinned_label,custom_html_updated_at,quick_replies,quick_replies_until,reactions_enabled,live_open,live_starts_at,custom_html_enabled,pinned_enabled,updated_at" as const;
 
 function muteLabel(minutes: number): string {
   if (minutes >= END_OF_LIVE_MINUTES) return "jusqu'à la fin du live";
@@ -248,6 +248,13 @@ export function AdminDashboard({ profile }: { profile: Profile }) {
           },
     );
 
+  const toggleVisibility = async (patch: { custom_html_enabled: boolean } | { pinned_enabled: boolean }) => {
+    const ok = await updateSettings(patch);
+    if (!ok) return;
+    if ("custom_html_enabled" in patch) toast.success(patch.custom_html_enabled ? "Offre affichée 🎁" : "Offre masquée");
+    else toast.success(patch.pinned_enabled ? "Épingle affichée 📌" : "Épingle masquée");
+  };
+
   const saveStart = async (iso: string): Promise<boolean> => {
     const ok = await updateSettings({ live_starts_at: iso });
     if (ok) toast.success("Compte à rebours mis à jour");
@@ -347,6 +354,8 @@ export function AdminDashboard({ profile }: { profile: Profile }) {
             saving={savingSettings}
             onUpdate={updateSettings}
             onClear={clearChat}
+            hasOffer={Boolean(chat.customHtml?.trim())}
+            onToggleVisibility={(patch) => void toggleVisibility(patch)}
             reactionStats={<ReactionStats chat={chat} />}
           />
         ) : (
@@ -372,19 +381,34 @@ export function AdminDashboard({ profile }: { profile: Profile }) {
             {activePanel === "offer" && (
               <OfferPanel
                 html={chat.customHtml}
+                enabled={chat.settings?.custom_html_enabled === true}
                 saving={savingSettings}
                 onSave={async (html) => {
-                  const ok = await updateSettings({ custom_html: html });
+                  const ok = await updateSettings({ custom_html: html, ...(html ? {} : { custom_html_enabled: false }) });
                   if (ok) {
                     setCustomHtml(html);
-                    toast.success(html ? "Bloc publié sous la vidéo" : "Bloc retiré");
+                    toast.success(
+                      chat.settings?.custom_html_enabled ? "Offre mise à jour (affichée)" : "Offre enregistrée (masquée)",
+                    );
                   }
                   return ok;
                 }}
+                onToggle={(enabled) => void toggleVisibility({ custom_html_enabled: enabled })}
               />
             )}
             {activePanel === "pin" && chat.settings && (
-              <PinPanel settings={chat.settings} saving={savingSettings} onSave={updateSettings} />
+              <PinPanel
+                settings={chat.settings}
+                saving={savingSettings}
+                onSave={async (patch) => {
+                  const ok = await updateSettings(patch);
+                  if (ok) {
+                    toast.success(chat.settings?.pinned_enabled ? "Épingle mise à jour (affichée)" : "Épingle enregistrée (masquée)");
+                  }
+                  return ok;
+                }}
+                onToggle={(enabled) => void toggleVisibility({ pinned_enabled: enabled })}
+              />
             )}
             {activePanel === "shadow" && (
               <ShadowPanel

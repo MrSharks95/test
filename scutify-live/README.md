@@ -92,9 +92,11 @@ Supabase (Auth, Postgres, Realtime Broadcast, Cron) · Vercel.
 - Onglet **Mots-clés** : ajout / suppression (insensible à la casse et aux
   accents, mot entier, `*` = joker : `arnaque*`).
 - Envoi de messages en tant qu'Équipe (même chat fermé, sans slow mode).
-- Épingle avec bouton lien (modèle « 🚀 Rejoindre la formation » prêt à
-  l'emploi) et retrait : affichée en **bannière sous la vidéo** et en haut du
-  chat.
+- **Épingle** et **bloc Offre** préparés à l'avance (contenu enregistré et
+  modifiable) avec un interrupteur **affiché / masqué** chacun (onglets
+  Épingle / Offre, et raccourcis dans la barre du haut). L'épingle s'affiche
+  en bannière sous la vidéo et en haut du chat ; l'affichage est instantané
+  chez tous (le contenu est déjà chargé par les spectateurs).
 - Onglet **Relances** : un clic lance un message Équipe + des **boutons de
   réponse rapide** (« OUI 🔥 », « Chaud ! »…) chez les spectateurs pendant 30,
   60 ou 120 s ; un appui = un vrai message (slow mode, anti-spam et mots-clés

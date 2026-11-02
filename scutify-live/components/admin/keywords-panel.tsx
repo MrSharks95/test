@@ -34,7 +34,7 @@ export function KeywordsPanel({ keywords, loading, onAdd, onRemove }: Props) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Mots-clés bloqués</CardTitle>
+        <CardTitle>Mots-clés bloqués{keywords && keywords.length > 0 ? ` (${keywords.length})` : ""}</CardTitle>
         <CardDescription>
           Un message qui en contient un est masqué pour tous sauf son auteur (onglet « Bloqués »). Insensible à la
           casse et aux accents, mot entier. Astuce : <code className="font-semibold">arnaque*</code> bloque aussi
@@ -60,7 +60,7 @@ export function KeywordsPanel({ keywords, loading, onAdd, onRemove }: Props) {
         ) : !keywords || keywords.length === 0 ? (
           <p className="text-center text-sm text-muted-foreground">Aucun mot-clé bloqué.</p>
         ) : (
-          <ul className="flex flex-wrap gap-2">
+          <ul className="scrollbar-thin flex max-h-[min(45vh,360px)] flex-wrap gap-2 overflow-y-auto overscroll-contain pr-1">
             {keywords.map((keyword) => (
               <li key={keyword.id}>
                 <Badge variant="secondary" className="gap-1 py-1 pl-3 pr-1 text-sm normal-case tracking-normal">

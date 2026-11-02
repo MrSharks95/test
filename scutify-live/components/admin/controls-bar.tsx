@@ -17,9 +17,23 @@ type Props = {
   onClear: () => void;
   /** Compteurs de réactions (dernière minute). */
   reactionStats?: ReactNode;
+  /** Un bloc « Offre » est enregistré (sinon rien à afficher). */
+  hasOffer?: boolean;
+  onToggleVisibility?: (patch: { custom_html_enabled: boolean } | { pinned_enabled: boolean }) => void;
 };
 
-export function ControlsBar({ settings, saving, onUpdate, onClear, reactionStats }: Props) {
+export function ControlsBar({
+  settings,
+  saving,
+  onUpdate,
+  onClear,
+  reactionStats,
+  hasOffer = false,
+  onToggleVisibility,
+}: Props) {
+  const offerOn = settings.custom_html_enabled === true;
+  const pinOn = settings.pinned_enabled === true;
+  const hasPin = Boolean(settings.pinned_message || settings.pinned_url);
   const reactionsOn = settings.reactions_enabled !== false;
   return (
     <Card className="p-3 sm:p-4">
@@ -87,6 +101,33 @@ export function ControlsBar({ settings, saving, onUpdate, onClear, reactionStats
           </label>
           {reactionsOn && reactionStats}
         </div>
+
+        {onToggleVisibility && (
+          <>
+            <label className="flex cursor-pointer items-center gap-3">
+              <Switch
+                checked={offerOn}
+                disabled={saving || (!hasOffer && !offerOn)}
+                onCheckedChange={(checked) => onToggleVisibility({ custom_html_enabled: checked })}
+                aria-label="Afficher ou masquer l'offre"
+              />
+              <span className={cn("text-sm font-bold", offerOn ? "text-emerald-700" : "text-muted-foreground")}>
+                {offerOn ? "🎁 Offre affichée" : "🎁 Offre masquée"}
+              </span>
+            </label>
+            <label className="flex cursor-pointer items-center gap-3">
+              <Switch
+                checked={pinOn}
+                disabled={saving || (!hasPin && !pinOn)}
+                onCheckedChange={(checked) => onToggleVisibility({ pinned_enabled: checked })}
+                aria-label="Afficher ou masquer l'épingle"
+              />
+              <span className={cn("text-sm font-bold", pinOn ? "text-emerald-700" : "text-muted-foreground")}>
+                {pinOn ? "📌 Épingle affichée" : "📌 Épingle masquée"}
+              </span>
+            </label>
+          </>
+        )}
 
         <Button variant="destructive" size="sm" className="h-9 sm:ml-auto" onClick={onClear}>
           <Trash2 /> Vider le chat
