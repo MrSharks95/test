@@ -83,7 +83,9 @@ Supabase (Auth, Postgres, Realtime Broadcast, Cron) · Vercel.
   **« Terminer le live »** (tous les spectateurs basculent sans recharger sur
   une page de remerciement avec le bloc Offre ; vidéo, chat et réactions
   coupés, chat fermé) et « Rouvrir le live » en cas d'erreur. Confirmation à
-  chaque étape.
+  chaque étape. **Vidéo StreamYard** modifiable au même endroit (coller le
+  code d'intégration) : tous les spectateurs changent de vidéo sans
+  redéploiement ; « Revenir au lien par défaut » reprend celui du code.
 - Ouvrir / fermer le chat (instantané pour tous ; fermé = masqué chez les
   spectateurs, l'équipe continue de le voir).
 - Slow mode : off, 5 s, 10 s, 30 s. Autoriser / bloquer les liens.

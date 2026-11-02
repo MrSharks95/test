@@ -9,6 +9,7 @@ import { useHtmlClass, useVisualViewportVars } from "@/hooks/use-visual-viewport
 import { type LiveChat, useLiveChat } from "@/hooks/use-live-chat";
 import { type LiveReactions, useReactions } from "@/hooks/use-reactions";
 import { DEFAULT_LIVE_STARTS_AT, liveGate, parseStartsAt } from "@/lib/chat/countdown";
+import { parseStreamyardEmbed } from "@/lib/chat/stream";
 import { publicEnv } from "@/lib/env";
 import { cn } from "@/lib/utils";
 
@@ -175,7 +176,8 @@ function LiveLayout({ chat, reactions }: { chat: LiveChat; reactions: LiveReacti
             style={stageReserve}
           >
             <VideoPlayer
-              src={publicEnv.streamEmbedUrl}
+              // Lien choisi dans l'admin (changement instantané), sinon celui du code.
+              src={parseStreamyardEmbed(chat.settings?.stream_url) ?? publicEnv.streamEmbedUrl}
               className="lg:rounded-2xl lg:shadow-2xl lg:ring-1 lg:ring-white/10 touchland:rounded-none touchland:shadow-none touchland:ring-0"
             />
             {/* Message épinglé en bannière sous la vidéo (masqué clavier ouvert). */}

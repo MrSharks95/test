@@ -32,6 +32,8 @@ export type ChatSettings = {
   live_starts_at?: string | null;
   /** Live terminé : page de remerciement (avec l'offre) pour tous. */
   live_ended?: boolean;
+  /** Lien StreamYard choisi dans l'admin (null = lien par défaut du code). */
+  stream_url?: string | null;
   updated_at?: string;
 };
 

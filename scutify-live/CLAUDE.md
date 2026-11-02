@@ -83,6 +83,10 @@ en français, concise, actionnable. Voir README.md pour le détail.
   n'est pas concerné → un test « via cron » ne suffit pas). Toujours mettre
   un WHERE (ex. `where id > 0`) et tester les RPC depuis le site/API. Bug
   trouvé le jour J (flush des réactions) et corrigé (migration 20261102100000).
+- **Lien StreamYard** : modifiable dans l'admin (bandeau, « Vidéo StreamYard :
+  … changer » : coller le code d'intégration) → `chat_settings.stream_url`,
+  bascule instantanée ; null = défaut du code (`lib/env.ts`). Pour un test :
+  admin + `/live?equipe` (le public reste en salle d'attente).
 - **Fin du live** : `chat_settings.live_ended` → page de remerciement + bloc
   Offre (même masqué pendant le live) pour tous ; iframe démontée, chat
   fermé par l'admin au même moment ; réversible. Priorité sur la salle
