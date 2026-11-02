@@ -354,7 +354,7 @@ Retirer les droits : `update public.profiles set role = 'viewer' where email = '
 |---|---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | Vercel + local | URL du projet (*Project Settings > API*) |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Vercel + local | Clé publique : `anon` (legacy) ou `sb_publishable_…` |
-| `NEXT_PUBLIC_STREAM_EMBED_URL` | optionnel | URL d'intégration StreamYard (défaut : `https://streamyard.com/watch/bjJkQR6HBCpX?embed=true`) |
+| `NEXT_PUBLIC_STREAM_EMBED_URL` | optionnel | URL d'intégration StreamYard (défaut : `https://streamyard.com/watch/4XgFVqbD93jc?embed=true`) |
 | `SUPABASE_SERVICE_ROLE_KEY` | **local uniquement** | Pour `npm run create-admin`. Contourne RLS : jamais sur Vercel, jamais en `NEXT_PUBLIC_` |
 
 Les valeurs publiques de production (`NEXT_PUBLIC_SUPABASE_URL`,

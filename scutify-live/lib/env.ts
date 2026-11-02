@@ -6,7 +6,7 @@
  * par les scripts locaux (scripts/create-admin.mjs) et ne doit jamais être
  * préfixée NEXT_PUBLIC_.
  */
-const DEFAULT_STREAM_EMBED_URL = "https://streamyard.com/watch/bjJkQR6HBCpX?embed=true";
+const DEFAULT_STREAM_EMBED_URL = "https://streamyard.com/watch/4XgFVqbD93jc?embed=true";
 
 function required(name: string, value: string | undefined): string {
   if (!value || value.trim() === "") {
