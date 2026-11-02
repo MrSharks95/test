@@ -6,7 +6,7 @@ Page de live StreamYard + chat modéré pour **~4 000 spectateurs**, une soirée
 Interface **en français**, code en anglais. Communication avec l'utilisateur
 en français, concise, actionnable. Voir README.md pour le détail.
 
-## Production (à jour au 01/11/2026)
+## Production (à jour au 02/11/2026)
 - **URL** : https://live.scutify.io/live · admin : https://live.scutify.io/admin
   (DNS `live` CNAME → Vercel chez Infomaniak ; ancien domaine
   `test-five-xi-y6pdflcbnz.vercel.app` toujours actif).
@@ -25,7 +25,8 @@ en français, concise, actionnable. Voir README.md pour le détail.
   `select private.promote_to_admin('email', 'Pseudo');`.
 
 ## Accès outils (important)
-- Supabase MCP : `execute_sql` OK pour SELECT / UPDATE / DDL non destructif.
+- Supabase MCP : `execute_sql` OK pour SELECT / UPDATE / DDL non destructif
+  (create or replace de fonctions compris).
   `apply_migration` et les DROP déclenchent une confirmation que
   l'utilisateur ne voit pas (timeout) → lui faire coller le SQL dans
   *SQL Editor* (fichier sur GitHub, bouton « Copy raw file »).
@@ -74,6 +75,11 @@ en français, concise, actionnable. Voir README.md pour le détail.
   le monde (admins compris) voit l'attente ; admin + `/live?equipe` = vidéo ;
   réglages illisibles = attente jusqu'à l'heure (logique `liveGate()`).
   Titre de page « Karine et Richard · Le live ».
+- **pg-safeupdate** : Supabase refuse tout DELETE/UPDATE **sans WHERE** dans
+  une requête PostgREST, même dans une fonction SECURITY DEFINER (pg_cron
+  n'est pas concerné → un test « via cron » ne suffit pas). Toujours mettre
+  un WHERE (ex. `where id > 0`) et tester les RPC depuis le site/API. Bug
+  trouvé le jour J (flush des réactions) et corrigé (migration 20261102100000).
 - `lib/chat/` = logique pure testée (Vitest, 65 tests).
 
 ## Fonctionnalités en production
