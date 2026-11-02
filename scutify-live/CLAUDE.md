@@ -10,7 +10,8 @@ en français, concise, actionnable. Voir README.md pour le détail.
 - **URL** : https://live.scutify.io/live · admin : https://live.scutify.io/admin
   (DNS `live` CNAME → Vercel chez Infomaniak ; ancien domaine
   `test-five-xi-y6pdflcbnz.vercel.app` toujours actif).
-- **Live** : lundi 02/11/2026 à 20h (StreamYard `bjJkQR6HBCpX`).
+- **Live** : lundi 02/11/2026 à 20h (StreamYard `4XgFVqbD93jc` ; l'ancien
+  `bjJkQR6HBCpX` a servi au test du 02/11 et affiche « Vidéo indisponible »).
 - **Supabase** : projet `scutify-live`, ref `jmzneakxezblpksdhaos`, région
   Paris (eu-west-3), org « LevelUp » en Pro **pay-as-you-go** (pas de spend
   cap), compute **Medium** (à redescendre après le live). Auth : anonymous
