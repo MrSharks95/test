@@ -526,8 +526,9 @@ spend cap, ou augmenter `broadcast_interval_seconds`.
 ## Mise en veille (novembre 2026) et relance
 
 **État** : après le live du 02/11/2026, le projet Supabase `scutify-live` est
-supprimé (0 € de frais) et `live.scutify.io` redirigé vers
-`https://www.scutify-club.com`. Tout ce qu'il faut pour relancer est dans ce
+supprimé (0 € de frais, vérifié le 03/11) et le domaine `live.scutify.io`
+retiré du projet Vercel (qui reste, gratuit ; le CNAME `live` chez Infomaniak
+pointe toujours vers Vercel, qui affiche « DEPLOYMENT_NOT_FOUND »). Tout ce qu'il faut pour relancer est dans ce
 dépôt : la structure de la base (`supabase/migrations/`, vérifiée identique à
 la production le 03/11 : 28 fonctions, 10 règles RLS, 5 triggers, 8 tables,
 2 tâches cron), les mots-clés et réglages (`supabase/seed/`), l'offre (migration
@@ -562,8 +563,8 @@ la production le 03/11 : 28 fonctions, 10 règles RLS, 5 triggers, 8 tables,
    - noms affichés « Karine et Richard » : `components/live/waiting-room.tsx`,
      `components/live/thank-you-page.tsx`, `app/live/page.tsx` ;
    - relances prêtes : `components/admin/relance-panel.tsx`.
-7. **Vercel** → projet `scutify-live` → *Domains* → `live.scutify.io` :
-   retirer la redirection.
+7. **Vercel** → projet `scutify-live` → *Settings → Domains* → *Add* :
+   `live.scutify.io` (le CNAME chez Infomaniak est toujours en place).
 8. **Tests** : `npm run reactions-test`, `npm run load-test` (limites par IP à
    0 le temps du test, puis 20 / 30), puis la checklist jour J ci-dessus.
 

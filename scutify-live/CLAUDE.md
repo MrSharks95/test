@@ -7,10 +7,10 @@ Interface **en français**, code en anglais. Communication avec l'utilisateur
 en français, concise, actionnable. Voir README.md pour le détail.
 
 ## ⏸️ EN VEILLE depuis le 03/11/2026
-Live terminé. Projet Supabase `scutify-live` **supprimé** (0 € de frais, sur
-demande de l'utilisateur, après sauvegarde : migrations vérifiées identiques à
-la prod, `supabase/seed/` = 123 mots-clés + réglages) et `live.scutify.io`
-**redirigé** vers scutify-club.com (Vercel). Relance prévue dans ~6 mois (vers mai 2027) :
+Live terminé. Projet Supabase `scutify-live` **supprimé** le 03/11 (vérifié ; 0 € de frais,
+après sauvegarde : migrations vérifiées identiques à la prod, `supabase/seed/`
+= 123 mots-clés + réglages) et domaine `live.scutify.io` **retiré** du projet
+Vercel (projet conservé, Vercel gratuit ; à ré-ajouter à la relance). Relance prévue dans ~6 mois (vers mai 2027) :
 suivre **README § « Mise en veille et relance »** (nouveau projet → nouvelle
 URL/clé dans `.env.production`). Les infos « Production » ci-dessous sont
 l'état d'avant la veille. Ne pas toucher aux AUTRES projets de l'organisation
