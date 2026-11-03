@@ -523,6 +523,67 @@ spend cap, ou augmenter `broadcast_interval_seconds`.
 
 ---
 
+## Mise en veille (novembre 2026) et relance
+
+**État** : après le live du 02/11/2026, le projet Supabase `scutify-live` est
+supprimé (0 € de frais) et `live.scutify.io` redirigé vers
+`https://www.scutify-club.com`. Tout ce qu'il faut pour relancer est dans ce
+dépôt : la structure de la base (`supabase/migrations/`, vérifiée identique à
+la production le 03/11 : 28 fonctions, 10 règles RLS, 5 triggers, 8 tables,
+2 tâches cron), les mots-clés et réglages (`supabase/seed/`), l'offre (migration
+`20261102120000_offer_pin_toggles.sql`) et le code du site.
+
+### Relancer (≈ 1 h, quelques jours avant le live)
+
+1. **Supabase** (organisation LevelUp, Pro) → *New project* : `scutify-live`,
+   région **Paris (eu-west-3)**. Compute **Micro** jusqu'au jour J, **Medium**
+   quelques heures avant (le changement redémarre la base ~2 min), Micro après.
+2. **SQL Editor** : exécuter les fichiers de `supabase/migrations/` **dans
+   l'ordre** (du plus ancien au plus récent), puis
+   `supabase/seed/blocked_keywords.sql` et `supabase/seed/chat_settings.sql`.
+   Vérifier ensuite *Database → Extensions* (`pg_cron`, `unaccent`) et
+   *Integrations → Cron* (tâches `scutify-live-flush` chaque seconde et
+   `scutify-live-purge`).
+3. **Authentication** : activer *Anonymous sign-ins* ; *Rate limits* : sign-ins
+   anonymes 1 000 / h / IP, token refresh 500 / 5 min ; activer « leaked
+   passwords ».
+4. **Realtime → Settings** : désactiver *Allow public access* (canal privé
+   uniquement) ; 10 000 clients simultanés, 2 500 événements / s ; ne plus y
+   toucher le jour J (chaque sauvegarde déconnecte tout le monde).
+5. **Admins** : *Authentication → Users → Add user* (email + mot de passe,
+   *Auto Confirm*), puis en SQL :
+   `select private.promote_to_admin('email', 'Pseudo');`
+6. **Code**, puis push (Vercel redéploie) :
+   - `.env.production` : nouvelle URL et nouvelle clé *publishable*
+     (*Settings → API Keys*) ;
+   - `lib/env.ts` : lien StreamYard par défaut (chaque diffusion StreamYard a
+     un nouveau lien ; on peut aussi le coller dans l'admin le jour J) ;
+   - `lib/chat/countdown.ts` : `DEFAULT_LIVE_STARTS_AT` (date du live) ;
+   - noms affichés « Karine et Richard » : `components/live/waiting-room.tsx`,
+     `components/live/thank-you-page.tsx`, `app/live/page.tsx` ;
+   - relances prêtes : `components/admin/relance-panel.tsx`.
+7. **Vercel** → projet `scutify-live` → *Domains* → `live.scutify.io` :
+   retirer la redirection.
+8. **Tests** : `npm run reactions-test`, `npm run load-test` (limites par IP à
+   0 le temps du test, puis 20 / 30), puis la checklist jour J ci-dessus.
+
+### Retours du live du 02/11/2026 (à traiter avant le prochain)
+
+- **≈ 7 400 visiteurs** (≈ 5 950 pendant le live, pic ≈ 5 000 connexions à
+  l'ouverture), 1 675 pseudos, ≈ 6 235 messages (pic 123 / min),
+  11 621 envois de réactions. Aucune attaque, aucune erreur serveur.
+- **iPhone / Safari** : ≈ 250 personnes (≈ 4 %), surtout à l'ouverture, ont
+  envoyé leurs requêtes sans session (pseudo et réactions refusés, canal
+  temps réel refusé). À corriger : renouveler la session anonyme
+  automatiquement quand une requête ou le canal est refusé.
+- **Mots-clés trop larges** : 32 % des messages masqués (« formation »,
+  « site », « € », « gratuit »…). Alléger la liste.
+- **Compteur de connectés pour l'admin** : proposition prête (non appliquée)
+  dans `docs/prochain-live/viewer_presence.sql` (+ appel client toutes les
+  2 min et affichage admin à écrire).
+
+---
+
 ## Sécurité
 
 - RLS sur toutes les tables ; viewers : lecture des messages visibles, de

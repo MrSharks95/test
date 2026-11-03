@@ -6,7 +6,17 @@ Page de live StreamYard + chat modéré pour **~4 000 spectateurs**, une soirée
 Interface **en français**, code en anglais. Communication avec l'utilisateur
 en français, concise, actionnable. Voir README.md pour le détail.
 
-## Production (à jour au 02/11/2026)
+## ⏸️ EN VEILLE depuis le 03/11/2026
+Live terminé. Projet Supabase `scutify-live` **supprimé** (0 € de frais, sur
+demande de l'utilisateur, après sauvegarde : migrations vérifiées identiques à
+la prod, `supabase/seed/` = 123 mots-clés + réglages) et `live.scutify.io`
+**redirigé** vers scutify-club.com (Vercel). Relance prévue dans ~6 mois (vers mai 2027) :
+suivre **README § « Mise en veille et relance »** (nouveau projet → nouvelle
+URL/clé dans `.env.production`). Les infos « Production » ci-dessous sont
+l'état d'avant la veille. Ne pas toucher aux AUTRES projets de l'organisation
+Supabase LevelUp (10 projets) ni de l'équipe Vercel « Charly ».
+
+## Production (état au 02/11/2026, avant la veille)
 - **URL** : https://live.scutify.io/live · admin : https://live.scutify.io/admin
   (DNS `live` CNAME → Vercel chez Infomaniak ; ancien domaine
   `test-five-xi-y6pdflcbnz.vercel.app` toujours actif).
